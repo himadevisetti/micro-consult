@@ -1,0 +1,12 @@
+You're generating a clause map based on the following inputs:
+
+- Parties involved: {{party_roles}}
+- Services scope: {{retainer_scope}}
+- Agreement term: {{term_length}}
+- Payment structure: {{payment_terms}}
+- Termination preference: {{termination_clause}}
+
+Please return a clause list like:
+[CLAUSE_TYPE]: Clause wording
+Add caveats or notes if California jurisdiction applies.
+

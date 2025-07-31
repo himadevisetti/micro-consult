@@ -1,0 +1,47 @@
+{
+  "fieldMappings": [
+    {
+      "formFieldId": "clientName",
+      "templateToken": "{{clientName}}",
+      "dataType": "string",
+      "transform": "titleCase"
+    },
+    {
+      "formFieldId": "serviceType",
+      "templateToken": "{{serviceType}}",
+      "dataType": "string",
+      "transform": "titleCase"
+    },
+    {
+      "formFieldId": "rate",
+      "templateToken": "{{rate}}",
+      "dataType": "currency",
+      "transform": "formatCurrency"
+    },
+    {
+      "formFieldId": "billingCycle",
+      "templateToken": "{{billingCycle}}",
+      "dataType": "string",
+      "transform": "sentenceCase"
+    },
+    {
+      "formFieldId": "jurisdiction",
+      "templateToken": "{{jurisdiction}}",
+      "dataType": "string",
+      "transform": "upperCase"
+    },
+    {
+      "formFieldId": "startDate",
+      "templateToken": "{{startDate}}",
+      "dataType": "date",
+      "transform": "formatDate"
+    },
+    {
+      "formFieldId": "endDate",
+      "templateToken": "{{endDate}}",
+      "dataType": "date",
+      "transform": "formatDate"
+    }
+  ]
+}
+

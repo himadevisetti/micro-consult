@@ -1,0 +1,25 @@
+{
+  "name": "micro-consult",
+  "version": "1.0.0",
+  "description": "",
+  "main": "dist/src/functions/generateContract.js",
+  "scripts": {
+    "start": "func start",
+    "build": "tsc",
+    "test": "jest",
+    "test:injection": "jest expert-snapshot-legal/backend/functions/tokenInjection/test/injectTokens.test.ts",
+    "test:tokenIndex": "jest expert-snapshot-legal/backend/functions/tokenInjection/test/index.test.ts"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@types/express": "^5.0.3",
+    "@types/jest": "^30.0.0",
+    "node-mocks-http": "^1.17.2",
+    "ts-jest": "^29.4.0"
+  },
+  "dependencies": {
+    "@azure/functions": "^4.7.2"
+  }
+}

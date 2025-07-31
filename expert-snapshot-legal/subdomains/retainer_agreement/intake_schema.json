@@ -1,0 +1,38 @@
+{
+  "subdomain_id": "retainer_agreement",
+  "jurisdiction": "CA",
+  "intake_questions": [
+    {
+      "id": "party_roles",
+      "label": "Who are the parties and their roles?",
+      "type": "text",
+      "required": true
+    },
+    {
+      "id": "retainer_scope",
+      "label": "Scope of services covered by the retainer",
+      "type": "textarea",
+      "required": true
+    },
+    {
+      "id": "term_length",
+      "label": "Duration of the agreement",
+      "type": "dropdown",
+      "options": ["Monthly", "Quarterly", "Annual", "Custom"],
+      "required": true
+    },
+    {
+      "id": "payment_terms",
+      "label": "Payment amount and frequency",
+      "type": "text",
+      "required": true
+    },
+    {
+      "id": "termination_clause",
+      "label": "Include termination conditions?",
+      "type": "yesno",
+      "required": false
+    }
+  ]
+}
+
