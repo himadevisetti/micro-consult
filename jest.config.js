@@ -1,22 +1,12 @@
-const path = require('path');
-const { createDefaultPreset } = require("ts-jest");
-const tsJestTransformCfg = createDefaultPreset().transform;
-
+/** @type {import('jest').Config} */
 module.exports = {
   preset: 'ts-jest',
+  // preset: require.resolve('ts-jest'),
   testEnvironment: 'node',
   transform: {
-    '^.+\\.ts?$': ['ts-jest', {
-      tsconfig: path.resolve(__dirname, 'tsconfig.json'),
-    }],
-    ...tsJestTransformCfg,
+    '^.+\\.tsx?$': ['ts-jest', { tsconfig: 'tsconfig.json' }]
   },
-  roots: [
-    '<rootDir>/expert-snapshot-legal/backend/functions/tokenInjection/test',
-  ],
-  modulePaths: [
-    '<rootDir>/expert-snapshot-legal/backend/functions/tokenInjection/src',
-  ],
-  moduleFileExtensions: ['ts', 'js', 'json', 'node'],
-};
+  moduleFileExtensions: ['ts', 'js', 'json'],
+  testMatch: ['**/?(*.)+(spec|test).ts'],
+}
 
