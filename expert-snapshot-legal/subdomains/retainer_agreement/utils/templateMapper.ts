@@ -17,4 +17,3 @@ export function applyFormToTemplate(
     return acc.replaceAll(map.templateToken, value || '');
   }, templateText);
 }
-

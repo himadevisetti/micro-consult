@@ -1,25 +1,25 @@
-import httpTrigger from '../src/index'
-import { InvocationContext } from '@azure/functions'
-import * as httpMocks from 'node-mocks-http'
+import httpTrigger from '../src/index';
+import { InvocationContext } from '@azure/functions';
+import * as httpMocks from 'node-mocks-http';
 
 function createMockContext(): InvocationContext & { res?: any } {
-  const mockLogFn = (...args: any[]) => console.log(...args)
+  const mockLogFn = (...args: any[]) => console.log(...args);
 
   return {
     invocationId: 'test-invoke',
     functionName: 'httpTrigger',
     extraInputs: {
       get: () => undefined,
-      set: () => {}
+      set: () => {},
     },
     extraOutputs: {
       get: () => undefined,
-      set: () => {}
+      set: () => {},
     },
     traceContext: {
       traceParent: '',
       traceState: '',
-      attributes: {}
+      attributes: {},
     },
     trace: mockLogFn,
     log: mockLogFn,
@@ -30,13 +30,13 @@ function createMockContext(): InvocationContext & { res?: any } {
     options: {
       trigger: {
         type: 'httpTrigger',
-        name: 'req'
+        name: 'req',
       },
       extraInputs: [],
-      extraOutputs: []
+      extraOutputs: [],
     },
-    res: undefined
-  }
+    res: undefined,
+  };
 }
 
 describe('Azure Function index.ts', () => {
@@ -47,42 +47,41 @@ describe('Azure Function index.ts', () => {
     endDate: '2025-12-01',
     rate: '$5000',
     jurisdiction: 'New York',
-    billingCycle: 'weekly'
-  }
+    billingCycle: 'weekly',
+  };
 
-  const mockTemplate = 'Client: {{clientName}}, Service: {{serviceType}}, Rate: {{rate}}'
+  const mockTemplate = 'Client: {{clientName}}, Service: {{serviceType}}, Rate: {{rate}}';
 
   it('returns 200 with injected output', async () => {
     const req = {
       json: async () => ({
         template: mockTemplate,
-        intent: mockIntent
-      })
-    } as any
+        intent: mockIntent,
+      }),
+    } as any;
 
-    const context = createMockContext()
-    await httpTrigger(req, context)
+    const context = createMockContext();
+    await httpTrigger(req, context);
 
-    const result = await httpTrigger(req, context)
+    const result = await httpTrigger(req, context);
 
-    expect(result.status).toBe(200)
+    expect(result.status).toBe(200);
 
-    expect(result.jsonBody.fieldsInjected.clientName).toContain('Beta LLC')
-    expect(result.jsonBody.fieldsInjected.rate).toBe('$5000')
-  })
+    expect(result.jsonBody.fieldsInjected.clientName).toContain('Beta LLC');
+    expect(result.jsonBody.fieldsInjected.rate).toBe('$5000');
+  });
 
   it('returns 400 for missing payload', async () => {
     const req = {
-      json: async () => ({})
-    } as any
+      json: async () => ({}),
+    } as any;
 
-    const context = createMockContext()
-    await httpTrigger(req, context)
+    const context = createMockContext();
+    await httpTrigger(req, context);
 
-    const result = await httpTrigger(req, context)
+    const result = await httpTrigger(req, context);
 
-    expect(result.status).toBe(400)
-    expect(result.jsonBody.error).toBeDefined()
-  })
-})
-
+    expect(result.status).toBe(400);
+    expect(result.jsonBody.error).toBeDefined();
+  });
+});

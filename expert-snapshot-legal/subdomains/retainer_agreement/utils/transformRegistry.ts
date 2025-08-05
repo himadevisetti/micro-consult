@@ -1,13 +1,13 @@
 export function applyTransform(name: string, value: string): string {
   switch (name) {
     case 'titleCase':
-      return value.replace(/\b\w/g, char => char.toUpperCase());
+      return value.replace(/\b\w/g, (char) => char.toUpperCase());
 
     case 'formatDate':
       return new Date(value).toLocaleDateString('en-US', {
         month: 'long',
         day: 'numeric',
-        year: 'numeric'
+        year: 'numeric',
       });
 
     case 'formatCurrency':
@@ -17,7 +17,7 @@ export function applyTransform(name: string, value: string): string {
         : new Intl.NumberFormat('en-US', {
             style: 'currency',
             currency: 'USD',
-            minimumFractionDigits: 2
+            minimumFractionDigits: 2,
           }).format(num);
 
     case 'sentenceCase':
@@ -30,4 +30,3 @@ export function applyTransform(name: string, value: string): string {
       return value;
   }
 }
-

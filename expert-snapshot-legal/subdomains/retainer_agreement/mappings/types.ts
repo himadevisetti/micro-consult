@@ -1,4 +1,3 @@
-
 export interface FieldMapping {
   formFieldId: string;
   templateToken: string;
@@ -9,4 +8,3 @@ export interface FieldMapping {
 export interface MappingSchema {
   fieldMappings: FieldMapping[];
 }
-

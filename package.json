@@ -1,28 +1,44 @@
 {
-  "name": "micro-consult",
+  "name": "micro-consult-root",
   "version": "1.0.0",
+  "private": true,
+  "workspaces": [
+    "micro-consult",
+    "expert-snapshot-legal/frontend"
+  ],
   "description": "",
-  "main": "dist/src/functions/generateContract.js",
   "scripts": {
     "start": "func start",
-    "build": "tsc",
+    "build": "tsc -p expert-snapshot-legal/frontend",
     "clean": "rm -rf dist tsbuildinfo *.js *.js.map",
     "test": "jest --config jest.config.js",
     "test:injection": "jest expert-snapshot-legal/backend/functions/tokenInjection/test/injectTokens.test.ts",
     "test:tokenIndex": "jest expert-snapshot-legal/backend/functions/tokenInjection/test/index.test.ts",
-    "all": "npm run clean && npm run build && npm run test"
+    "all": "npm run clean && npm run build && npm run test",
+    "dev:full": "npm run dev -w micro-consult && npm run dev -w expert-snapshot-legal/frontend"
   },
   "keywords": [],
   "author": "Hima Bindu Devisetti",
   "license": "ISC",
   "devDependencies": {
+    "@types/cheerio": "^0.22.35",
     "@types/express": "^5.0.3",
     "@types/jest": "^30.0.0",
+    "@types/react": "^19.1.9",
+    "@types/react-dom": "^19.1.7",
     "jest": "^29.7.0",
     "node-mocks-http": "^1.17.2",
+    "prettier": "^3.6.2",
     "ts-jest": "^29.4.0"
   },
   "dependencies": {
-    "@azure/functions": "^4.7.2"
+    "@azure/functions": "^4.7.2",
+    "cheerio": "^1.1.0",
+    "docx": "^9.5.1",
+    "html2pdf.js": "^0.10.3",
+    "jsdom": "^26.1.0"
+  },
+  "overrides": {
+    "glob": "^10.3.3"
   }
 }

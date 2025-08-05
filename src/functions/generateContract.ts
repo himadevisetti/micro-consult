@@ -1,6 +1,6 @@
-import { app, HttpRequest, HttpResponseInit, InvocationContext } from "@azure/functions";
-import { applyFormToTemplate } from "../../expert-snapshot-legal/subdomains/retainer_agreement/utils/templateMapper";
-import mappingSchema from "../../expert-snapshot-legal/subdomains/retainer_agreement/mappings/formToTemplate.schema.json";
+import { app, HttpRequest, HttpResponseInit, InvocationContext } from '@azure/functions';
+import { applyFormToTemplate } from '../../expert-snapshot-legal/subdomains/retainer_agreement/utils/templateMapper';
+import mappingSchema from '../../expert-snapshot-legal/subdomains/retainer_agreement/mappings/formToTemplate.schema.json';
 
 export async function generateContract(
   request: HttpRequest,
@@ -13,12 +13,12 @@ export async function generateContract(
     template: string;
   };
 
-  const { intent, template } = await request.json() as RequestPayload;
+  const { intent, template } = (await request.json()) as RequestPayload;
   const output = applyFormToTemplate(intent, template, mappingSchema);
 
   return {
     status: 200,
-    body: output
+    body: output,
   };
 }
 
@@ -26,6 +26,5 @@ export async function generateContract(
 app.http('generateContract', {
   methods: ['GET', 'POST'],
   authLevel: 'anonymous',
-  handler: generateContract
+  handler: generateContract,
 });
-

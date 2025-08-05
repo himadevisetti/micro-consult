@@ -1,0 +1,17 @@
+.card-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.template-card {
+  border: 1px solid #ccc;
+  padding: 1rem;
+  width: 250px;
+}
+
+.template-options {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap; /* Optional: keeps buttons from squishing if screen is narrow */
+}
