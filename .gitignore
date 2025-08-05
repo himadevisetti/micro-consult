@@ -1,34 +1,37 @@
-bin
-obj
-csx
-.vs
-edge
-Publish
+# Build & IDE Artifacts
+bin/
+obj/
+csx/
+.vs/
+Publish/
+edge/
 
+# User & Config Files
 *.user
 *.suo
 *.cscfg
 *.Cache
 project.lock.json
 
-/packages
-/TestResults
-
+# Package Managers & Test Output
+/packages/
+/TestResults/
 /tools/NuGet.exe
-/App_Data
-/secrets
-/data
+
+# App Data & Secrets
+/App_Data/
+/secrets/
+/data/
 .secrets
 appsettings.json
 local.settings.json
 
-node_modules
-dist
+# Node.js Artifacts
+node_modules/
+dist/
 
-# Local python packages
+# Python: Local Packages & Environments
 .python_packages/
-
-# Python Environments
 .env
 .venv
 env/
@@ -37,12 +40,39 @@ ENV/
 env.bak/
 venv.bak/
 
-# Byte-compiled / optimized / DLL files
+# Python: Compiled Files
 __pycache__/
 *.py[cod]
 *$py.class
 
-# Azurite artifacts
-__blobstorage__
-__queuestorage__
+# Azure Emulator Artifacts
+__blobstorage__/
+__queuestorage__/
 __azurite_db*__.json
+
+# macOS System Files
+.DS_Store
+
+# Windows System Files
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# OS Crash Reports
+*.pid
+*.seed
+
+# Editor Swap/Backup Files
+*.swp
+*.bak
+*~
+
+# VSCode Workspace Settings
+.vscode/
+
