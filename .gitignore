@@ -76,3 +76,13 @@ yarn-error.log*
 # VSCode Workspace Settings
 .vscode/
 
+# Next.js build output
+expert-snapshot-legal/frontend/.next/
+
+# Ignore dev-only export artifacts
+expert-snapshot-legal/frontend/exports/
+
+# Environment config
+expert-snapshot-legal/frontend/.env.local
+
+
