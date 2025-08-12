@@ -1,13 +1,12 @@
-import { generatePDF } from './generatePDF';
-import { generateDOCX } from './generateDOCX';
-import { getSerializedClauses } from '../../utils/serializeClauses';
-import { getFilename } from '../../utils/generateFilename';
-import { getSignatureBlock } from '../signatureUtils';
+import { generateDOCX } from './generateDOCX.js';
+import { getSerializedClauses } from '../../utils/serializeClauses.js';
+import { getFilename } from '../../utils/generateFilename.js';
+import { getSignatureBlock } from '../signatureUtils.js';
 
 export async function exportRetainer(
   type: 'pdf' | 'docx',
   rawData: Record<string, string>,
-  previewElement?: HTMLElement
+  html?: string // ✅ Optional HTML for PDF
 ) {
   const resolvedClient = rawData.clientName?.trim() || 'Client';
   const resolvedGroup = rawData.legalGroup?.trim() || 'Expert Snapshot Legal';
@@ -42,23 +41,25 @@ export async function exportRetainer(
     data.retainerPurpose
   );
 
-  // 🧯 Ensure preview is stable before generating PDF
-  if (type === 'pdf') {
-    if (!previewElement || !document.body.contains(previewElement)) {
-      console.warn('Preview element is missing or detached.');
-      alert('Cannot generate PDF: preview not available.');
-      return;
-    }
-
-    await new Promise((resolve) => requestAnimationFrame(resolve));
-  }
-
-  // 🧱 Blob generation with error handling
   let blob: Blob | null = null;
 
   try {
-    blob =
-      type === 'pdf' ? await generatePDF(previewElement) : await generateDOCX(data, signatureBlock);
+    if (type === 'pdf') {
+      if (!html) throw new Error('Missing HTML for PDF export');
+
+      const response = await fetch('/api/export-pdf', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ html, filename }), // ✅ Send both
+      });
+
+      if (!response.ok) throw new Error(`PDF export failed: ${response.statusText}`);
+
+      const arrayBuffer = await response.arrayBuffer();
+      blob = new Blob([arrayBuffer], { type: 'application/pdf' });
+    } else {
+      blob = await generateDOCX(data, signatureBlock);
+    }
   } catch (err) {
     console.error(`[Export Error] Failed to generate ${type.toUpperCase()} blob:`, err);
     alert('Export failed. Please try again or contact support.');
@@ -97,9 +98,9 @@ export async function exportRetainer(
     link.download = filename;
     document.body.appendChild(link);
 
-    link.click(); // ⬅️ Direct, synchronous trigger
+    link.click();
     document.body.removeChild(link);
-    URL.revokeObjectURL(url); // Optional cleanup
+    URL.revokeObjectURL(url);
   } else {
     console.warn('No file blob was generated for download.');
   }

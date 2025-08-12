@@ -1,5 +1,5 @@
-import { MappingSchema } from '../mappings/types';
-import { applyTransform } from './transformRegistry';
+import { MappingSchema } from '../mappings/types.js';
+import { applyTransform } from './transformRegistry.js';
 
 export function applyFormToTemplate(
   formData: Record<string, string>,

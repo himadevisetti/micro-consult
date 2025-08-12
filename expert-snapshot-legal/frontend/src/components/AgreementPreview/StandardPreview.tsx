@@ -1,18 +1,11 @@
 import { useEffect, useRef } from 'react';
-import PartiesClause from '../AgreementClauses/PartiesClause';
-import ScopeClause from '../AgreementClauses/ScopeClause';
-import ResponsibilitiesClause from '../AgreementClauses/ResponsibilitiesClause';
-import FeeClause from '../AgreementClauses/FeeClause';
-import CostsClause from '../AgreementClauses/CostsClause';
-import CommunicationClause from '../AgreementClauses/CommunicationClause';
-import ConfidentialityClause from '../AgreementClauses/ConfidentialityClause';
-import TerminationClause from '../AgreementClauses/TerminationClause';
-import GoverningLawClause from '../AgreementClauses/GoverningLawClause';
-import EntireAgreementClause from '../AgreementClauses/EntireAgreementClause';
-import SignatureClause from '../AgreementClauses/SignatureClause';
+import { getClauses } from '../AgreementClauses/clauses.js';
+import SignatureClause from '../AgreementClauses/SignatureClause.js';
 import styles from '../../styles/StandardPreview.module.css';
+import { exportRetainer } from '../../utils/export/exportHandler.js';
+import DownloadToggle from '../Export/DownloadToggle.js';
 
-interface PreviewProps {
+export interface PreviewProps {
   formData: Record<string, string>;
   onRefReady?: (element: HTMLElement | null) => void;
 }
@@ -20,49 +13,65 @@ interface PreviewProps {
 export default function StandardPreview({ formData, onRefReady }: PreviewProps) {
   const previewRef = useRef<HTMLDivElement>(null);
 
-  // Pass the ref back to parent if needed for export
-  // if (onRefReady) {
-  // onRefReady(previewRef.current);
-  // }
-
   useEffect(() => {
     if (onRefReady && previewRef.current) {
-      console.log('Preview ref mounted: ', previewRef.current);
       onRefReady(previewRef.current);
     }
   }, [onRefReady]);
 
+  const clauses = getClauses(formData);
+
+  const handleExportPDF = async () => {
+    const html = previewRef.current?.innerHTML;
+    if (!html) return;
+
+    try {
+      await exportRetainer('pdf', formData, html);
+    } catch (err) {
+      console.error('PDF export failed:', err);
+    }
+  };
+
+  const handleExportDOCX = async () => {
+    try {
+      await exportRetainer('docx', formData);
+    } catch (err) {
+      console.error('DOCX export failed:', err);
+    }
+  };
+
   return (
-    <div ref={previewRef} className={styles.retainerPreview}>
-      <h2>Legal Retainer Agreement</h2>
+    <div>
+      <div ref={previewRef} className={styles.retainerPreview}>
+        <h2 className={styles.retainerTitle}>Legal Retainer Agreement</h2>
 
-      <PartiesClause
-        clientName={formData.clientName}
-        legalGroup="Expert Snapshot Legal"
-        effectiveDate={formData.startDate}
-      />
+        <div className={styles.clausesFlow}>
+          {clauses.map((clause, index) => (
+            <div key={index} className={styles.clauseBlock}>
+              {clause}
+            </div>
+          ))}
+        </div>
 
-      <ScopeClause retainerPurpose={formData.retainerPurpose} />
-      <ResponsibilitiesClause />
-      <CommunicationClause contactPerson={formData.clientName} />
+        <div className={styles.signatureWrapper}>
+          <div className={styles.signatureBlock}>
+            <SignatureClause
+              clientName={formData.clientName}
+              legalGroup="Expert Snapshot Legal"
+              executionDate={formData.startDate}
+            />
+          </div>
+        </div>
+      </div>
 
-      <FeeClause
-        structure={formData.feeStructure}
-        rate="350"
-        retainerAmount="1500"
-        jurisdiction={formData.jurisdiction}
-      />
-
-      <CostsClause />
-      <ConfidentialityClause />
-      <TerminationClause />
-      <GoverningLawClause jurisdiction={formData.jurisdiction} />
-      <EntireAgreementClause />
-
-      <SignatureClause
-        clientName={formData.clientName}
-        legalGroup="Expert Snapshot Legal"
-        executionDate={formData.startDate}
+      <DownloadToggle
+        onDownload={(type) => {
+          if (type === 'pdf') {
+            handleExportPDF();
+          } else if (type === 'docx') {
+            handleExportDOCX();
+          }
+        }}
       />
     </div>
   );

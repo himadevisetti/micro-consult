@@ -1,6 +1,6 @@
 import { InvocationContext, HttpRequest, HttpResponseInit } from '@azure/functions';
-import { injectTokensIntoContract } from './injectTokens';
-import { RetainerAgreementIntent } from './types';
+import { injectTokensIntoContract } from './injectTokens.js';
+import { RetainerAgreementIntent } from './types.js';
 
 export default async function httpTrigger(
   req: HttpRequest,

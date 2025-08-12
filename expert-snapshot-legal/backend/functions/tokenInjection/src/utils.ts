@@ -1,4 +1,4 @@
-import { RetainerAgreementIntent } from './types';
+import { RetainerAgreementIntent } from './types.js';
 
 export const formatDate = (iso: string): string => {
   const date = new Date(iso);

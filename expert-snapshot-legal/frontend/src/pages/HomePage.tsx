@@ -1,11 +1,10 @@
-// expert-snapshot-legal/frontend/src/pages/index.tsx
-
-import { useRouter } from 'next/router';
+// src/pages/HomePage.tsx
 import React, { useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import styles from '../styles/HomePage.module.css';
 
-const Home = () => {
-  const router = useRouter();
+const HomePage = () => {
+  const navigate = useNavigate();
 
   useEffect(() => {
     const buttons = document.querySelectorAll('button');
@@ -15,7 +14,7 @@ const Home = () => {
   }, []);
 
   const handleStart = (templateId: string) => {
-    router.push(`/builder?template=${templateId}`);
+    navigate(`/builder?template=${templateId}`);
   };
 
   const RetainerCard = ({ title, templateId }: { title: string; templateId: string }) => (
@@ -43,4 +42,4 @@ const Home = () => {
   );
 };
 
-export default Home;
+export default HomePage;

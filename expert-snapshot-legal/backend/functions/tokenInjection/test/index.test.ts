@@ -1,4 +1,4 @@
-import httpTrigger from '../src/index';
+import httpTrigger from '../src/index.js';
 import { InvocationContext } from '@azure/functions';
 import * as httpMocks from 'node-mocks-http';
 

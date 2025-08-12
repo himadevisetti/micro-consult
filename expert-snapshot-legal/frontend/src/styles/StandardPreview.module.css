@@ -1,32 +1,107 @@
-.retainerPreview {
-  max-width: 800px;
-  margin: 0 auto;
-  padding: 40px;
-  font-family: 'Georgia', serif;
-  background: #fff;
-  color: #000;
-  border: 1px solid #ccc;
+@page {
+  margin-top: 1.5in;
 }
 
-.retainerPreview h2 {
+body {
+  padding-top: 0in;
+  border-top: 1px solid transparent;
+}
+
+.retainerPreview {
+  display: block;
+  position: relative;
+  margin-top: 0;
+  margin-right: auto;
+  margin-bottom: 0.5in;
+  margin-left: auto;
+  padding: 1in 48px 1.5in 4px;
+  box-sizing: border-box;
+  max-width: 800px;
+  font-family: 'Georgia', serif;
+  font-size: 14px;
+  line-height: 1.6;
+  color: #000;
+  border: 2px solid black;
+  page-break-inside: avoid;
+}
+
+@media screen {
+  .retainerPreview {
+    box-shadow: 0 0 8px rgba(0, 0, 0, 0.25);
+  }
+}
+
+.retainerTitle {
   text-align: center;
   font-size: 24px;
-  margin-bottom: 40px;
+  margin-top: 0;
+  margin-bottom: 24px;
   text-transform: uppercase;
   letter-spacing: 1px;
+  page-break-after: avoid;
+  break-after: avoid;
 }
 
-.retainerPreview section {
+.clauseHeading {
+  font-weight: bold;
+  font-size: 18px;
+  margin: 0 0 12px 0;
+  padding: 0;
+  color: #333;
+  page-break-after: avoid;
+  break-after: avoid;
+}
+
+.clauseBlock h3 {
+  margin-top: 8px;
   margin-bottom: 24px;
 }
 
-.retainerPreview h3 {
-  font-size: 18px;
-  margin-bottom: 8px;
-  color: #333;
+.clauseBlock {
+  display: block;
+  break-inside: avoid;
+  page-break-inside: avoid;
+  margin-top: 0;
+  margin-bottom: 24px;
+  padding: 0;
 }
 
-.retainerPreview p {
+.clausesFlow {
+  padding: 0;
+  margin: 0;
+  page-break-inside: avoid;
+}
+
+.signatureWrapper {
+  padding: 0;
+  margin: 0;
+  break-inside: avoid;
+}
+
+.signatureBlock {
+  margin-top: 48px;
+  padding: 0;
+  page-break-inside: avoid;
+  border-top: none;
+}
+
+.clauseBlock p {
+  margin-top: 0;
+  margin-bottom: 24px;
   font-size: 16px;
   line-height: 1.6;
+}
+
+.clauseBlock:last-of-type {
+  margin-bottom: 24px;
+}
+
+.signatureBlock p {
+  margin-bottom: 12px;
+  font-size: 16px;
+}
+
+.form-section {
+  overflow-x: visible;
+  overflow-y: auto;
 }

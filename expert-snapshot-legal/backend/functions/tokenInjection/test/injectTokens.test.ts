@@ -1,5 +1,5 @@
-import { injectTokensIntoContract } from '../src/injectTokens';
-import { RetainerAgreementIntent } from '../src/types';
+import { injectTokensIntoContract } from '../src/injectTokens.js';
+import { RetainerAgreementIntent } from '../src/types.js';
 
 const mockTemplate = `
   This agreement is between {{clientName}} and the legal team for {{serviceType}} services.

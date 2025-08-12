@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
-import { standardRetainerSchema } from '../../schemas/standardRetainerSchema';
-import StandardPreview from '../AgreementPreview/StandardPreview';
-import DownloadToggle from '../Export/DownloadToggle';
-import { exportRetainer } from '../../utils/export/exportHandler';
-import { getSerializedClauses } from '../../utils/serializeClauses';
+import { standardRetainerSchema } from '../../schemas/standardRetainerSchema.js';
+import StandardPreview from '../AgreementPreview/StandardPreview.js';
+import DownloadToggle from '../Export/DownloadToggle.js';
+import { exportRetainer } from '../../utils/export/exportHandler.js';
+import { getSerializedClauses } from '../../utils/serializeClauses.js';
 
 export default function StandardRetainerForm() {
   const [formData, setFormData] = useState<Record<string, string>>({});
@@ -84,7 +84,11 @@ export default function StandardRetainerForm() {
       ...clauseHTML,
     };
 
-    exportRetainer(type, agreementData, previewElement || undefined);
+    try {
+      await exportRetainer(type, agreementData);
+    } catch (err) {
+      console.error(`Export failed for ${type}:`, err);
+    }
   };
 
   return (
@@ -98,7 +102,6 @@ export default function StandardRetainerForm() {
       {submitted && (
         <>
           <StandardPreview formData={formData} onRefReady={setPreviewElement} />
-          <DownloadToggle onDownload={handleDownload} />
         </>
       )}
     </div>

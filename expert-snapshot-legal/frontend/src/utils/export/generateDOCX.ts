@@ -1,6 +1,6 @@
 import { Document, Packer, Paragraph, TextRun } from 'docx';
-import { formatClauseContent } from '../formatClauseContent';
-import { clauses } from '../clauses';
+import { formatClauseContent } from '../formatClauseContent.js';
+import { clauses } from '../clauses.js';
 
 function cleanClauseBody(body: string): string {
   const lines = body
@@ -12,14 +12,18 @@ function cleanClauseBody(body: string): string {
 
 export async function generateDOCX(
   data: Record<string, string>,
-  signatureBlock: Paragraph[] // ✅ trusted, already-built block
+  signatureBlock: Paragraph[]
 ) {
   const sections: Paragraph[] = [];
+
+  const resolvedClient = data.clientName || 'the Client';
+  const resolvedGroup = data.legalGroup || 'the Attorney';
+  const resolvedDate = data.executionDate || 'the date of execution';
 
   // 📄 Document title
   sections.push(
     new Paragraph({
-      children: [new TextRun({ text: 'Legal Retainer Agreement', bold: true, size: 36 })],
+      children: [new TextRun({ text: 'Legal Retainer Agreement', bold: true, size: 48 })],
       alignment: 'center',
       spacing: { after: 400 },
     })
@@ -33,30 +37,72 @@ export async function generateDOCX(
     const cleanedBody = cleanClauseBody(clauseBody);
     const formattedLines = formatClauseContent(cleanedBody);
 
-    sections.push(
-      ...formattedLines.map(
-        ({ text, bold }) =>
-          new Paragraph({
-            children: [new TextRun({ text, bold })],
-            spacing: { after: 100 },
-          })
-      )
-    );
+    const clauseParagraphs = formattedLines.map(({ text, bold }, index) => {
+      const isHeading = index === 0 && bold;
+      const isLast = index === formattedLines.length - 1;
+
+      const replacedText = text
+        .replace(/the Client/g, resolvedClient)
+        .replace(/the Attorney/g, resolvedGroup)
+        .replace(/the date of execution/g, resolvedDate);
+
+      return new Paragraph({
+        children: [
+          new TextRun({
+            text: replacedText,
+            bold,
+            size: isHeading ? 26 : 22, // 🔧 Reduced from 36/32 to ~15pt/13pt
+          }),
+        ],
+        spacing: {
+          after: isHeading ? 200 : isLast ? 300 : 100,
+        },
+        keepLines: isHeading,
+        keepNext: isHeading,
+      });
+    });
+
+    sections.push(...clauseParagraphs);
   }
 
   // ✍️ Signature block — single, delegated injection
   if (signatureBlock?.length) {
+    sections.push(
+      new Paragraph({ spacing: { after: 200 } }),
+      new Paragraph({ spacing: { after: 200 } })
+    );
     sections.push(...signatureBlock);
   }
 
   const doc = new Document({
-    sections: [{ properties: {}, children: sections }],
+    styles: {
+      default: {
+        document: {
+          run: {
+            font: 'Georgia',
+            size: 20, // 🔧 Reduced from 28 to ~11pt
+          },
+          paragraph: {
+            spacing: { after: 100 },
+          },
+        },
+      },
+    },
+    sections: [{
+      properties: {
+        page: {
+          margin: {
+            top: 1440,
+            bottom: 1440,
+            left: 1440,
+            right: 1440,
+          },
+        },
+      },
+      children: sections,
+    }],
   });
 
-  const buffer = await Packer.toBuffer(doc);
-  const safeBuffer = new Uint8Array(buffer);
-  return new Blob([safeBuffer], {
-    type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-  });
-
+  const blob = await Packer.toBlob(doc);
+  return blob;
 }

@@ -2,17 +2,17 @@
 import * as React from 'react';
 import ReactDOMServer from 'react-dom/server';
 
-import PartiesClause from '../components/AgreementClauses/PartiesClause';
-import ScopeClause from '../components/AgreementClauses/ScopeClause';
-import ResponsibilitiesClause from '../components/AgreementClauses/ResponsibilitiesClause';
-import CommunicationClause from '../components/AgreementClauses/CommunicationClause';
-import FeeClause from '../components/AgreementClauses/FeeClause';
-import CostsClause from '../components/AgreementClauses/CostsClause';
-import ConfidentialityClause from '../components/AgreementClauses/ConfidentialityClause';
-import TerminationClause from '../components/AgreementClauses/TerminationClause';
-import GoverningLawClause from '../components/AgreementClauses/GoverningLawClause';
-import EntireAgreementClause from '../components/AgreementClauses/EntireAgreementClause';
-import SignatureClause from '../components/AgreementClauses/SignatureClause';
+import PartiesClause from '../components/AgreementClauses/PartiesClause.js';
+import ScopeClause from '../components/AgreementClauses/ScopeClause.js';
+import ResponsibilitiesClause from '../components/AgreementClauses/ResponsibilitiesClause.js';
+import CommunicationClause from '../components/AgreementClauses/CommunicationClause.js';
+import FeeClause from '../components/AgreementClauses/FeeClause.js';
+import CostsClause from '../components/AgreementClauses/CostsClause.js';
+import ConfidentialityClause from '../components/AgreementClauses/ConfidentialityClause.js';
+import TerminationClause from '../components/AgreementClauses/TerminationClause.js';
+import GoverningLawClause from '../components/AgreementClauses/GoverningLawClause.js';
+import EntireAgreementClause from '../components/AgreementClauses/EntireAgreementClause.js';
+import SignatureClause from '../components/AgreementClauses/SignatureClause.js';
 
 /**
  * Safely serializes a JSX.Element to static HTML.

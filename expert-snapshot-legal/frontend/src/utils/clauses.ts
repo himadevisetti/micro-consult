@@ -1,4 +1,4 @@
-import { SerializedClause } from '../types/clauseTypes';
+import { SerializedClause } from '../types/clauseTypes.js';
 
 export const clauses: Record<string, SerializedClause> = {
   partiesClause: {

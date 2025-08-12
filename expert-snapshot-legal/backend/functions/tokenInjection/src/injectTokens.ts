@@ -1,5 +1,5 @@
-import { RetainerAgreementIntent, TokenizedContract } from './types';
-import { formatDate, extractTokens } from './utils';
+import { RetainerAgreementIntent, TokenizedContract } from './types.js';
+import { formatDate, extractTokens } from './utils.js';
 
 export const injectTokensIntoContract = (
   template: string,
