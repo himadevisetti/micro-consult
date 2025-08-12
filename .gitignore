@@ -85,4 +85,15 @@ expert-snapshot-legal/frontend/exports/
 # Environment config
 expert-snapshot-legal/frontend/.env.local
 
+# Compiled build artifacts
+frontend/build/
 
+# Vite cache
+node_modules/.vite/
+
+# TypeScript build artifacts
+*.tsbuildinfo
+
+# Temporary export files
+*.pdf
+*.docx
