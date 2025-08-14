@@ -1,109 +1,177 @@
-import React, { useState } from 'react';
-import { standardRetainerSchema } from '../../schemas/standardRetainerSchema.js';
-import StandardPreview from '../AgreementPreview/StandardPreview.js';
-import DownloadToggle from '../Export/DownloadToggle.js';
-import { exportRetainer } from '../../utils/export/exportHandler.js';
-import { getSerializedClauses } from '../../utils/serializeClauses.js';
+// src/components/FormFlows/StandardRetainerForm.tsx
+import React from 'react';
+import { standardRetainerSchema } from '../../schemas/standardRetainerSchema';
+import type { RetainerFormData } from '../../types/RetainerFormData';
 
-export default function StandardRetainerForm() {
-  const [formData, setFormData] = useState<Record<string, string>>({});
-  const [errors, setErrors] = useState<Record<string, string>>({});
-  const [submitted, setSubmitted] = useState(false);
-  const [previewElement, setPreviewElement] = useState<HTMLElement | null>(null);
+export interface StandardRetainerFormProps {
+  formData: RetainerFormData;
+  errors?: Partial<Record<keyof RetainerFormData, string>>;
+  touched?: Partial<Record<keyof RetainerFormData, boolean>>;
+  onChange: (field: keyof RetainerFormData, value: string | number | Date) => void;
+  onSubmit?: () => void;
+  markTouched?: (field: keyof RetainerFormData) => void;
+}
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
-    setErrors((prev) => ({ ...prev, [name]: '' }));
-  };
+export default function StandardRetainerForm({
+  formData,
+  errors,
+  touched,
+  onChange,
+  onSubmit,
+  markTouched,
+}: StandardRetainerFormProps) {
+  const handleChange = (field: keyof RetainerFormData) => (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
+  ) => {
+    const raw = e.target.value;
+    const config = standardRetainerSchema[field];
 
-  const validateForm = () => {
-    const newErrors: Record<string, string> = {};
-
-    for (const [key, config] of Object.entries(standardRetainerSchema)) {
-      const value = formData[key];
-      if (config.required && !value) {
-        newErrors[key] = `${config.label} is required.`;
-      }
+    let parsed: string | number = raw;
+    if (field === 'feeAmount' || field === 'retainerAmount') {
+      parsed = raw === '' ? 0 : parseFloat(raw);
     }
 
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
+    onChange(field, parsed);
+    markTouched?.(field);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    setSubmitted(false);
-    if (validateForm()) {
-      console.log('Payload:', formData);
-      setSubmitted(true);
-    }
-  };
-
-  const renderField = (key: string, config: any) => {
-    const error = errors[key];
-    const commonProps = {
-      name: key,
-      value: formData[key] || '',
-      onChange: handleChange,
-      required: config.required,
-    };
-
-    return (
-      <div key={key} className="form-field">
-        <label htmlFor={key}>{config.label}</label>
-        {config.type === 'select' ? (
-          <select {...commonProps}>
-            <option value="">Select {config.label}</option>
-            {config.options?.map((option: string) => (
-              <option key={option} value={option}>
-                {option}
-              </option>
-            ))}
-          </select>
-        ) : (
-          <input
-            id={key}
-            type={config.type || 'text'}
-            placeholder={config.placeholder}
-            {...commonProps}
-          />
-        )}
-        {error && <p className="error">{error}</p>}
-      </div>
-    );
-  };
-
-  const handleDownload = async (type: 'pdf' | 'docx') => {
-    const clauseHTML = getSerializedClauses(formData);
-
-    const agreementData = {
-      ...formData,
-      legalGroup: 'Expert Snapshot Legal',
-      executionDate: formData.startDate,
-      ...clauseHTML,
-    };
-
-    try {
-      await exportRetainer(type, agreementData);
-    } catch (err) {
-      console.error(`Export failed for ${type}:`, err);
+  const handleDateChange = (field: keyof RetainerFormData) => (e: React.ChangeEvent<HTMLInputElement>) => {
+    const date = new Date(e.target.value);
+    if (!isNaN(date.getTime())) {
+      onChange(field, date);
+      markTouched?.(field);
     }
   };
 
   return (
-    <div>
-      <form className="retainer-form" onSubmit={handleSubmit}>
-        {Object.entries(standardRetainerSchema).map(([key, config]) => renderField(key, config))}
-        <button type="submit">Submit</button>
-        {submitted && <p className="success">Form submitted successfully! ✅</p>}
-      </form>
+    <form
+      style={{ maxWidth: '600px', margin: '0 auto' }}
+      onSubmit={(e) => {
+        e.preventDefault();
+        onSubmit?.();
+      }}
+    >
+      <h2 style={{ fontSize: '1.5rem', marginBottom: '1rem' }}>📝 Standard Legal Retainer Form</h2>
 
-      {submitted && (
-        <>
-          <StandardPreview formData={formData} onRefReady={setPreviewElement} />
-        </>
-      )}
-    </div>
+      {Object.entries(standardRetainerSchema).map(([key, config]) => {
+        const field = key as keyof RetainerFormData;
+        const value = formData[field];
+
+        return (
+          <div key={field} style={{ marginBottom: '1rem' }}>
+            <label htmlFor={field} style={{ display: 'block', marginBottom: '0.25rem' }}>
+              {config.label}
+            </label>
+
+            {field === 'feeAmount' || field === 'retainerAmount' ? (
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  border: '1px solid #ccc',
+                  borderRadius: '4px',
+                  padding: '0.25rem 0.5rem',
+                  backgroundColor: '#fff',
+                  width: '100%',
+                  maxWidth: '300px',
+                }}
+              >
+                <span style={{ fontWeight: 'bold', color: '#333', marginRight: '0.25rem' }}>$</span>
+                <input
+                  id={field}
+                  type="number"
+                  step="0.01"
+                  value={typeof value === 'number' ? value : ''}
+                  onChange={handleChange(field)}
+                  onBlur={() => markTouched?.(field)}
+                  placeholder={config.placeholder}
+                  style={{
+                    border: 'none',
+                    outline: 'none',
+                    fontSize: '1rem',
+                    width: '100%',
+                    backgroundColor: 'transparent',
+                  }}
+                />
+              </div>
+            ) : config.type === 'date' ? (
+              <input
+                id={field}
+                type="date"
+                value={value instanceof Date ? value.toISOString().split('T')[0] : ''}
+                onChange={handleDateChange(field)}
+                onBlur={() => markTouched?.(field)}
+                placeholder={config.placeholder}
+                style={{
+                  width: '100%',
+                  padding: '0.5rem',
+                  border: '1px solid #ccc',
+                  borderRadius: '4px',
+                }}
+              />
+            ) : config.type === 'textarea' ? (
+              <textarea
+                id={field}
+                value={value as string}
+                onChange={handleChange(field)}
+                onBlur={() => markTouched?.(field)}
+                placeholder={config.placeholder}
+                style={{
+                  width: '100%',
+                  padding: '0.5rem',
+                  border: '1px solid #ccc',
+                  borderRadius: '4px',
+                  minHeight: '100px',
+                }}
+              />
+            ) : config.type === 'dropdown' && config.options ? (
+              <select
+                id={field}
+                value={value as string}
+                onChange={handleChange(field)}
+                onBlur={() => markTouched?.(field)}
+                style={{
+                  width: '100%',
+                  padding: '0.5rem',
+                  border: '1px solid #ccc',
+                  borderRadius: '4px',
+                }}
+              >
+                {config.options.map((opt) => (
+                  <option key={opt} value={opt}>
+                    {opt}
+                  </option>
+                ))}
+              </select>
+            ) : (
+              <input
+                id={field}
+                type={config.type}
+                value={value as string}
+                onChange={handleChange(field)}
+                onBlur={() => markTouched?.(field)}
+                placeholder={config.placeholder}
+                style={{
+                  width: '100%',
+                  padding: '0.5rem',
+                  border: '1px solid #ccc',
+                  borderRadius: '4px',
+                }}
+              />
+            )}
+
+            {touched?.[field] && errors?.[field] && (
+              <span style={{ color: 'red', fontSize: '0.875rem', marginTop: '0.25rem', display: 'block' }}>
+                {errors[field]}
+              </span>
+            )}
+          </div>
+        );
+      })}
+
+      <button type="submit" style={{ padding: '0.5rem 1rem', fontSize: '1rem', borderRadius: '4px' }}>
+        Submit
+      </button>
+    </form>
   );
 }

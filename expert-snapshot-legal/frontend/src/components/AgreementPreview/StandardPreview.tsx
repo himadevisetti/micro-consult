@@ -1,68 +1,51 @@
-import { useEffect, useRef } from 'react';
-import { getClauses } from '../AgreementClauses/clauses.js';
-import SignatureClause from '../AgreementClauses/SignatureClause.js';
+import { useRef } from 'react';
 import styles from '../../styles/StandardPreview.module.css';
-import { exportRetainer } from '../../utils/export/exportHandler.js';
-import DownloadToggle from '../Export/DownloadToggle.js';
+import { exportRetainer } from '../../utils/export/exportHandler';
+import DownloadToggle from '../Export/DownloadToggle';
 
 export interface PreviewProps {
-  formData: Record<string, string>;
-  onRefReady?: (element: HTMLElement | null) => void;
+  html: string;
+  onRefresh: () => void;
+  metadata?: Record<string, any>; // Optional, for future extensibility
 }
 
-export default function StandardPreview({ formData, onRefReady }: PreviewProps) {
+export default function StandardPreview({ html, onRefresh, metadata = {} }: PreviewProps) {
   const previewRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    if (onRefReady && previewRef.current) {
-      onRefReady(previewRef.current);
-    }
-  }, [onRefReady]);
-
-  const clauses = getClauses(formData);
-
   const handleExportPDF = async () => {
-    const html = previewRef.current?.innerHTML;
-    if (!html) return;
+    const content = previewRef.current?.innerHTML;
+    if (!content) {
+      console.warn('No content found in previewRef for PDF export.');
+      return;
+    }
 
     try {
-      await exportRetainer('pdf', formData, html);
+      await exportRetainer('pdf', metadata, content);
     } catch (err) {
-      console.error('PDF export failed:', err);
+      console.error('PDF export failed in StandardPreview:', err);
     }
   };
 
   const handleExportDOCX = async () => {
     try {
-      await exportRetainer('docx', formData);
+      await exportRetainer('docx', metadata);
     } catch (err) {
-      console.error('DOCX export failed:', err);
+      console.error('DOCX export failed in StandardPreview:', err);
     }
   };
 
   return (
-    <div>
-      <div ref={previewRef} className={styles.retainerPreview}>
+    <div className={styles.previewContainer}>
+      <div className={styles.previewHeader}>
         <h2 className={styles.retainerTitle}>Legal Retainer Agreement</h2>
-
-        <div className={styles.clausesFlow}>
-          {clauses.map((clause, index) => (
-            <div key={index} className={styles.clauseBlock}>
-              {clause}
-            </div>
-          ))}
-        </div>
-
-        <div className={styles.signatureWrapper}>
-          <div className={styles.signatureBlock}>
-            <SignatureClause
-              clientName={formData.clientName}
-              legalGroup="Expert Snapshot Legal"
-              executionDate={formData.startDate}
-            />
-          </div>
-        </div>
+        <button onClick={onRefresh}>🔄 Refresh Preview</button>
       </div>
+
+      <div
+        ref={previewRef}
+        className={styles.retainerPreview}
+        dangerouslySetInnerHTML={{ __html: html }}
+      />
 
       <DownloadToggle
         onDownload={(type) => {

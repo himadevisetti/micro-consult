@@ -97,3 +97,8 @@ node_modules/.vite/
 # Temporary export files
 *.pdf
 *.docx
+
+# Ignore local Prisma database
+frontend/prisma/dev.db
+
+
