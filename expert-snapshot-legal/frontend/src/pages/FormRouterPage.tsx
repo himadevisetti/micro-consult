@@ -1,46 +1,46 @@
-import { useEffect, useState } from 'react'
-import { useLocation, useNavigate } from 'react-router-dom'
-import StandardRetainerFlow from '../components/FormFlows/StandardRetainerFlow'
-import IPCounselForm from '../components/FormFlows/IPCounselForm'
-import CustomUploadForm from '../components/FormFlows/CustomUploadForm'
+import { useEffect, useState } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
+import StandardRetainerFlow from '../components/FormFlows/StandardRetainerFlow';
+import IPCounselForm from '../components/FormFlows/IPCounselForm';
+import CustomUploadForm from '../components/FormFlows/CustomUploadForm';
+import { FormType } from '@/types/FormType';
 
 const FormRouterPage = () => {
-  const location = useLocation()
-  const navigate = useNavigate()
-  const queryParams = new URLSearchParams(location.search)
-  const template = queryParams.get('template')
-  const [isValid, setIsValid] = useState(false)
+  const location = useLocation();
+  const navigate = useNavigate();
+  const queryParams = new URLSearchParams(location.search);
+  const template = queryParams.get('template')?.toLowerCase();
+  const [isValid, setIsValid] = useState(false);
 
   useEffect(() => {
-    if (!template) return
+    const validTemplates = Object.values(FormType);
 
-    const validTemplates = ['standard-retainer', 'ip-counsel-retainer', 'custom-upload']
-    const normalized = template.toLowerCase()
-    setIsValid(validTemplates.includes(normalized))
-
-    if (!validTemplates.includes(normalized)) {
-      navigate('/')
+    if (!template || !validTemplates.includes(template as FormType)) {
+      navigate('/');
+      return;
     }
-  }, [template, navigate])
+
+    setIsValid(true);
+  }, [template, navigate]);
 
   const renderForm = () => {
-    switch (template?.toLowerCase()) {
-      case 'standard-retainer':
-        return <StandardRetainerFlow />
-      case 'ip-counsel-retainer':
-        return <IPCounselForm />
-      case 'custom-upload':
-        return <CustomUploadForm />
+    switch (template) {
+      case FormType.StandardRetainer:
+        return <StandardRetainerFlow />;
+      case FormType.IPCounselRetainer:
+        return <IPCounselForm />;
+      case FormType.CustomTemplate:
+        return <CustomUploadForm />;
       default:
-        return null
+        return null;
     }
-  }
+  };
 
   return (
     <div className="form-section">
-      {isValid ? renderForm() : <p>🔄 Loading builder...</p>}
+      {renderForm()}
     </div>
-  )
-}
+  );
+};
 
-export default FormRouterPage
+export default FormRouterPage;

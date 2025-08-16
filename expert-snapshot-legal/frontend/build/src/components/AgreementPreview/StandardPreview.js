@@ -1,10 +1,12 @@
 import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
 import { useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import styles from '../../styles/StandardPreview.module.css';
 import { exportRetainer } from '../../utils/export/exportHandler';
 import DownloadToggle from '../Export/DownloadToggle';
-export default function StandardPreview({ html, onRefresh, metadata = {} }) {
+export default function StandardPreview({ html, onRefresh, metadata, formData, }) {
     const previewRef = useRef(null);
+    const navigate = useNavigate();
     const handleExportPDF = async () => {
         const content = previewRef.current?.innerHTML;
         if (!content) {
@@ -12,7 +14,7 @@ export default function StandardPreview({ html, onRefresh, metadata = {} }) {
             return;
         }
         try {
-            await exportRetainer('pdf', metadata, content);
+            await exportRetainer('pdf', formData, content);
         }
         catch (err) {
             console.error('PDF export failed in StandardPreview:', err);
@@ -20,13 +22,13 @@ export default function StandardPreview({ html, onRefresh, metadata = {} }) {
     };
     const handleExportDOCX = async () => {
         try {
-            await exportRetainer('docx', metadata);
+            await exportRetainer('docx', formData);
         }
         catch (err) {
             console.error('DOCX export failed in StandardPreview:', err);
         }
     };
-    return (_jsxs("div", { className: styles.previewContainer, children: [_jsxs("div", { className: styles.previewHeader, children: [_jsx("h2", { className: styles.retainerTitle, children: "Legal Retainer Agreement" }), _jsx("button", { onClick: onRefresh, children: "\uD83D\uDD04 Refresh Preview" })] }), _jsx("div", { ref: previewRef, className: styles.retainerPreview, dangerouslySetInnerHTML: { __html: html } }), _jsx(DownloadToggle, { onDownload: (type) => {
+    return (_jsxs("div", { className: styles.previewContainer, children: [_jsx("div", { className: styles.previewHeader, children: _jsx("button", { onClick: () => navigate('/builder?template=standard-retainer'), children: "\u2B05\uFE0F Back to Form" }) }), _jsx("div", { ref: previewRef, className: styles.retainerPreview, dangerouslySetInnerHTML: { __html: html } }), _jsx(DownloadToggle, { onDownload: (type) => {
                     if (type === 'pdf') {
                         handleExportPDF();
                     }

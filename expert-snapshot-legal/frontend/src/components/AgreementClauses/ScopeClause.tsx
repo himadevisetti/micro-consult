@@ -1,5 +1,5 @@
-export default function ScopeClause({ retainerPurpose }: { retainerPurpose?: string }) {
-  const resolvedPurpose = retainerPurpose?.trim() || 'general legal services';
+export default function ScopeClause({ matterDescription }: { matterDescription?: string }) {
+  const resolvedPurpose = matterDescription?.trim() || 'general legal services';
 
   return (
     <section>

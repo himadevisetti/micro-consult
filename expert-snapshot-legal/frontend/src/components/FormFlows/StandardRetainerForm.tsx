@@ -1,7 +1,9 @@
 // src/components/FormFlows/StandardRetainerForm.tsx
+
 import React from 'react';
 import { standardRetainerSchema } from '../../schemas/standardRetainerSchema';
 import type { RetainerFormData } from '../../types/RetainerFormData';
+import { FormType, RetainerTypeLabel } from '@/types/FormType';
 
 export interface StandardRetainerFormProps {
   formData: RetainerFormData;
@@ -43,40 +45,58 @@ export default function StandardRetainerForm({
     }
   };
 
+  const labelStyle: React.CSSProperties = {
+    width: '160px',
+    fontWeight: 'bold',
+    marginRight: '1rem',
+  };
+
+  const inputStyle: React.CSSProperties = {
+    flex: 1,
+    padding: '0.5rem',
+    paddingLeft: '0.5rem',
+    border: '1px solid #ccc',
+    borderRadius: '4px',
+    fontSize: '1rem',
+    backgroundColor: 'white',
+  };
+
   return (
     <form
-      style={{ maxWidth: '600px', margin: '0 auto' }}
+      style={{ maxWidth: '800px', margin: '0 auto' }}
       onSubmit={(e) => {
         e.preventDefault();
         onSubmit?.();
       }}
     >
-      <h2 style={{ fontSize: '1.5rem', marginBottom: '1rem' }}>📝 Standard Legal Retainer Form</h2>
+      <h2 style={{ fontSize: '1.5rem', marginBottom: '1.5rem' }}>
+        📝 {RetainerTypeLabel[FormType.StandardRetainer]} Form
+      </h2>
 
       {Object.entries(standardRetainerSchema).map(([key, config]) => {
         const field = key as keyof RetainerFormData;
         const value = formData[field];
 
         return (
-          <div key={field} style={{ marginBottom: '1rem' }}>
-            <label htmlFor={field} style={{ display: 'block', marginBottom: '0.25rem' }}>
+          <div key={field} style={{ marginBottom: '1rem', display: 'flex', alignItems: 'center' }}>
+            <label htmlFor={field} style={labelStyle}>
               {config.label}
             </label>
 
             {field === 'feeAmount' || field === 'retainerAmount' ? (
-              <div
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  border: '1px solid #ccc',
-                  borderRadius: '4px',
-                  padding: '0.25rem 0.5rem',
-                  backgroundColor: '#fff',
-                  width: '100%',
-                  maxWidth: '300px',
-                }}
-              >
-                <span style={{ fontWeight: 'bold', color: '#333', marginRight: '0.25rem' }}>$</span>
+              <div style={{ position: 'relative', flex: 1, display: 'flex' }}>
+                <span
+                  style={{
+                    position: 'absolute',
+                    left: '0.75rem',
+                    top: '50%',
+                    transform: 'translateY(-50%)',
+                    fontWeight: 'bold',
+                    color: '#333',
+                  }}
+                >
+                  $
+                </span>
                 <input
                   id={field}
                   type="number"
@@ -85,13 +105,7 @@ export default function StandardRetainerForm({
                   onChange={handleChange(field)}
                   onBlur={() => markTouched?.(field)}
                   placeholder={config.placeholder}
-                  style={{
-                    border: 'none',
-                    outline: 'none',
-                    fontSize: '1rem',
-                    width: '100%',
-                    backgroundColor: 'transparent',
-                  }}
+                  style={{ ...inputStyle, paddingLeft: '1.5rem', width: '100%' }}
                 />
               </div>
             ) : config.type === 'date' ? (
@@ -102,12 +116,7 @@ export default function StandardRetainerForm({
                 onChange={handleDateChange(field)}
                 onBlur={() => markTouched?.(field)}
                 placeholder={config.placeholder}
-                style={{
-                  width: '100%',
-                  padding: '0.5rem',
-                  border: '1px solid #ccc',
-                  borderRadius: '4px',
-                }}
+                style={inputStyle}
               />
             ) : config.type === 'textarea' ? (
               <textarea
@@ -116,13 +125,7 @@ export default function StandardRetainerForm({
                 onChange={handleChange(field)}
                 onBlur={() => markTouched?.(field)}
                 placeholder={config.placeholder}
-                style={{
-                  width: '100%',
-                  padding: '0.5rem',
-                  border: '1px solid #ccc',
-                  borderRadius: '4px',
-                  minHeight: '100px',
-                }}
+                style={{ ...inputStyle, minHeight: '100px' }}
               />
             ) : config.type === 'dropdown' && config.options ? (
               <select
@@ -130,12 +133,7 @@ export default function StandardRetainerForm({
                 value={value as string}
                 onChange={handleChange(field)}
                 onBlur={() => markTouched?.(field)}
-                style={{
-                  width: '100%',
-                  padding: '0.5rem',
-                  border: '1px solid #ccc',
-                  borderRadius: '4px',
-                }}
+                style={inputStyle}
               >
                 {config.options.map((opt) => (
                   <option key={opt} value={opt}>
@@ -151,17 +149,12 @@ export default function StandardRetainerForm({
                 onChange={handleChange(field)}
                 onBlur={() => markTouched?.(field)}
                 placeholder={config.placeholder}
-                style={{
-                  width: '100%',
-                  padding: '0.5rem',
-                  border: '1px solid #ccc',
-                  borderRadius: '4px',
-                }}
+                style={inputStyle}
               />
             )}
 
             {touched?.[field] && errors?.[field] && (
-              <span style={{ color: 'red', fontSize: '0.875rem', marginTop: '0.25rem', display: 'block' }}>
+              <span style={{ color: 'red', fontSize: '0.875rem', marginLeft: '1rem' }}>
                 {errors[field]}
               </span>
             )}
@@ -169,9 +162,11 @@ export default function StandardRetainerForm({
         );
       })}
 
-      <button type="submit" style={{ padding: '0.5rem 1rem', fontSize: '1rem', borderRadius: '4px' }}>
-        Submit
-      </button>
+      <div style={{ textAlign: 'center', marginTop: '2rem' }}>
+        <button type="submit" style={{ padding: '0.5rem 1.25rem', fontSize: '1rem', borderRadius: '4px' }}>
+          Submit
+        </button>
+      </div>
     </form>
   );
 }

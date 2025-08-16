@@ -1,16 +1,25 @@
 import { useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import styles from '../../styles/StandardPreview.module.css';
 import { exportRetainer } from '../../utils/export/exportHandler';
 import DownloadToggle from '../Export/DownloadToggle';
+import type { RetainerFormData } from '../../types/RetainerFormData.js';
 
 export interface PreviewProps {
   html: string;
   onRefresh: () => void;
-  metadata?: Record<string, any>; // Optional, for future extensibility
+  metadata?: Record<string, any>;
+  formData: RetainerFormData;
 }
 
-export default function StandardPreview({ html, onRefresh, metadata = {} }: PreviewProps) {
+export default function StandardPreview({
+  html,
+  onRefresh,
+  metadata,
+  formData,
+}: PreviewProps) {
   const previewRef = useRef<HTMLDivElement>(null);
+  const navigate = useNavigate();
 
   const handleExportPDF = async () => {
     const content = previewRef.current?.innerHTML;
@@ -20,7 +29,7 @@ export default function StandardPreview({ html, onRefresh, metadata = {} }: Prev
     }
 
     try {
-      await exportRetainer('pdf', metadata, content);
+      await exportRetainer('pdf', formData, content);
     } catch (err) {
       console.error('PDF export failed in StandardPreview:', err);
     }
@@ -28,7 +37,7 @@ export default function StandardPreview({ html, onRefresh, metadata = {} }: Prev
 
   const handleExportDOCX = async () => {
     try {
-      await exportRetainer('docx', metadata);
+      await exportRetainer('docx', formData);
     } catch (err) {
       console.error('DOCX export failed in StandardPreview:', err);
     }
@@ -37,8 +46,9 @@ export default function StandardPreview({ html, onRefresh, metadata = {} }: Prev
   return (
     <div className={styles.previewContainer}>
       <div className={styles.previewHeader}>
-        <h2 className={styles.retainerTitle}>Legal Retainer Agreement</h2>
-        <button onClick={onRefresh}>🔄 Refresh Preview</button>
+        <button onClick={() => navigate('/builder?template=standard-retainer')}>
+          ⬅️ Back to Form
+        </button>
       </div>
 
       <div

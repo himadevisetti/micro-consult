@@ -16,16 +16,16 @@ export function getClauses(formData: Record<string, string>) {
     <PartiesClause
       key="parties"
       clientName={formData.clientName}
-      legalGroup="Expert Snapshot Legal"
+      providerName="Expert Snapshot Legal"
       effectiveDate={formData.startDate}
     />,
-    <ScopeClause key="scope" retainerPurpose={formData.retainerPurpose} />,
+    <ScopeClause key="scope" matterDescription={formData.matterDescription} />,
     <ResponsibilitiesClause key="responsibilities" />,
-    <CommunicationClause key="communication" contactPerson={formData.clientName} />,
+    <CommunicationClause key="communication" clientName={formData.clientName} />,
     <FeeClause
       key="fee"
       structure={formData.feeStructure}
-      rate="350"
+      feeAmount="350"
       retainerAmount="1500"
       jurisdiction={formData.jurisdiction}
     />,

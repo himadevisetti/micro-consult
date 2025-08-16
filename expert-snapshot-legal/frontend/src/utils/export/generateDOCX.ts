@@ -23,7 +23,7 @@ export async function generateDOCX(
   // 📄 Document title
   sections.push(
     new Paragraph({
-      children: [new TextRun({ text: 'Legal Retainer Agreement', bold: true, size: 48 })],
+      children: [new TextRun({ text: 'STANDARD RETAINER AGREEMENT', bold: true, size: 48 })],
       alignment: 'center',
       spacing: { after: 400 },
     })

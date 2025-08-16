@@ -1,7 +1,7 @@
 import { Paragraph, TextRun } from 'docx';
 export function getSignatureBlock(raw) {
     const client = raw.clientName?.trim() || 'Client';
-    const group = raw.legalGroup?.trim() || 'Attorney';
+    const group = raw.providerName?.trim() || 'Attorney';
     const executionDate = raw.executionDate?.trim() || 'the date of execution';
     const font = 'Georgia';
     const signatureLine = () => new Paragraph({

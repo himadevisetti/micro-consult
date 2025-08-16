@@ -8,7 +8,7 @@ export function injectCssIntoHtml(html, compiledCss) {
     <html lang="en">
       <head>
         <meta charset="UTF-8" />
-        <title>Legal Retainer Agreement</title>
+        <title>STANDARD RETAINER AGREEMENT</title>
         <style>
           body {
             margin: 0;

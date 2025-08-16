@@ -1,14 +1,14 @@
 export default function PartiesClause({
   clientName,
-  legalGroup,
+  providerName,
   effectiveDate,
 }: {
   clientName?: string;
-  legalGroup?: string;
+  providerName?: string;
   effectiveDate?: string;
 }) {
   const resolvedClient = clientName?.trim() || 'the Client';
-  const resolvedGroup = legalGroup?.trim() || 'the Attorney';
+  const resolvedProvider = providerName?.trim() || 'the Attorney';
   const resolvedDate = effectiveDate?.trim() || 'the effective date of this Agreement';
 
   return (
@@ -16,7 +16,7 @@ export default function PartiesClause({
       <h3 style={{ fontWeight: 'bold' }}>Parties</h3>
       <p>
         This Agreement is entered into between <strong>{resolvedClient}</strong> and{' '}
-        <strong>{resolvedGroup}</strong>, effective as of <strong>{resolvedDate}</strong>.
+        <strong>{resolvedProvider}</strong>, effective as of <strong>{resolvedDate}</strong>.
       </p>
     </section>
   );

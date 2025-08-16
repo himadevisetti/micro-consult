@@ -1,5 +1,4 @@
 import { jsx as _jsx } from "react/jsx-runtime";
-// serializeClauses.tsx
 import * as React from 'react';
 import ReactDOMServer from 'react-dom/server';
 import PartiesClause from '../components/AgreementClauses/PartiesClause.js';
@@ -13,55 +12,53 @@ import TerminationClause from '../components/AgreementClauses/TerminationClause.
 import GoverningLawClause from '../components/AgreementClauses/GoverningLawClause.js';
 import EntireAgreementClause from '../components/AgreementClauses/EntireAgreementClause.js';
 import SignatureClause from '../components/AgreementClauses/SignatureClause.js';
-/**
- * Safely serializes a JSX.Element to static HTML.
- * Throws if the input is not a valid JSX.Element.
- */
+import { formatDateMMDDYYYY } from '../utils/formatDate'; // Assumes this exists
 function renderStatic(component) {
     if (!React.isValidElement(component)) {
-        throw new Error('Invalid input to renderStatic. Make sure you are passing a JSX element like <MyComponent />.');
+        throw new Error('Invalid input to renderStatic. Expected a JSX element.');
     }
     return ReactDOMServer.renderToStaticMarkup(component);
 }
-/**
- * Generates HTML strings for agreement clauses.
- * Skips any clause listed in the `exclude` array.
- */
 export function getSerializedClauses(formData, options) {
     const exclude = options?.exclude || [];
     const clauses = {};
+    const formattedStartDate = formatDateMMDDYYYY(formData.startDate);
+    const formattedEndDate = formatDateMMDDYYYY(formData.endDate);
+    const formattedRetainerAmount = formData.retainerAmount?.toFixed(2) ?? '';
+    const formattedFeeAmount = formData.feeAmount.toFixed(2);
+    const wrapClause = (html) => `<div style="page-break-inside: avoid; break-inside: avoid; margin-bottom: 24px;">${html}</div>`;
     if (!exclude.includes('partiesClause')) {
-        clauses.partiesClause = renderStatic(_jsx(PartiesClause, { clientName: formData.clientName, legalGroup: formData.legalGroup, effectiveDate: formData.startDate }));
+        clauses.partiesClause = wrapClause(renderStatic(_jsx(PartiesClause, { clientName: formData.clientName, providerName: formData.providerName, effectiveDate: formattedStartDate })));
     }
     if (!exclude.includes('scopeClause')) {
-        clauses.scopeClause = renderStatic(_jsx(ScopeClause, { retainerPurpose: formData.retainerPurpose }));
+        clauses.scopeClause = wrapClause(renderStatic(_jsx(ScopeClause, { matterDescription: formData.matterDescription })));
     }
     if (!exclude.includes('responsibilitiesClause')) {
-        clauses.responsibilitiesClause = renderStatic(_jsx(ResponsibilitiesClause, {}));
+        clauses.responsibilitiesClause = wrapClause(renderStatic(_jsx(ResponsibilitiesClause, {})));
     }
     if (!exclude.includes('communicationClause')) {
-        clauses.communicationClause = renderStatic(_jsx(CommunicationClause, { contactPerson: formData.contactPerson }));
+        clauses.communicationClause = wrapClause(renderStatic(_jsx(CommunicationClause, { clientName: formData.clientName })));
     }
     if (!exclude.includes('feeClause')) {
-        clauses.feeClause = renderStatic(_jsx(FeeClause, { structure: formData.feeStructure, rate: formData.feeRate, retainerAmount: formData.retainerAmount, jurisdiction: formData.jurisdiction }));
+        clauses.feeClause = wrapClause(renderStatic(_jsx(FeeClause, { structure: formData.feeStructure, feeAmount: formattedFeeAmount, retainerAmount: formattedRetainerAmount, jurisdiction: formData.jurisdiction })));
     }
     if (!exclude.includes('costsClause')) {
-        clauses.costsClause = renderStatic(_jsx(CostsClause, {}));
+        clauses.costsClause = wrapClause(renderStatic(_jsx(CostsClause, {})));
     }
     if (!exclude.includes('confidentialityClause')) {
-        clauses.confidentialityClause = renderStatic(_jsx(ConfidentialityClause, {}));
+        clauses.confidentialityClause = wrapClause(renderStatic(_jsx(ConfidentialityClause, {})));
     }
     if (!exclude.includes('terminationClause')) {
-        clauses.terminationClause = renderStatic(_jsx(TerminationClause, {}));
+        clauses.terminationClause = wrapClause(renderStatic(_jsx(TerminationClause, {})));
     }
     if (!exclude.includes('governingLawClause')) {
-        clauses.governingLawClause = renderStatic(_jsx(GoverningLawClause, { jurisdiction: formData.jurisdiction }));
+        clauses.governingLawClause = wrapClause(renderStatic(_jsx(GoverningLawClause, { jurisdiction: formData.jurisdiction })));
     }
     if (!exclude.includes('entireAgreementClause')) {
-        clauses.entireAgreementClause = renderStatic(_jsx(EntireAgreementClause, {}));
+        clauses.entireAgreementClause = wrapClause(renderStatic(_jsx(EntireAgreementClause, {})));
     }
     if (!exclude.includes('signatureClause')) {
-        clauses.signatureClause = renderStatic(_jsx(SignatureClause, { clientName: formData.clientName, legalGroup: formData.legalGroup, executionDate: formData.executionDate || formData.startDate }));
+        clauses.signatureClause = wrapClause(renderStatic(_jsx(SignatureClause, { clientName: formData.clientName, providerName: formData.providerName, executionDate: formattedStartDate })));
     }
     return clauses;
 }

@@ -1,25 +1,25 @@
-// src/hooks/useRetainerState.ts
-
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { validateRetainerForm } from '../utils/validateRetainerForm';
 import { buildRetainerPreviewPayload } from '../utils/buildRetainerPreviewPayload';
+import { getSerializedClauses } from '../utils/serializeClauses';
+import { useSessionFormState } from './useSessionFormState';
 import type { RetainerFormData } from '../types/RetainerFormData';
 import { defaultRetainerFormData } from '../types/RetainerFormData';
-
-// Placeholder renderer — replace with SSR or styled HTML builder
-function renderRetainerPreview(payload: ReturnType<typeof buildRetainerPreviewPayload>): string {
-  return payload.clauses.map(c => `<p><strong>${c.id}:</strong> ${c.text}</p>`).join('');
-}
 
 export type RetainerFormErrors = Partial<Record<keyof RetainerFormData, string>>;
 
 export function useRetainerState() {
-  const [formData, setFormData] = useState<RetainerFormData>(defaultRetainerFormData);
-
+  const [formData, setFormData] = useSessionFormState<RetainerFormData>(
+    'standardRetainerForm',
+    defaultRetainerFormData
+  );
   const [errors, setErrors] = useState<RetainerFormErrors>({});
   const [touched, setTouched] = useState<Partial<Record<keyof RetainerFormData, boolean>>>({});
-
   const [previewHtml, setPreviewHtml] = useState<string>('');
+  const [metadata, setMetadata] = useState<Record<string, string>>({});
+
+  const navigate = useNavigate();
 
   const validate = () => {
     const result = validateRetainerForm(formData);
@@ -35,24 +35,42 @@ export function useRetainerState() {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
-  const generatePreview = () => {
+  const generatePreview = async (): Promise<string> => {
     const isValid = validate();
-    if (!isValid) return;
+    if (!isValid) return '';
 
     const payload = buildRetainerPreviewPayload(formData);
-    const html = renderRetainerPreview(payload);
+    setMetadata(payload.metadata);
+
+    const clauseHtmlMap = getSerializedClauses(formData);
+    const html = `
+      <div style="margin-top:60px;">
+        <h2 style="text-align:center; font-weight:bold;">STANDARD RETAINER AGREEMENT</h2>
+      </div>
+      ${Object.values(clauseHtmlMap).join('\n')}`;
+
     setPreviewHtml(html);
+    console.log('Preview HTML:', html);
+    return html;
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     const isValid = validate();
     if (!isValid) {
       console.warn('Form submission blocked due to validation errors:', errors);
       return;
     }
 
-    generatePreview();
+    const html = await generatePreview();
     console.log('Form submitted successfully:', formData);
+
+    navigate('/preview', {
+      state: {
+        formData,
+        previewHtml: html,
+        metadata,
+      },
+    });
   };
 
   return {
@@ -65,5 +83,6 @@ export function useRetainerState() {
     generatePreview,
     handleSubmit,
     previewHtml,
+    metadata,
   };
 }
