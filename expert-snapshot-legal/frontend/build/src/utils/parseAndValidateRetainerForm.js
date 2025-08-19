@@ -5,11 +5,6 @@ export function parseAndValidateRetainerForm(rawFormData) {
     const errors = {};
     const normalizedFormData = normalizeFormDates(rawFormData, ['startDate', 'endDate']);
     const parsedRaw = {};
-    console.log('🔍 Raw form data:', rawFormData);
-    // 🔎 Audit schema types
-    for (const [key, config] of Object.entries(standardRetainerSchema)) {
-        console.log(`[Schema Audit] ${key} → type="${config.type}"`);
-    }
     for (const [key, config] of Object.entries(standardRetainerSchema)) {
         const field = key;
         // 🔎 Log field access explicitly
@@ -54,8 +49,6 @@ export function parseAndValidateRetainerForm(rawFormData) {
             errors.endDate = 'End date must be after start date.';
         }
     }
-    console.log('✅ Final parsed form:', parsedFormData);
-    console.log('🧾 Validation errors:', errors);
     return {
         parsed: parsedFormData,
         errors,

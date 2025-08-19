@@ -19,7 +19,6 @@ export default function StandardRetainerForm({ formData, rawFormData, errors, to
     };
     const handleFormSubmit = async (e) => {
         e.preventDefault();
-        console.log('[StandardRetainerForm] Submitting rawFormData:', { ...rawFormData });
         try {
             await onSubmit?.(rawFormData);
         }

@@ -41,7 +41,6 @@ export function useSessionFormState(sessionKey, initialState) {
     const [rawFormData, setRawFormData] = useState({});
     useEffect(() => {
         const schemaDefaults = getDefaultRawFormData();
-        console.log('[init] rawFormData from schema:', schemaDefaults);
         const hydrated = Object.fromEntries(Object.entries(schemaDefaults).map(([key, val]) => {
             const config = standardRetainerSchema[key];
             if (config?.type === 'date') {
@@ -53,12 +52,6 @@ export function useSessionFormState(sessionKey, initialState) {
         setRawFormData(prev => ({ ...hydrated, ...prev }));
     }, []);
     useEffect(() => {
-        console.log('[rawFormData INIT]', rawFormData);
-    }, []);
-    useEffect(() => {
-        console.log('[rawFormData CHANGE]', rawFormData);
-    }, [rawFormData]);
-    useEffect(() => {
         const serialized = {};
         for (const field in formData) {
             const value = formData[field];
@@ -69,11 +62,9 @@ export function useSessionFormState(sessionKey, initialState) {
         sessionStorage.setItem(sessionKey, JSON.stringify(serialized));
     }, [formData, sessionKey]);
     const handleChange = (name, value) => {
-        console.log(`[handleChange] ${name} =`, value);
         setRawFormData((prev) => ({ ...prev, [name]: value }));
     };
     const handleBlur = (name, value) => {
-        console.log(`[handleBlur] ${name} rawValue =`, value);
         setRawFormData((prev) => ({ ...prev, [name]: value }));
     };
     return {

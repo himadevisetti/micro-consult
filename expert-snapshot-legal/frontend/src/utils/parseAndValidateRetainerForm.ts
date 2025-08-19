@@ -19,18 +19,15 @@ export function parseAndValidateRetainerForm(
 
     // 🔎 Log field access explicitly
     const rawValue = normalizedFormData[field] ?? rawFormData[field];
-    console.log(`🧪 [${field}] rawValue =`, rawValue);
 
     let parsedValue: unknown = rawValue;
 
     if (config.type === 'number') {
       parsedValue = rawValue !== undefined ? Number(rawValue) : undefined;
-      console.log(`🔢 [${field}] parsed number:`, parsedValue);
     }
 
     if (config.type === 'string' || config.type === 'date') {
       parsedValue = typeof rawValue === 'string' ? rawValue.trim() : rawValue;
-      console.log(`🔤 [${field}] normalized string:`, parsedValue);
     }
 
     parsedRaw[field] = parsedValue as RetainerFormData[typeof field];
@@ -50,10 +47,7 @@ export function parseAndValidateRetainerForm(
       const normalized = normalizeForValidation(parsedValue, config.type);
       const parsedFormData = parsedRaw as RetainerFormData;
 
-      console.log(`🔍 [${field}] validate input: raw="${rawValue}", normalized="${normalized}"`);
       const result = config.validate(normalized, parsedFormData);
-
-      console.log(`✅ [${field}] validation result:`, result);
 
       if (!result) {
         errors[field] = `${config.label} is invalid.`;

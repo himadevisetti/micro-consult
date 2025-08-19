@@ -22,11 +22,6 @@ export function getSerializedClauses(formData, options) {
     // convert startDate and endDate into readable long format
     const formattedStartDateLong = formatDateLong(formattedStartDateShort);
     const formattedEndDateLong = formatDateLong(formattedEndDateShort);
-    console.log("startDate raw:", formData.startDate); // string
-    console.log("startDate normalized:", normalized.startDate); // Date
-    console.log("startDate formatted:", formatDateYYYYMMDD(normalized.startDate));
-    console.log("startDate print format:", formattedStartDateLong);
-    console.log("endDate print format:", formattedEndDateLong);
     const formattedRetainerAmount = normalized.retainerAmount?.toFixed(2) ?? '';
     const formattedFeeAmount = normalized.feeAmount.toFixed(2);
     const wrapClause = (component, key) => (_jsx("div", { className: styles.clauseBlock, children: component }, key));

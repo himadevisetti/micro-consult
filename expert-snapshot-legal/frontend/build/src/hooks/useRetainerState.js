@@ -11,7 +11,6 @@ export function useRetainerState(rawFormData, formData, setFormData) {
     const [metadata, setMetadata] = useState({});
     const navigate = useNavigate();
     function validate(rawFormData) {
-        console.log('[validate] rawFormData before parse =', rawFormData);
         if (!rawFormData) {
             throw new Error('rawFormData is undefined during submission');
         }
@@ -40,9 +39,6 @@ export function useRetainerState(rawFormData, formData, setFormData) {
         return html;
     };
     const handleSubmit = async (rawFormData) => {
-        console.log('[Submit] rawFormData:', rawFormData);
-        console.log('[Submit] formData:', formData);
-        console.log(`[${new Date().toISOString()}] Submitting rawFormData:`, rawFormData);
         const isValid = validate(rawFormData);
         if (!isValid) {
             console.warn('Form submission blocked due to validation errors:', errors);

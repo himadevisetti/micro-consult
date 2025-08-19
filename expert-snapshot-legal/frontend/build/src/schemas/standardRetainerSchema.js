@@ -10,7 +10,6 @@ export const standardRetainerSchema = {
         validate: (val) => {
             const sanitized = val.replace(/[^0-9.]/g, '');
             const num = parseFloat(sanitized);
-            console.log(`[FeeAmount Validation] raw="${val}" sanitized="${sanitized}" parsed=${num}`);
             return (!isNaN(num) &&
                 num >= 0 &&
                 /^\d+(\.\d{1,2})?$/.test(sanitized));
