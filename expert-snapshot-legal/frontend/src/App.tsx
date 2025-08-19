@@ -11,7 +11,7 @@ export default function App() {
       <Routes>
         <Route path="/" element={<HomePage />} />
         <Route path="/builder" element={<FormRouterPage />} />
-        <Route path="/preview" element={<StandardRetainerPreview />} />
+        <Route path="/standard-retainer/preview" element={<StandardRetainerPreview />} />
       </Routes>
     </BrowserRouter>
   );

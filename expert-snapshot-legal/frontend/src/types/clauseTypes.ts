@@ -16,3 +16,8 @@ export interface SerializedClause {
     initials?: boolean;
   };
 }
+
+export interface ClausePayload {
+  label: string;
+  html: string;
+}

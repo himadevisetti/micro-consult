@@ -3,15 +3,17 @@ export function formatClauseContent(html) {
     const $ = load(html);
     const lines = [];
     $('h3, p').each((_, el) => {
-        const text = $(el).text().trim();
-        if (!text)
-            return;
-        if ($(el).is('h3')) {
-            lines.push({ text, bold: true }); // Treat <h3> as bold title
-        }
-        else {
-            lines.push({ text });
-        }
+        const tag = $(el).get(0)?.tagName;
+        const isHeading = tag === 'h3';
+        const rawHtml = $(el).html() || '';
+        const segments = rawHtml.split(/<br\s*\/?>/i);
+        segments.forEach((segment) => {
+            const segment$ = load(segment);
+            const segmentText = segment$('body').text().trim();
+            if (!segmentText)
+                return;
+            lines.push({ text: segmentText, bold: isHeading });
+        });
     });
     return lines;
 }

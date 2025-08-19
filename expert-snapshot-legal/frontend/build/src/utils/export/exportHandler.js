@@ -1,44 +1,11 @@
 import { generateDOCX } from './generateDOCX.js';
-import { getSerializedClauses } from '../../utils/serializeClauses.js';
 import { getFilename } from '../../utils/generateFilename.js';
-import { getSignatureBlock } from '../signatureUtils.js';
-import { formatDateMMDDYYYY } from '../../utils/formatDate.js';
 import { FormType, RetainerTypeLabel } from '@/types/FormType';
 export async function exportRetainer(type, formData, html) {
     const resolvedClient = formData.clientName?.trim() || 'Client';
-    const resolvedProvider = formData.providerName?.trim() || 'Expert Snapshot Legal';
     const resolvedMatter = formData.matterDescription?.trim() || 'general legal services';
-    const resolvedFeeAmount = formData.feeAmount || 0;
-    const resolvedRetainerAmount = formData.retainerAmount || 1500;
-    const resolvedFeeStructure = formData.feeStructure;
-    const resolvedJurisdiction = formData.jurisdiction?.trim() || 'California';
-    const resolvedStartDate = formData.startDate;
-    const resolvedEndDate = formData.endDate;
-    const formattedStartDate = formatDateMMDDYYYY(resolvedStartDate);
-    const formattedEndDate = formatDateMMDDYYYY(resolvedEndDate);
-    const serializedClauses = getSerializedClauses(formData, {
-        exclude: ['signatureClause'],
-    });
-    const signatureBlock = getSignatureBlock({
-        clientName: resolvedClient,
-        providerName: resolvedProvider,
-        executionDate: formattedStartDate,
-    });
-    const retainerType = RetainerTypeLabel[FormType.StandardRetainer]; // You can make this dynamic later
+    const retainerType = RetainerTypeLabel[FormType.StandardRetainer];
     const normalizedFormType = FormType.StandardRetainer.replace(/\s+/g, '_');
-    const data = {
-        providerName: resolvedProvider,
-        executionDate: formattedStartDate,
-        matterDescription: resolvedMatter,
-        retainerType,
-        feeAmount: String(resolvedFeeAmount),
-        retainerAmount: String(resolvedRetainerAmount),
-        feeStructure: resolvedFeeStructure,
-        startDate: formattedStartDate,
-        endDate: formattedEndDate,
-        jurisdiction: resolvedJurisdiction,
-        ...serializedClauses,
-    };
     const today = new Date().toISOString();
     const filename = getFilename(type === 'pdf' ? 'final' : 'draft', resolvedClient, today, normalizedFormType);
     let blob = null;
@@ -57,7 +24,9 @@ export async function exportRetainer(type, formData, html) {
             blob = new Blob([arrayBuffer], { type: 'application/pdf' });
         }
         else {
-            blob = await generateDOCX(data, signatureBlock);
+            if (!html)
+                throw new Error('Missing HTML for DOCX export');
+            blob = await generateDOCX({ html, filename });
         }
     }
     catch (err) {

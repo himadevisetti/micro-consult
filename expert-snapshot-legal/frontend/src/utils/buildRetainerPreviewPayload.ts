@@ -2,7 +2,7 @@
 
 import { standardRetainerSchema } from '../schemas/standardRetainerSchema';
 import type { RetainerFormData } from '../types/RetainerFormData';
-import { formatDateMMDDYYYY } from './formatDate';
+import { formatDateLong } from './formatDate';
 
 export type RetainerPreviewPayload = {
   clauses: Array<{ id: string; text: string }>;
@@ -20,7 +20,7 @@ export function buildRetainerPreviewPayload(formData: RetainerFormData): Retaine
     // Normalize value to string for metadata
     const value =
       rawValue instanceof Date
-        ? formatDateMMDDYYYY(rawValue)
+        ? formatDateLong(rawValue)
         : typeof rawValue === 'number'
           ? rawValue.toString()
           : rawValue ?? '';
@@ -34,7 +34,7 @@ export function buildRetainerPreviewPayload(formData: RetainerFormData): Retaine
         const tokenValue = formData[tokenKey];
 
         return tokenValue instanceof Date
-          ? formatDateMMDDYYYY(tokenValue)
+          ? formatDateLong(tokenValue)
           : typeof tokenValue === 'number'
             ? tokenValue.toString()
             : tokenValue ?? '';

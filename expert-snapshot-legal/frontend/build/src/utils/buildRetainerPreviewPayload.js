@@ -1,6 +1,6 @@
 // src/utils/buildRetainerPreviewPayload.ts
 import { standardRetainerSchema } from '../schemas/standardRetainerSchema';
-import { formatDateMMDDYYYY } from './formatDate';
+import { formatDateLong } from './formatDate';
 export function buildRetainerPreviewPayload(formData) {
     const clauses = [];
     const metadata = {};
@@ -9,7 +9,7 @@ export function buildRetainerPreviewPayload(formData) {
         const rawValue = formData[field];
         // Normalize value to string for metadata
         const value = rawValue instanceof Date
-            ? formatDateMMDDYYYY(rawValue)
+            ? formatDateLong(rawValue)
             : typeof rawValue === 'number'
                 ? rawValue.toString()
                 : rawValue ?? '';
@@ -20,7 +20,7 @@ export function buildRetainerPreviewPayload(formData) {
                 const tokenKey = token.trim();
                 const tokenValue = formData[tokenKey];
                 return tokenValue instanceof Date
-                    ? formatDateMMDDYYYY(tokenValue)
+                    ? formatDateLong(tokenValue)
                     : typeof tokenValue === 'number'
                         ? tokenValue.toString()
                         : tokenValue ?? '';

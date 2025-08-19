@@ -1,19 +1,19 @@
+// src/hooks/useRetainerState.ts
+
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { validateRetainerForm } from '../utils/validateRetainerForm';
+import { parseAndValidateRetainerForm } from '../utils/parseAndValidateRetainerForm';
 import { buildRetainerPreviewPayload } from '../utils/buildRetainerPreviewPayload';
 import { getSerializedClauses } from '../utils/serializeClauses';
-import { useSessionFormState } from './useSessionFormState';
 import type { RetainerFormData } from '../types/RetainerFormData';
-import { defaultRetainerFormData } from '../types/RetainerFormData';
 
 export type RetainerFormErrors = Partial<Record<keyof RetainerFormData, string>>;
 
-export function useRetainerState() {
-  const [formData, setFormData] = useSessionFormState<RetainerFormData>(
-    'standardRetainerForm',
-    defaultRetainerFormData
-  );
+export function useRetainerState(
+  rawFormData: Record<string, string>,
+  formData: RetainerFormData,
+  setFormData: React.Dispatch<React.SetStateAction<RetainerFormData>>
+) {
   const [errors, setErrors] = useState<RetainerFormErrors>({});
   const [touched, setTouched] = useState<Partial<Record<keyof RetainerFormData, boolean>>>({});
   const [previewHtml, setPreviewHtml] = useState<string>('');
@@ -21,10 +21,14 @@ export function useRetainerState() {
 
   const navigate = useNavigate();
 
-  const validate = () => {
-    const result = validateRetainerForm(formData);
-    setErrors(result);
-    return Object.keys(result).length === 0;
+  function validate(rawFormData?: Record<string, string>) {
+    if (!rawFormData) {
+      throw new Error('rawFormData is undefined during submission');
+    }
+    const { parsed, errors } = parseAndValidateRetainerForm(rawFormData);
+    setFormData(parsed);
+    setErrors(errors);
+    return Object.keys(errors).length === 0;
   };
 
   const markTouched = (field: keyof RetainerFormData) => {
@@ -36,9 +40,6 @@ export function useRetainerState() {
   };
 
   const generatePreview = async (): Promise<string> => {
-    const isValid = validate();
-    if (!isValid) return '';
-
     const payload = buildRetainerPreviewPayload(formData);
     setMetadata(payload.metadata);
 
@@ -50,23 +51,25 @@ export function useRetainerState() {
       ${Object.values(clauseHtmlMap).join('\n')}`;
 
     setPreviewHtml(html);
-    console.log('Preview HTML:', html);
     return html;
   };
 
-  const handleSubmit = async () => {
-    const isValid = validate();
+  const handleSubmit = async (rawFormData: Record<string, string>) => {
+
+    const isValid = validate(rawFormData);
     if (!isValid) {
       console.warn('Form submission blocked due to validation errors:', errors);
       return;
     }
 
     const html = await generatePreview();
-    console.log('Form submitted successfully:', formData);
+    const payload = rawFormData;
 
-    navigate('/preview', {
+    console.log('Form submitted successfully:', payload);
+
+    navigate('/standard-retainer/preview', {
       state: {
-        formData,
+        formData: payload,
         previewHtml: html,
         metadata,
       },
@@ -74,10 +77,9 @@ export function useRetainerState() {
   };
 
   return {
-    formData,
+    updateField,
     errors,
     touched,
-    updateField,
     markTouched,
     validate,
     generatePreview,

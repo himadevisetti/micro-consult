@@ -1,6 +1,5 @@
 import { Document, Packer, Paragraph, TextRun } from 'docx';
 import { formatClauseContent } from '../formatClauseContent.js';
-import { clauses } from '../clauses.js';
 function cleanClauseBody(body) {
     const lines = body
         .split('\n')
@@ -8,64 +7,50 @@ function cleanClauseBody(body) {
         .filter(Boolean);
     return lines.join('\n');
 }
-export async function generateDOCX(data, signatureBlock) {
+export async function generateDOCX(input) {
+    const { html } = input;
     const sections = [];
-    const resolvedClient = data.clientName || 'the Client';
-    const resolvedGroup = data.legalGroup || 'the Attorney';
-    const resolvedDate = data.executionDate || 'the date of execution';
     // 📄 Document title
     sections.push(new Paragraph({
-        children: [new TextRun({ text: 'STANDARD RETAINER AGREEMENT', bold: true, size: 48 })],
+        children: [new TextRun({ text: 'STANDARD RETAINER AGREEMENT', bold: true, size: 32 })],
         alignment: 'center',
-        spacing: { after: 400 },
+        spacing: { after: 300 },
     }));
-    // 🧩 Clause rendering
-    for (const clauseKey of Object.keys(clauses).filter((key) => key !== 'signatureClause')) {
-        const clauseBody = data[clauseKey];
-        if (!clauseBody)
-            continue;
-        const cleanedBody = cleanClauseBody(clauseBody);
-        const formattedLines = formatClauseContent(cleanedBody);
-        const clauseParagraphs = formattedLines.map(({ text, bold }, index) => {
-            const isHeading = index === 0 && bold;
-            const isLast = index === formattedLines.length - 1;
-            const replacedText = text
-                .replace(/the Client/g, resolvedClient)
-                .replace(/the Attorney/g, resolvedGroup)
-                .replace(/the date of execution/g, resolvedDate);
-            return new Paragraph({
-                children: [
-                    new TextRun({
-                        text: replacedText,
-                        bold,
-                        size: isHeading ? 26 : 22, // 🔧 Reduced from 36/32 to ~15pt/13pt
-                    }),
-                ],
-                spacing: {
-                    after: isHeading ? 200 : isLast ? 300 : 100,
-                },
-                keepLines: isHeading,
-                keepNext: isHeading,
-            });
+    // 🧩 Clause rendering from full HTML
+    const cleanedBody = cleanClauseBody(html);
+    const formattedLines = formatClauseContent(cleanedBody);
+    const paragraphTuples = formattedLines.map(({ text, bold }, index) => {
+        const isHeading = bold === true;
+        const isLast = index === formattedLines.length - 1;
+        const paragraph = new Paragraph({
+            children: [
+                new TextRun({
+                    text,
+                    bold: isHeading,
+                    size: isHeading ? 26 : 22,
+                }),
+            ],
+            spacing: {
+                after: isHeading ? 300 : isLast ? 600 : 300,
+            },
+            keepLines: isHeading,
+            keepNext: isHeading,
         });
-        sections.push(...clauseParagraphs);
+        return [text, paragraph];
+    });
+    const witnessIndex = paragraphTuples.findIndex(([text]) => text.toUpperCase().includes("IN WITNESS WHEREOF"));
+    if (witnessIndex > 0) {
+        const insertIndex = witnessIndex - 1;
+        paragraphTuples.splice(insertIndex, 0, ["", new Paragraph({ spacing: { after: 200 } })], ["", new Paragraph({ spacing: { after: 200 } })]);
     }
-    // ✍️ Signature block — single, delegated injection
-    if (signatureBlock?.length) {
-        sections.push(new Paragraph({ spacing: { after: 200 } }), new Paragraph({ spacing: { after: 200 } }));
-        sections.push(...signatureBlock);
-    }
+    const htmlParagraphs = paragraphTuples.map(([_, p]) => p);
+    sections.push(...htmlParagraphs);
     const doc = new Document({
         styles: {
             default: {
                 document: {
-                    run: {
-                        font: 'Georgia',
-                        size: 20, // 🔧 Reduced from 28 to ~11pt
-                    },
-                    paragraph: {
-                        spacing: { after: 100 },
-                    },
+                    run: { font: 'Georgia', size: 20 },
+                    paragraph: { spacing: { after: 100 } },
                 },
             },
         },
@@ -73,7 +58,7 @@ export async function generateDOCX(data, signatureBlock) {
                 properties: {
                     page: {
                         margin: {
-                            top: 1440,
+                            top: 2160, // ✅ Increased top margin to 1.5 inch
                             bottom: 1440,
                             left: 1440,
                             right: 1440,

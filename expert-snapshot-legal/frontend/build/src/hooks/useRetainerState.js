@@ -1,22 +1,26 @@
+// src/hooks/useRetainerState.ts
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { validateRetainerForm } from '../utils/validateRetainerForm';
+import { parseAndValidateRetainerForm } from '../utils/parseAndValidateRetainerForm';
 import { buildRetainerPreviewPayload } from '../utils/buildRetainerPreviewPayload';
 import { getSerializedClauses } from '../utils/serializeClauses';
-import { useSessionFormState } from './useSessionFormState';
-import { defaultRetainerFormData } from '../types/RetainerFormData';
-export function useRetainerState() {
-    const [formData, setFormData] = useSessionFormState('standardRetainerForm', defaultRetainerFormData);
+export function useRetainerState(rawFormData, formData, setFormData) {
     const [errors, setErrors] = useState({});
     const [touched, setTouched] = useState({});
     const [previewHtml, setPreviewHtml] = useState('');
     const [metadata, setMetadata] = useState({});
     const navigate = useNavigate();
-    const validate = () => {
-        const result = validateRetainerForm(formData);
-        setErrors(result);
-        return Object.keys(result).length === 0;
-    };
+    function validate(rawFormData) {
+        console.log('[validate] rawFormData before parse =', rawFormData);
+        if (!rawFormData) {
+            throw new Error('rawFormData is undefined during submission');
+        }
+        const { parsed, errors } = parseAndValidateRetainerForm(rawFormData);
+        setFormData(parsed);
+        setErrors(errors);
+        return Object.keys(errors).length === 0;
+    }
+    ;
     const markTouched = (field) => {
         setTouched(prev => ({ ...prev, [field]: true }));
     };
@@ -24,9 +28,6 @@ export function useRetainerState() {
         setFormData(prev => ({ ...prev, [field]: value }));
     };
     const generatePreview = async () => {
-        const isValid = validate();
-        if (!isValid)
-            return '';
         const payload = buildRetainerPreviewPayload(formData);
         setMetadata(payload.metadata);
         const clauseHtmlMap = getSerializedClauses(formData);
@@ -36,30 +37,32 @@ export function useRetainerState() {
       </div>
       ${Object.values(clauseHtmlMap).join('\n')}`;
         setPreviewHtml(html);
-        console.log('Preview HTML:', html);
         return html;
     };
-    const handleSubmit = async () => {
-        const isValid = validate();
+    const handleSubmit = async (rawFormData) => {
+        console.log('[Submit] rawFormData:', rawFormData);
+        console.log('[Submit] formData:', formData);
+        console.log(`[${new Date().toISOString()}] Submitting rawFormData:`, rawFormData);
+        const isValid = validate(rawFormData);
         if (!isValid) {
             console.warn('Form submission blocked due to validation errors:', errors);
             return;
         }
         const html = await generatePreview();
-        console.log('Form submitted successfully:', formData);
-        navigate('/preview', {
+        const payload = rawFormData;
+        console.log('Form submitted successfully:', payload);
+        navigate('/standard-retainer/preview', {
             state: {
-                formData,
+                formData: payload,
                 previewHtml: html,
                 metadata,
             },
         });
     };
     return {
-        formData,
+        updateField,
         errors,
         touched,
-        updateField,
         markTouched,
         validate,
         generatePreview,

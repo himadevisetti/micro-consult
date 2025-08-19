@@ -7,18 +7,24 @@ import { FormType, RetainerTypeLabel } from '@/types/FormType';
 
 export interface StandardRetainerFormProps {
   formData: RetainerFormData;
+  rawFormData: Record<string, string>;
   errors?: Partial<Record<keyof RetainerFormData, string>>;
   touched?: Partial<Record<keyof RetainerFormData, boolean>>;
   onChange: (field: keyof RetainerFormData, value: string | number | Date) => void;
-  onSubmit?: () => void;
+  onRawChange: (field: keyof RetainerFormData, value: string) => void;
+  onBlur: (field: keyof RetainerFormData, value: string) => void;
+  onSubmit?: (rawFormData: Record<string, string>) => Promise<void>;
   markTouched?: (field: keyof RetainerFormData) => void;
 }
 
 export default function StandardRetainerForm({
   formData,
+  rawFormData,
   errors,
   touched,
   onChange,
+  onRawChange,
+  onBlur,
   onSubmit,
   markTouched,
 }: StandardRetainerFormProps) {
@@ -33,15 +39,25 @@ export default function StandardRetainerForm({
       parsed = raw === '' ? 0 : parseFloat(raw);
     }
 
+    onRawChange(field, raw);
     onChange(field, parsed);
     markTouched?.(field);
   };
 
-  const handleDateChange = (field: keyof RetainerFormData) => (e: React.ChangeEvent<HTMLInputElement>) => {
-    const date = new Date(e.target.value);
-    if (!isNaN(date.getTime())) {
-      onChange(field, date);
-      markTouched?.(field);
+  const handleBlur = (field: keyof RetainerFormData) => (
+    e: React.FocusEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
+  ) => {
+    onBlur(field, e.target.value);
+    markTouched?.(field);
+  };
+
+  const handleFormSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    try {
+      await onSubmit?.(rawFormData);
+    } catch (err) {
+      console.error('[StandardRetainerForm] Submission failed:', err);
     }
   };
 
@@ -62,13 +78,7 @@ export default function StandardRetainerForm({
   };
 
   return (
-    <form
-      style={{ maxWidth: '800px', margin: '0 auto' }}
-      onSubmit={(e) => {
-        e.preventDefault();
-        onSubmit?.();
-      }}
-    >
+    <form style={{ maxWidth: '800px', margin: '0 auto' }} onSubmit={handleFormSubmit}>
       <h2 style={{ fontSize: '1.5rem', marginBottom: '1.5rem' }}>
         📝 {RetainerTypeLabel[FormType.StandardRetainer]} Form
       </h2>
@@ -103,7 +113,7 @@ export default function StandardRetainerForm({
                   step="0.01"
                   value={typeof value === 'number' ? value : ''}
                   onChange={handleChange(field)}
-                  onBlur={() => markTouched?.(field)}
+                  onBlur={handleBlur(field)}
                   placeholder={config.placeholder}
                   style={{ ...inputStyle, paddingLeft: '1.5rem', width: '100%' }}
                 />
@@ -112,9 +122,9 @@ export default function StandardRetainerForm({
               <input
                 id={field}
                 type="date"
-                value={value instanceof Date ? value.toISOString().split('T')[0] : ''}
-                onChange={handleDateChange(field)}
-                onBlur={() => markTouched?.(field)}
+                value={rawFormData[field] || ''}
+                onChange={handleChange(field)}
+                onBlur={handleBlur(field)}
                 placeholder={config.placeholder}
                 style={inputStyle}
               />
@@ -123,7 +133,7 @@ export default function StandardRetainerForm({
                 id={field}
                 value={value as string}
                 onChange={handleChange(field)}
-                onBlur={() => markTouched?.(field)}
+                onBlur={handleBlur(field)}
                 placeholder={config.placeholder}
                 style={{ ...inputStyle, minHeight: '100px' }}
               />
@@ -132,7 +142,7 @@ export default function StandardRetainerForm({
                 id={field}
                 value={value as string}
                 onChange={handleChange(field)}
-                onBlur={() => markTouched?.(field)}
+                onBlur={handleBlur(field)}
                 style={inputStyle}
               >
                 {config.options.map((opt) => (
@@ -147,7 +157,7 @@ export default function StandardRetainerForm({
                 type={config.type}
                 value={value as string}
                 onChange={handleChange(field)}
-                onBlur={() => markTouched?.(field)}
+                onBlur={handleBlur(field)}
                 placeholder={config.placeholder}
                 style={inputStyle}
               />
