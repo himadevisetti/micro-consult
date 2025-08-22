@@ -6,8 +6,9 @@ export function getFilename(
 ): string {
   const safeName = (clientName || 'Client').trim().replace(/\s+/g, '_');
   const purpose = (retainerPurpose || 'Retainer').trim().replace(/\s+/g, '_');
-  const date = executionDate?.split('T')[0] || new Date().toISOString().split('T')[0];
+
+  const safeDate = executionDate?.trim().split('T')[0] || 'unspecified';
   const extension = mode === 'final' ? 'pdf' : 'docx';
 
-  return `${safeName}-${purpose}-${date}_${mode}.${extension}`;
+  return `${safeName}-${purpose}-${safeDate}_${mode}.${extension}`;
 }

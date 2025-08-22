@@ -3,16 +3,15 @@ export const standardRetainerSchema = {
     providerName: { label: 'Provider Name', type: 'text', required: true, placeholder: 'e.g. Jane Doe Law Firm', clauseTemplate: 'The provider of legal services is {{providerName}}.' },
     feeAmount: {
         label: 'Fee Amount',
-        type: 'text',
+        type: 'number',
         required: true,
-        placeholder: 'e.g. $2000.00',
+        placeholder: 'e.g. 2000.00',
         clauseTemplate: 'The total fee is {{feeAmount}}.',
         validate: (val) => {
-            const sanitized = val.replace(/[^0-9.]/g, '');
-            const num = parseFloat(sanitized);
+            const num = parseFloat(val);
             return (!isNaN(num) &&
                 num >= 0 &&
-                /^\d+(\.\d{1,2})?$/.test(sanitized));
+                /^\d+(\.\d{1,2})?$/.test(val.trim()));
         }
     },
     feeStructure: {
@@ -26,15 +25,17 @@ export const standardRetainerSchema = {
     },
     retainerAmount: {
         label: 'Retainer Amount (Optional)',
-        type: 'text',
+        type: 'number',
         required: false,
-        placeholder: 'e.g. $5,000.00',
+        placeholder: 'e.g. 5000.00',
         clauseTemplate: 'A one-time retainer fee of {{retainerAmount}} will be charged.',
         validate: (val) => {
             if (!val)
                 return true;
             const num = parseFloat(val);
-            return !isNaN(num) && num >= 0 && /^\d+(\.\d{1,2})?$/.test(val);
+            return (!isNaN(num) &&
+                num >= 0 &&
+                /^\d+(\.\d{1,2})?$/.test(val.trim()));
         },
         default: '0'
     },
@@ -45,8 +46,7 @@ export const standardRetainerSchema = {
         placeholder: 'MM/DD/YYYY',
         clauseTemplate: 'The agreement begins on {{startDate}}.',
         validate: (val) => {
-            const date = new Date(val);
-            return typeof val === 'string' && !isNaN(date.getTime());
+            return typeof val === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(val);
         }
     },
     endDate: {
@@ -58,9 +58,8 @@ export const standardRetainerSchema = {
         validate: (val, form) => {
             if (!val || !form?.startDate)
                 return false;
-            const end = new Date(val);
-            const start = new Date(form.startDate);
-            return !isNaN(end.getTime()) && !isNaN(start.getTime()) && end >= start;
+            const isValidFormat = /^\d{4}-\d{2}-\d{2}$/.test(val) && /^\d{4}-\d{2}-\d{2}$/.test(form.startDate);
+            return isValidFormat && val >= form.startDate;
         }
     },
     jurisdiction: {

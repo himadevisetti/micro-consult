@@ -46,6 +46,7 @@ export function useRetainerState(rawFormData, formData, setFormData) {
         }
         const html = await generatePreview();
         const payload = rawFormData;
+        sessionStorage.setItem('retainerFormData', JSON.stringify(rawFormData));
         console.log('Form submitted successfully:', payload);
         navigate('/standard-retainer/preview', {
             state: {

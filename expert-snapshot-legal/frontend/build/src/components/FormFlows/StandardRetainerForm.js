@@ -1,6 +1,9 @@
 import { jsxs as _jsxs, jsx as _jsx } from "react/jsx-runtime";
 import { standardRetainerSchema } from '../../schemas/standardRetainerSchema';
 import { FormType, RetainerTypeLabel } from '@/types/FormType';
+// import { coerce } from '../../utils/normalizeFormData';
+import { getDateInputValue } from '../../utils/formRenderUtils';
+import CustomDatePicker from '../Inputs/CustomDatePicker';
 export default function StandardRetainerForm({ formData, rawFormData, errors, touched, onChange, onRawChange, onBlur, onSubmit, markTouched, }) {
     const handleChange = (field) => (e) => {
         const raw = e.target.value;
@@ -50,6 +53,18 @@ export default function StandardRetainerForm({ formData, rawFormData, errors, to
                                         transform: 'translateY(-50%)',
                                         fontWeight: 'bold',
                                         color: '#333',
-                                    }, children: "$" }), _jsx("input", { id: field, type: "number", step: "0.01", value: typeof value === 'number' ? value : '', onChange: handleChange(field), onBlur: handleBlur(field), placeholder: config.placeholder, style: { ...inputStyle, paddingLeft: '1.5rem', width: '100%' } })] })) : config.type === 'date' ? (_jsx("input", { id: field, type: "date", value: rawFormData[field] || '', onChange: handleChange(field), onBlur: handleBlur(field), placeholder: config.placeholder, style: inputStyle })) : config.type === 'textarea' ? (_jsx("textarea", { id: field, value: value, onChange: handleChange(field), onBlur: handleBlur(field), placeholder: config.placeholder, style: { ...inputStyle, minHeight: '100px' } })) : config.type === 'dropdown' && config.options ? (_jsx("select", { id: field, value: value, onChange: handleChange(field), onBlur: handleBlur(field), style: inputStyle, children: config.options.map((opt) => (_jsx("option", { value: opt, children: opt }, opt))) })) : (_jsx("input", { id: field, type: config.type, value: value, onChange: handleChange(field), onBlur: handleBlur(field), placeholder: config.placeholder, style: inputStyle })), touched?.[field] && errors?.[field] && (_jsx("span", { style: { color: 'red', fontSize: '0.875rem', marginLeft: '1rem' }, children: errors[field] }))] }, field));
+                                    }, children: "$" }), _jsx("input", { id: field, type: "number", step: "0.01", value: typeof value === 'number' ? value : '', onChange: handleChange(field), onBlur: handleBlur(field), placeholder: config.placeholder, style: { ...inputStyle, paddingLeft: '1.5rem', width: '100%' } })] })) : config.type === 'date' ? ((() => {
+                            // const parsedDate = coerce.date(rawFormData[field]);
+                            const isoValue = getDateInputValue(rawFormData[field]);
+                            return (_jsx(CustomDatePicker, { id: field, value: rawFormData[field], onChange: (newIso) => {
+                                    onRawChange(field, newIso);
+                                    onChange(field, newIso); // already typed as string
+                                    markTouched?.(field);
+                                }, onBlur: () => {
+                                    const safeValue = rawFormData[field] ?? ''; // fallback to empty string
+                                    onBlur(field, safeValue);
+                                    markTouched?.(field);
+                                }, placeholder: config.placeholder, style: inputStyle }));
+                        })()) : config.type === 'textarea' ? (_jsx("textarea", { id: field, value: value, onChange: handleChange(field), onBlur: handleBlur(field), placeholder: config.placeholder, style: { ...inputStyle, minHeight: '100px' } })) : config.type === 'dropdown' && config.options ? (_jsx("select", { id: field, value: value, onChange: handleChange(field), onBlur: handleBlur(field), style: inputStyle, children: config.options.map((opt) => (_jsx("option", { value: opt, children: opt }, opt))) })) : (_jsx("input", { id: field, type: config.type, value: value, onChange: handleChange(field), onBlur: handleBlur(field), placeholder: config.placeholder, style: inputStyle })), touched?.[field] && errors?.[field] && (_jsx("span", { style: { color: 'red', fontSize: '0.875rem', marginLeft: '1rem' }, children: errors[field] }))] }, field));
             }), _jsx("div", { style: { textAlign: 'center', marginTop: '2rem' }, children: _jsx("button", { type: "submit", style: { padding: '0.5rem 1.25rem', fontSize: '1rem', borderRadius: '4px' }, children: "Submit" }) })] }));
 }

@@ -12,16 +12,14 @@ import EntireAgreementClause from '../components/AgreementClauses/EntireAgreemen
 import SignatureClause from '../components/AgreementClauses/SignatureClause.js';
 import styles from '../styles/StandardPreview.module.css';
 import { normalizeFormData } from './normalizeFormData';
-import { formatDateLong, formatDateYYYYMMDD } from './formatDate';
+import { formatDateLong } from './formatDate';
 export function getSerializedClauses(formData, options) {
     const exclude = options?.exclude || [];
     const clauses = {};
     const normalized = normalizeFormData(formData); // formData is already the raw string input
-    const formattedStartDateShort = formatDateYYYYMMDD(normalized.startDate);
-    const formattedEndDateShort = formatDateYYYYMMDD(normalized.endDate);
     // convert startDate and endDate into readable long format
-    const formattedStartDateLong = formatDateLong(formattedStartDateShort);
-    const formattedEndDateLong = formatDateLong(formattedEndDateShort);
+    const formattedStartDateLong = formatDateLong(normalized.startDate);
+    const formattedEndDateLong = formatDateLong(normalized.endDate);
     const formattedRetainerAmount = normalized.retainerAmount?.toFixed(2) ?? '';
     const formattedFeeAmount = normalized.feeAmount.toFixed(2);
     const wrapClause = (component, key) => (_jsx("div", { className: styles.clauseBlock, children: component }, key));

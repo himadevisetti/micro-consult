@@ -1,4 +1,5 @@
 // src/types/RetainerFormData.ts
+// import { getTodayYYYYMMDD } from '../utils/formatDate';
 
 export type FeeStructure = "Flat" | "Hourly" | "Monthly" | "Contingency";
 
@@ -8,8 +9,8 @@ export interface RetainerFormData {
   feeAmount: number;                  // $ Textbox, precision: 2
   feeStructure: FeeStructure;         // Dropdown
   retainerAmount?: number;            // $ Textbox, optional, precision: 2
-  startDate: Date;                    // Calendar picker
-  endDate: Date;                      // Calendar picker
+  startDate: string;                    // Calendar picker
+  endDate: string;                       // Calendar picker
   matterDescription: string;          // Textarea
   jurisdiction?: string;              // Dropdown, default: "California"
 }
@@ -20,8 +21,8 @@ export const defaultRetainerFormData: RetainerFormData = {
   feeAmount: 0.00,
   feeStructure: "Flat",
   retainerAmount: 0.00,
-  startDate: new Date(0), // Jan 1, 1970 UTC
-  endDate: new Date(0),
+  startDate: "",
+  endDate: "",
   matterDescription: "",
   jurisdiction: "California",
 };

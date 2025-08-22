@@ -18,27 +18,69 @@ export function formatDateLong(date) {
     });
 }
 /**
- * Converts a date to a string by using the current or specified locale
+ * Converts MM/DD/YYYY string to ISO format ("YYYY-MM-DD").
  */
-export function formatDateLongFromString(dateStr) {
-    const date = new Date(dateStr);
-    return formatDateLong(date);
-}
-// Reserved for machine-readable formats (e.g. API payloads, CSV exports)
-export function formatDateMMDDYYYY(date) {
-    return date.toLocaleDateString('en-US', {
-        year: 'numeric',
-        month: '2-digit',
-        day: '2-digit',
-    });
+export function mmddToIso(dateStr) {
+    if (!dateStr || typeof dateStr !== 'string')
+        return '';
+    const [mm, dd, yyyy] = dateStr.split('/');
+    if (!mm || !dd || !yyyy)
+        return '';
+    return `${yyyy}-${mm.padStart(2, '0')}-${dd.padStart(2, '0')}`;
 }
 /**
- * Formats a Date object into "YYYY-MM-DD" without UTC drift.
- * Safe for sessionStorage and API payloads.
+ * Converts a Date object to ISO string ("YYYY-MM-DD").
  */
-export function formatDateYYYYMMDD(date) {
-    const yyyy = date.getUTCFullYear();
-    const mm = String(date.getUTCMonth() + 1).padStart(2, '0');
-    const dd = String(date.getUTCDate()).padStart(2, '0');
+export function dateToIsoString(date) {
+    if (!date || isNaN(date.getTime()))
+        return '';
+    const yyyy = date.getFullYear();
+    const mm = String(date.getMonth() + 1).padStart(2, '0');
+    const dd = String(date.getDate()).padStart(2, '0');
     return `${yyyy}-${mm}-${dd}`;
+}
+/**
+ * Parses a manually entered date string into a UTC Date object.
+ * Supports MM/DD/YYYY, MM/DD, YYYY-MM-DD, and MM-DD-YYYY formats.
+ */
+export function parseManualDateAsUTC(input) {
+    const trimmed = input.trim();
+    // MM/DD/YYYY
+    if (trimmed.includes('/')) {
+        const parts = trimmed.split('/');
+        if (parts.length === 3) {
+            const [month, day, year] = parts;
+            const parsed = new Date(Date.UTC(+year, +month - 1, +day));
+            return isNaN(parsed.getTime()) ? undefined : parsed;
+        }
+        if (parts.length === 2) {
+            const [month, day] = parts;
+            const year = new Date().getUTCFullYear();
+            const parsed = new Date(Date.UTC(year, +month - 1, +day));
+            return isNaN(parsed.getTime()) ? undefined : parsed;
+        }
+    }
+    // YYYY-MM-DD
+    if (/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) {
+        const [year, month, day] = trimmed.split('-').map(Number);
+        const parsed = new Date(Date.UTC(year, month - 1, day));
+        return isNaN(parsed.getTime()) ? undefined : parsed;
+    }
+    // MM-DD-YYYY
+    if (/^\d{2}-\d{2}-\d{4}$/.test(trimmed)) {
+        const [month, day, year] = trimmed.split('-').map(Number);
+        const parsed = new Date(Date.UTC(year, month - 1, day));
+        return isNaN(parsed.getTime()) ? undefined : parsed;
+    }
+    return undefined;
+}
+/**
+ * Formats a Date object into MM/DD/YYYY string.
+ * Example: new Date(2025, 7, 21) → "08/21/2025"
+ */
+export function formatDateMMDDYYYY(date) {
+    const month = String(date.getMonth() + 1).padStart(2, '0'); // Months are zero-based
+    const day = String(date.getDate()).padStart(2, '0');
+    const year = date.getFullYear();
+    return `${month}/${day}/${year}`;
 }

@@ -10,7 +10,7 @@ import type { RetainerFormData } from '../types/RetainerFormData';
 export type RetainerFormErrors = Partial<Record<keyof RetainerFormData, string>>;
 
 export function useRetainerState(
-  rawFormData: Record<string, string>,
+  rawFormData: RetainerFormData,
   formData: RetainerFormData,
   setFormData: React.Dispatch<React.SetStateAction<RetainerFormData>>
 ) {
@@ -21,7 +21,7 @@ export function useRetainerState(
 
   const navigate = useNavigate();
 
-  function validate(rawFormData?: Record<string, string>) {
+  function validate(rawFormData?: RetainerFormData) {
     if (!rawFormData) {
       throw new Error('rawFormData is undefined during submission');
     }
@@ -54,7 +54,7 @@ export function useRetainerState(
     return html;
   };
 
-  const handleSubmit = async (rawFormData: Record<string, string>) => {
+  const handleSubmit = async (rawFormData: RetainerFormData) => {
 
     const isValid = validate(rawFormData);
     if (!isValid) {
@@ -64,6 +64,8 @@ export function useRetainerState(
 
     const html = await generatePreview();
     const payload = rawFormData;
+
+    sessionStorage.setItem('retainerFormData', JSON.stringify(rawFormData));
 
     console.log('Form submitted successfully:', payload);
 

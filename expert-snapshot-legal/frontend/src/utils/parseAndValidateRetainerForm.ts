@@ -1,24 +1,19 @@
 import { standardRetainerSchema } from '../schemas/standardRetainerSchema.js';
-import { defaultRetainerFormData } from '../types/RetainerFormData.js';
+// import { defaultRetainerFormData } from '../types/RetainerFormData.js';
 import type { RetainerFormData } from '../types/RetainerFormData.js';
 import { normalizeForValidation, isEmptyValue } from '../utils/formSchemaUtils.js';
-import { normalizeFormDates } from '../utils/normalizeFormDates.js';
 
 export type ValidationErrors = Partial<Record<keyof RetainerFormData, string>>;
 
 export function parseAndValidateRetainerForm(
-  rawFormData: Record<string, string>
+  rawFormData: RetainerFormData
 ): { parsed: RetainerFormData; errors: ValidationErrors } {
   const errors: ValidationErrors = {};
-
-  const normalizedFormData = normalizeFormDates(rawFormData, ['startDate', 'endDate']);
   const parsedRaw: Partial<Record<keyof RetainerFormData, RetainerFormData[keyof RetainerFormData]>> = {};
 
   for (const [key, config] of Object.entries(standardRetainerSchema)) {
     const field = key as keyof RetainerFormData;
-
-    // 🔎 Log field access explicitly
-    const rawValue = normalizedFormData[field] ?? rawFormData[field];
+    const rawValue = rawFormData[field];
 
     let parsedValue: unknown = rawValue;
 
@@ -55,18 +50,8 @@ export function parseAndValidateRetainerForm(
     }
   }
 
-  const parsedFormData = parsedRaw as RetainerFormData;
-
-  if (!errors.startDate && !errors.endDate) {
-    const start = normalizeForValidation(parsedFormData.startDate, 'date');
-    const end = normalizeForValidation(parsedFormData.endDate, 'date');
-    if (start && end && end <= start) {
-      errors.endDate = 'End date must be after start date.';
-    }
-  }
-
   return {
-    parsed: parsedFormData,
+    parsed: parsedRaw as RetainerFormData,
     errors,
   };
 }

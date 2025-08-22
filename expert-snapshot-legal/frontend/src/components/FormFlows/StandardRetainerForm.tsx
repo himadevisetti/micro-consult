@@ -4,16 +4,19 @@ import React from 'react';
 import { standardRetainerSchema } from '../../schemas/standardRetainerSchema';
 import type { RetainerFormData } from '../../types/RetainerFormData';
 import { FormType, RetainerTypeLabel } from '@/types/FormType';
+// import { coerce } from '../../utils/normalizeFormData';
+import { getDateInputValue } from '../../utils/formRenderUtils';
+import CustomDatePicker from '../Inputs/CustomDatePicker';
 
 export interface StandardRetainerFormProps {
   formData: RetainerFormData;
-  rawFormData: Record<string, string>;
+  rawFormData: RetainerFormData;
   errors?: Partial<Record<keyof RetainerFormData, string>>;
   touched?: Partial<Record<keyof RetainerFormData, boolean>>;
   onChange: (field: keyof RetainerFormData, value: string | number | Date) => void;
   onRawChange: (field: keyof RetainerFormData, value: string) => void;
   onBlur: (field: keyof RetainerFormData, value: string) => void;
-  onSubmit?: (rawFormData: Record<string, string>) => Promise<void>;
+  onSubmit?: (rawFormData: RetainerFormData) => Promise<void>;
   markTouched?: (field: keyof RetainerFormData) => void;
 }
 
@@ -119,15 +122,29 @@ export default function StandardRetainerForm({
                 />
               </div>
             ) : config.type === 'date' ? (
-              <input
-                id={field}
-                type="date"
-                value={rawFormData[field] || ''}
-                onChange={handleChange(field)}
-                onBlur={handleBlur(field)}
-                placeholder={config.placeholder}
-                style={inputStyle}
-              />
+              (() => {
+                // const parsedDate = coerce.date(rawFormData[field]);
+                const isoValue = getDateInputValue(rawFormData[field]);
+
+                return (
+                  <CustomDatePicker
+                    id={field}
+                    value={rawFormData[field]} // ISO string: "2025-08-20"
+                    onChange={(newIso: string) => {
+                      onRawChange(field, newIso);
+                      onChange(field, newIso); // already typed as string
+                      markTouched?.(field);
+                    }}
+                    onBlur={() => {
+                      const safeValue = rawFormData[field] ?? ''; // fallback to empty string
+                      onBlur(field, safeValue);
+                      markTouched?.(field);
+                    }}
+                    placeholder={config.placeholder}
+                    style={inputStyle}
+                  />
+                );
+              })()
             ) : config.type === 'textarea' ? (
               <textarea
                 id={field}

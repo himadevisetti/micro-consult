@@ -1,7 +1,6 @@
 import { generateDOCX } from './generateDOCX.js';
 import { getFilename } from '../../utils/generateFilename.js';
 import type { RetainerFormData } from '../../types/RetainerFormData.js';
-import { formatDateMMDDYYYY } from '../../utils/formatDate.js';
 import { FormType, RetainerTypeLabel } from '@/types/FormType';
 
 export async function exportRetainer(

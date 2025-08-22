@@ -1,29 +1,18 @@
 // src/utils/buildRetainerPreviewPayload.ts
 import { standardRetainerSchema } from '../schemas/standardRetainerSchema';
-import { formatDateLong } from './formatDate';
+import { normalizeValue } from './normalizeValue';
 export function buildRetainerPreviewPayload(formData) {
     const clauses = [];
     const metadata = {};
     for (const [key, config] of Object.entries(standardRetainerSchema)) {
         const field = key;
         const rawValue = formData[field];
-        // Normalize value to string for metadata
-        const value = rawValue instanceof Date
-            ? formatDateLong(rawValue)
-            : typeof rawValue === 'number'
-                ? rawValue.toString()
-                : rawValue ?? '';
-        metadata[key] = value;
-        // Clause interpolation
+        metadata[key] = normalizeValue(rawValue);
         if (config.clauseTemplate) {
             const clauseText = config.clauseTemplate.replace(/\{\{(.*?)\}\}/g, (_, token) => {
                 const tokenKey = token.trim();
                 const tokenValue = formData[tokenKey];
-                return tokenValue instanceof Date
-                    ? formatDateLong(tokenValue)
-                    : typeof tokenValue === 'number'
-                        ? tokenValue.toString()
-                        : tokenValue ?? '';
+                return normalizeValue(tokenValue);
             });
             clauses.push({ id: key, text: clauseText });
         }
