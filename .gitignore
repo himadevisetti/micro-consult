@@ -86,7 +86,7 @@ expert-snapshot-legal/frontend/exports/
 expert-snapshot-legal/frontend/.env.local
 
 # Compiled build artifacts
-frontend/build/
+**/build/
 
 # Vite cache
 node_modules/.vite/
