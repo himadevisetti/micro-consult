@@ -7,9 +7,9 @@ export default function DownloadToggle({
 }) {
   return (
     <div className={styles.downloadToggle}>
-      <p>
+      <span>
         <strong>Download As:</strong>
-      </p>
+      </span>
       <button className={styles.downloadButton} onClick={() => onDownload('docx')}>
         📝 Editable (.docx)
       </button>

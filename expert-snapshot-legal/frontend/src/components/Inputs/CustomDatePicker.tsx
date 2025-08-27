@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import { format, parseISO } from 'date-fns';
+import styles from '../../styles/StandardRetainerForm.module.css';
 
 interface CustomDatePickerProps {
   id: string;
@@ -10,6 +11,7 @@ interface CustomDatePickerProps {
   onBlur?: () => void;
   placeholder?: string;
   style?: React.CSSProperties;
+  className?: string;
 }
 
 export default function CustomDatePicker({
@@ -19,6 +21,7 @@ export default function CustomDatePicker({
   onBlur,
   placeholder,
   style,
+  className,
 }: CustomDatePickerProps) {
   const [internalValue, setInternalValue] = useState(value ?? '');
 
@@ -31,15 +34,19 @@ export default function CustomDatePicker({
   const displayValue = value ? format(parseISO(value), 'MM/dd/yyyy') : '';
 
   return (
-    <input
-      id={id}
-      type="date"
-      value={internalValue}
-      onChange={handleChange}
-      onBlur={onBlur}
-      placeholder={placeholder ?? displayValue}
-      style={style}
-    />
+    <div className={styles.dateInputWrapper}>
+      <input
+        id={id}
+        type="date"
+        value={internalValue}
+        onChange={handleChange}
+        onBlur={onBlur}
+        placeholder={placeholder ?? displayValue}
+        className={`${styles.input} ${className}`}
+        style={{ paddingRight: '2rem' }}
+      />
+      <span className="calendarIcon" />
+    </div>
   );
 }
 

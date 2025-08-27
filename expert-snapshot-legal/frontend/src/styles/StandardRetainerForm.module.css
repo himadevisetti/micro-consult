@@ -1,0 +1,190 @@
+/* src/styles/StandardRetainerForm.module.css */
+
+/* Optional outer container for full-page layout */
+.pageContainer {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.formWrapper {
+  flex-grow: 1;
+  min-height: 0;
+  height: 100%;
+  width: 100%;
+  max-width: 100%;
+  padding: 1rem;
+  display: flex;
+  align-items: stretch;
+  box-sizing: border-box;
+  overflow: hidden;
+  background-color: transparent;
+  border: none;
+}
+
+.formInner {
+  flex: 1;
+  max-width: 720px;
+  width: 100%;
+  height: 100%;
+  /* ⬅️ Fill vertical space */
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  /* ⬅️ Push submit button to bottom */
+  box-sizing: border-box;
+  padding: 1rem;
+  background-color: transparent;
+  border: none;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.formTitle {
+  text-align: center;
+  font-size: 1.5rem;
+  margin: 0 auto 1.5rem auto;
+  color: #1b5e20;
+}
+
+.formRow {
+  display: flex;
+  flex-wrap: wrap;
+  /* align-items: flex-start; */
+  align-items: center;
+  margin-bottom: 0.75rem;
+}
+
+.label {
+  min-width: 160px;
+  font-weight: bold;
+  margin-right: 1rem;
+  margin-bottom: 0.5rem;
+  color: #1b5e20;
+}
+
+.input,
+.input[type="date"] {
+  font-family: inherit;
+  font-size: 1rem;
+  line-height: 1.2;
+  padding: 0.4rem 0.5rem;
+  width: 100%;
+  max-width: 480px;
+  box-sizing: border-box;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  background-color: white;
+  color: #333;
+  flex-grow: 1;
+  flex-shrink: 1;
+  flex-basis: auto;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+input[type="date"]::-webkit-calendar-picker-indicator {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.dateInputWrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  flex-grow: 1;
+  max-width: 480px;
+  width: 100%;
+}
+
+.input:focus,
+.textarea:focus,
+.select:focus {
+  outline: 2px solid #FBC02D;
+  outline-offset: 2px;
+}
+
+.textarea {
+  min-height: 80px;
+  resize: vertical;
+}
+
+.currencyInputWrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  flex-grow: 1;
+  flex-shrink: 1;
+  flex-basis: auto;
+  max-width: 480px;
+  width: 100%;
+  box-sizing: border-box;
+  background-color: transparent;
+  border: none;
+}
+
+.dollarPrefix {
+  position: absolute;
+  left: 0.75rem;
+  top: 50%;
+  transform: translateY(-50%);
+  font-weight: bold;
+  color: #333;
+}
+
+.inputWithPrefix {
+  padding-left: 1.5rem;
+}
+
+.error {
+  color: #D32F2F;
+  font-size: 0.875rem;
+  margin-left: 1rem;
+  margin-top: 0.25rem;
+}
+
+.submitRow {
+  text-align: center;
+  margin-top: 1rem;
+}
+
+.submitButton {
+  display: block;
+  margin: 0 auto;
+  min-width: 120px;
+  padding: 0.4rem 1rem;
+  font-size: 1rem;
+  border-radius: 4px;
+  background-color: #1b5e20;
+  color: white;
+  border: none;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.submitButton:hover {
+  background-color: #1b5e20;
+}
+
+.select {
+  font-family: inherit;
+  font-size: 1rem;
+  padding: 0.5rem;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  background-color: white;
+  box-sizing: border-box;
+  width: auto;
+  max-width: 480px;
+  flex-grow: 1;
+  flex-shrink: 1;
+  flex-basis: auto;
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  background-image: url("data:image/svg+xml;utf8,<svg fill='gray' height='16' viewBox='0 0 24 24' width='16' xmlns='http://www.w3.org/2000/svg'><path d='M7 10l5 5 5-5z'/></svg>");
+  background-repeat: no-repeat;
+  background-position: right 0.75rem center;
+  background-size: 1rem;
+  padding-right: 2rem;
+}

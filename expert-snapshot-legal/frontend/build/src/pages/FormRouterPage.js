@@ -4,6 +4,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import StandardRetainerFlow from '../components/FormFlows/StandardRetainerFlow';
 import IPCounselForm from '../components/FormFlows/IPCounselForm';
 import CustomUploadForm from '../components/FormFlows/CustomUploadForm';
+import PageLayout from '../components/PageLayout';
 import { FormType } from '@/types/FormType';
 const FormRouterPage = () => {
     const location = useLocation();
@@ -31,6 +32,10 @@ const FormRouterPage = () => {
                 return null;
         }
     };
-    return (_jsx("div", { className: "form-section", children: renderForm() }));
+    const handleHomeClick = () => {
+        sessionStorage.clear();
+        navigate('/');
+    };
+    return (_jsx(PageLayout, { onHomeClick: handleHomeClick, children: isValid && renderForm() }));
 };
 export default FormRouterPage;

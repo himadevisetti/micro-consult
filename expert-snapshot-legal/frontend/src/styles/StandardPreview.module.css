@@ -8,14 +8,20 @@ body {
   border-top: 1px solid transparent;
 }
 
+/* Outer container for screen layout */
+.previewContainer {
+  padding: 2rem;
+  max-width: 960px;
+  margin: 0 auto;
+  box-sizing: border-box;
+}
+
+/* Printable preview block */
 .retainerPreview {
   display: block;
   position: relative;
-  margin-top: 0;
-  margin-right: auto;
-  margin-bottom: 0.5in;
-  margin-left: auto;
-  padding: 1in 48px 1.5in 4px;
+  margin: 0 auto 0.5in auto;
+  padding: 1in 48px 1.5in 24px;
   box-sizing: border-box;
   max-width: 800px;
   font-family: 'Georgia', serif;
@@ -35,8 +41,7 @@ body {
 .retainerTitle {
   text-align: center;
   font-size: 24px;
-  margin-top: 0;
-  margin-bottom: 24px;
+  margin: 0 0 24px 0;
   text-transform: uppercase;
   letter-spacing: 1px;
   page-break-after: avoid;
@@ -54,17 +59,15 @@ body {
 }
 
 .clauseBlock h3 {
-  margin-top: 8px;
-  margin-bottom: 24px;
+  margin: 8px 0 24px 0;
 }
 
 .clauseBlock {
   display: block;
+  margin: 0 0 24px 0;
+  padding: 0;
   break-inside: avoid;
   page-break-inside: avoid;
-  margin-top: 0;
-  margin-bottom: 24px;
-  padding: 0;
 }
 
 .clausesFlow {
@@ -87,8 +90,7 @@ body {
 }
 
 .clauseBlock p {
-  margin-top: 0;
-  margin-bottom: 24px;
+  margin: 0 0 24px 0;
   font-size: 16px;
   line-height: 1.6;
 }
@@ -102,7 +104,10 @@ body {
   font-size: 16px;
 }
 
-.form-section {
-  overflow-x: visible;
-  overflow-y: auto;
+/* Optional scrollable section — screen only */
+@media screen {
+  .form-section {
+    overflow-x: visible;
+    overflow-y: auto;
+  }
 }

@@ -1,0 +1,33 @@
+/* src/styles/PageLayout.module.css */
+
+.pageWrapper {
+  background-color: #f9f7f2;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+  overflow: hidden;
+}
+
+.pageContent {
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: stretch;
+  padding: 0;
+  overflow: hidden;
+}
+
+.fullWidth {
+  max-width: none;
+  margin: 0;
+  width: 100%;
+}
+
+.scrollablePage {
+  height: auto !important;
+  min-height: 100vh;
+  overflow-y: auto !important;
+  display: block !important;
+}

@@ -6,6 +6,8 @@ import { parseAndValidateRetainerForm } from '../utils/parseAndValidateRetainerF
 import { buildRetainerPreviewPayload } from '../utils/buildRetainerPreviewPayload';
 import { getSerializedClauses } from '../utils/serializeClauses';
 import type { RetainerFormData } from '../types/RetainerFormData';
+import { getPrintableHtml } from '../utils/getPrintableHtml';
+import { injectCssIntoHtml } from '../server/injectCssIntoHtml';
 
 export type RetainerFormErrors = Partial<Record<keyof RetainerFormData, string>>;
 

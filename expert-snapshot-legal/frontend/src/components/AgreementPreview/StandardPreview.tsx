@@ -1,5 +1,4 @@
 import React, { useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
 import styles from '../../styles/StandardPreview.module.css';
 import { exportRetainer } from '../../utils/export/exportHandler';
 import DownloadToggle from '../Export/DownloadToggle';
@@ -20,70 +19,40 @@ export default function StandardPreview({
   formData,
 }: PreviewProps) {
   const previewRef = useRef<HTMLDivElement>(null);
-  const navigate = useNavigate();
-
   const clauseComponents = getSerializedClauses(formData);
 
-  const handleExportPDF = async () => {
+  const handleExport = async (type: 'pdf' | 'docx') => {
     const content = previewRef.current?.innerHTML;
     if (!content) {
-      console.warn('No content found in previewRef for PDF export.');
+      console.warn(`No content found in previewRef for ${type.toUpperCase()} export.`);
       return;
     }
 
     try {
-      await exportRetainer('pdf', formData, content);
+      await exportRetainer(type, formData, content);
     } catch (err) {
-      console.error('PDF export failed in StandardPreview:', err);
-    }
-  };
-
-  const handleExportDOCX = async () => {
-    const content = previewRef.current?.innerHTML;
-    if (!content) {
-      console.warn('No content found in previewRef for DOCX export.');
-      return;
-    }
-
-    try {
-      await exportRetainer('docx', formData, content);
-    } catch (err) {
-      console.error('DOCX export failed in StandardPreview:', err);
+      console.error(`${type.toUpperCase()} export failed in StandardPreview:`, err);
     }
   };
 
   return (
     <div className={styles.previewContainer}>
-      <div className={styles.previewHeader}>
-        <button onClick={() => navigate('/builder?template=standard-retainer')}>
-          ⬅️ Back to Form
-        </button>
-      </div>
-
       <div
         ref={previewRef}
         className={styles.retainerPreview}
       >
-        <h2 style={{ textAlign: 'center', fontWeight: 'bold' }}>
+        <h2 className={styles.retainerTitle}>
           STANDARD RETAINER AGREEMENT
         </h2>
         {Object.values(clauseComponents).map((Clause, i) => (
-          <React.Fragment key={i}>
-            <div className={styles.clauseBlock}>
-              {Clause}
-            </div>
-          </React.Fragment>
+          <div key={i} className={styles.clauseBlock}>
+            {Clause}
+          </div>
         ))}
       </div>
 
       <DownloadToggle
-        onDownload={(type) => {
-          if (type === 'pdf') {
-            handleExportPDF();
-          } else if (type === 'docx') {
-            handleExportDOCX();
-          }
-        }}
+        onDownload={(type) => handleExport(type)}
       />
     </div>
   );

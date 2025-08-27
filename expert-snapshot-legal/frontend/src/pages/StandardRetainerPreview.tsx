@@ -1,6 +1,7 @@
 import React, { useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import StandardPreview from '../components/AgreementPreview/StandardPreview';
+import PageLayout from '../components/PageLayout';
 
 export default function StandardRetainerPreview() {
   const location = useLocation();
@@ -19,9 +20,29 @@ export default function StandardRetainerPreview() {
     return <p>🔄 Redirecting to builder...</p>;
   }
 
+  const onHomeClick = () => {
+    sessionStorage.clear();
+    navigate('/');
+  };
+
+  const onBackClick = () => {
+    navigate('/builder?template=standard-retainer', {
+      state: { formData, metadata },
+    });
+  };
+
   const onRefresh = () => {
     navigate('/builder?template=standard-retainer');
   };
 
-  return <StandardPreview html={previewHtml} onRefresh={onRefresh} metadata={metadata} formData={formData} />;
+  return (
+    <PageLayout onHomeClick={onHomeClick} onBackClick={onBackClick} scrollable>
+      <StandardPreview
+        html={previewHtml}
+        onRefresh={onRefresh}
+        metadata={metadata}
+        formData={formData}
+      />
+    </PageLayout>
+  );
 }

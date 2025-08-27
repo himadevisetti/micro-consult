@@ -17,6 +17,7 @@ export async function generatePdfFromPreview(html: string): Promise<Uint8Array> 
   const pdfBuffer = await page.pdf({
     format: 'A4',
     printBackground: true,
+    preferCSSPageSize: true,
     margin: {
       top: '1in',
       bottom: '1in',

@@ -1,39 +1,91 @@
-/* expert-snapshot-legal/frontend/src/styles/HomePage.module.css */
+/* src/styles/HomePage.module.css */
+
+.pageWrapper {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  background-color: #f9f7f2;
+}
+
+.landing {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 2rem;
+}
+
+.hero {
+  text-align: center;
+  margin-bottom: 2rem;
+}
+
+.hero h1 {
+  font-size: 2rem;
+  color: #1b5e20;
+  font-family: 'Georgia', serif;
+}
+
+.hero p {
+  font-size: 1rem;
+  color: #4a4a4a;
+  margin-top: 0.5rem;
+}
 
 .templateOptions {
-  display: block;
-  margin-top: 2rem;
-  text-align: left; /* or center, depending on layout */
+  text-align: center;
+}
+
+.templateOptions h2 {
+  font-size: 1.25rem;
+  margin-bottom: 1.5rem;
+  color: #1b5e20;
 }
 
 .retainerCardGrid {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: flex-start;
-  gap: 1.5rem; /* ← this gives space between cards */
-  margin-top: 2rem; /* ← space below heading */
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1.5rem;
+  width: 100%;
+  max-width: 800px;
+  margin: 0 auto;
 }
 
 .retainerCard {
-  width: 280px;
-  padding: 1.25rem;
+  all: unset;
+  display: block;
+  background-color: #fff;
+  border: 1px solid #ddd;
   border-radius: 8px;
-  border: 1px solid #ccc;
-  background-color: #fdfdfd;
+  padding: 1.5rem;
   text-align: center;
-  transition:
-    box-shadow 0.2s ease,
-    transform 0.2s ease;
   cursor: pointer;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  will-change: transform, box-shadow;
 }
 
 .retainerCard:hover {
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08);
-  transform: translateY(-2px);
+  background-color: #fef6d3;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+  transform: translateY(-4px) scale(1.03);
+}
+
+.cardIcon {
+  width: 64px;
+  height: auto;
+  display: block;
+  margin: 0 auto 0.5rem auto;
+  pointer-events: none;
+  background-color: transparent;
+  transition: filter 0.3s ease;
 }
 
 .retainerCard h3 {
   margin: 0;
-  font-size: 1.2rem;
-  color: #333;
+  font-size: 1rem;
+  color: #1b5e20;
+}
+
+.retainerCard:hover .cardIcon {
+  filter: brightness(1.05) sepia(20%) hue-rotate(40deg) saturate(150%);
 }
