@@ -67,6 +67,7 @@
   font-size: 1rem;
   line-height: 1.2;
   padding: 0.4rem 0.5rem;
+  cursor: pointer;
   width: 100%;
   max-width: 480px;
   box-sizing: border-box;
@@ -110,6 +111,11 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   background-image: url("data:image/svg+xml;utf8,<svg fill='gray' height='16' viewBox='0 0 24 24' width='16' xmlns='http://www.w3.org/2000/svg'><path d='M19 4h-1V2h-2v2H8V2H6v2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 16H5V9h14v11z'/></svg>");
   background-repeat: no-repeat;
   background-size: contain;
+}
+
+.calendarIcon:hover {
+  opacity: 0.4;
+  /* subtle fade to suggest it's passive */
 }
 
 .dateInputWrapper {

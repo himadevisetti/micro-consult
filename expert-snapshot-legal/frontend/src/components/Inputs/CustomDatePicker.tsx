@@ -55,7 +55,7 @@ export default function CustomDatePicker({
   const displayValue = value ? format(parseISO(value), 'MM/dd/yyyy') : '';
 
   return (
-    <div className={styles.dateInputWrapper} style={style}>
+    <div className={styles.dateInputWrapper} title="Tap the field to choose a date" style={style}>
       <input
         ref={inputRef}
         id={id}
