@@ -1,6 +1,6 @@
 // src/components/FormFlows/StandardRetainerForm.tsx
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { standardRetainerSchema } from '../../schemas/standardRetainerSchema';
 import type { RetainerFormData } from '../../types/RetainerFormData';
 import { FormType, RetainerTypeLabel } from '@/types/FormType';
@@ -63,10 +63,21 @@ export default function StandardRetainerForm({
     }
   };
 
+  useEffect(() => {
+    const formEl = document.getElementById('standard-retainer-form');
+    if (!formEl) return;
+
+    const editable = formEl.querySelector(
+      'input:not([type="hidden"]):not([disabled]):not([tabindex="-1"]), textarea:not([disabled]), select:not([disabled])'
+    ) as HTMLElement | null;
+
+    editable?.focus();
+  }, []);
+
   return (
     <div className={styles.pageContainer}>
       <div className={styles.formWrapper}>
-        <form className={styles.formInner} onSubmit={handleFormSubmit}>
+        <form id="standard-retainer-form" className={styles.formInner} onSubmit={handleFormSubmit}>
           <h2 className={styles.formTitle}>
             📝 {RetainerTypeLabel[FormType.StandardRetainer]} Form
           </h2>
