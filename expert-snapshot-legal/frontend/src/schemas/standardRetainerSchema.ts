@@ -90,7 +90,7 @@ export const standardRetainerSchema: Record<string, RetainerFieldConfig> = {
   matterDescription: {
     label: 'Matter Description',
     type: 'text',
-    required: true,
+    required: false,
     placeholder: 'e.g. IP Licensing Agreement',
     clauseTemplate: 'The purpose of this retainer is {{matterDescription}}.'
   }

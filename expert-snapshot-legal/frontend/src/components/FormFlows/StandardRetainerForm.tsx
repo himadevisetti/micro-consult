@@ -1,6 +1,6 @@
 // src/components/FormFlows/StandardRetainerForm.tsx
 
-import React, { useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { standardRetainerSchema } from '../../schemas/standardRetainerSchema';
 import type { RetainerFormData } from '../../types/RetainerFormData';
 import { FormType, RetainerTypeLabel } from '@/types/FormType';
@@ -31,6 +31,9 @@ export default function StandardRetainerForm({
   onSubmit,
   markTouched,
 }: StandardRetainerFormProps) {
+
+  const [submitted, setSubmitted] = useState(false);
+
   const handleChange = (field: keyof RetainerFormData) => (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
   ) => {
@@ -56,6 +59,14 @@ export default function StandardRetainerForm({
 
   const handleFormSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setSubmitted(true);
+
+    // Mark all fields touched so per-field errors render immediately
+    Object.keys(standardRetainerSchema).forEach((k) => {
+      const key = k as keyof RetainerFormData;
+      markTouched?.(key);
+    });
+
     try {
       await onSubmit?.(rawFormData);
     } catch (err) {
@@ -74,10 +85,25 @@ export default function StandardRetainerForm({
     editable?.focus();
   }, []);
 
+  useEffect(() => {
+    if (!submitted || !errors || Object.keys(errors).length === 0) return;
+
+    const firstErrorField = Object.keys(errors)[0];
+    const el = document.getElementById(firstErrorField);
+    el?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+    setSubmitted(false); // reset after scroll
+  }, [submitted, errors]);
+
   return (
     <div className={styles.pageContainer}>
       <div className={styles.formWrapper}>
         <form id="standard-retainer-form" className={styles.formInner} onSubmit={handleFormSubmit}>
+          {errors && Object.keys(errors).length > 0 && (
+            <div className={styles.errorBanner}>
+              Please fix the highlighted fields below.
+            </div>
+          )}
           <h2 className={styles.formTitle}>
             📝 {RetainerTypeLabel[FormType.StandardRetainer]} Form
           </h2>
@@ -171,7 +197,7 @@ export default function StandardRetainerForm({
                   />
                 )}
 
-                {touched?.[field] && errors?.[field] && (
+                {submitted || touched?.[field] && errors?.[field] && (
                   <span className={styles.error}>{errors[field]}</span>
                 )}
               </div>
