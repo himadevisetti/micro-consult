@@ -115,9 +115,10 @@ export default function StandardRetainerForm({
             return (
               <div key={field} className={styles.formRow}>
                 <label htmlFor={field} className={styles.label}>
-                  {field === 'retainerAmount' ? (
+                  {field === 'retainerAmount' || field === 'matterDescription' ? (
                     <>
-                      Retainer Amount<br />
+                      {config.label}
+                      <br />
                       <span className={styles.optionalLabel}>(Optional)</span>
                     </>
                   ) : (

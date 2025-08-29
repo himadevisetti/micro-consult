@@ -39,7 +39,7 @@ export const standardRetainerSchema: Record<string, RetainerFieldConfig> = {
     default: 'Flat'
   },
   retainerAmount: {
-    label: 'Retainer Amount (Optional)',
+    label: 'Retainer Amount',
     type: 'number',
     required: false,
     placeholder: 'e.g. 5000.00',
