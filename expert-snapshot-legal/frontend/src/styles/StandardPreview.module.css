@@ -24,7 +24,7 @@ body {
   padding: 1in 48px 1.5in 24px;
   box-sizing: border-box;
   max-width: 800px;
-  font-family: 'Georgia', serif;
+  font-family: var(--font-serif);
   font-size: 14px;
   line-height: 1.6;
   color: #000;
@@ -93,6 +93,7 @@ body {
   margin: 0 0 24px 0;
   font-size: 16px;
   line-height: 1.6;
+  font-family: var(--font-sans);
 }
 
 .clauseBlock:last-of-type {
@@ -102,6 +103,7 @@ body {
 .signatureBlock p {
   margin-bottom: 12px;
   font-size: 16px;
+  font-family: var(--font-sans);
 }
 
 /* Optional scrollable section — screen only */

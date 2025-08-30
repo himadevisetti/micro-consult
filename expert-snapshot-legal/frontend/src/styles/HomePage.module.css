@@ -1,10 +1,8 @@
-/* src/styles/HomePage.module.css */
-
 .pageWrapper {
   display: flex;
   flex-direction: column;
   min-height: 100vh;
-  background-color: #f9f7f2;
+  background-color: var(--color-creme);
 }
 
 .landing {
@@ -22,14 +20,15 @@
 
 .hero h1 {
   font-size: 2rem;
-  color: #1b5e20;
-  font-family: 'Georgia', serif;
+  color: var(--color-forest);
+  font-family: var(--font-serif);
 }
 
 .hero p {
   font-size: 1rem;
   color: #4a4a4a;
   margin-top: 0.5rem;
+  font-family: var(--font-sans);
 }
 
 .templateOptions {
@@ -39,7 +38,8 @@
 .templateOptions h2 {
   font-size: 1.25rem;
   margin-bottom: 1.5rem;
-  color: #1b5e20;
+  color: var(--color-forest);
+  font-family: var(--font-sans);
 }
 
 .retainerCardGrid {
@@ -54,18 +54,19 @@
 .retainerCard {
   all: unset;
   display: block;
-  background-color: #fff;
+  background-color: white;
   border: 1px solid #ddd;
-  border-radius: 8px;
+  border-radius: var(--radius-md);
   padding: 1.5rem;
   text-align: center;
   cursor: pointer;
   transition: transform 0.3s ease, box-shadow 0.3s ease;
   will-change: transform, box-shadow;
+  font-family: var(--font-sans);
 }
 
 .retainerCard:hover {
-  background-color: #fef6d3;
+  background-color: var(--color-creme-light);
   box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
   transform: translateY(-4px) scale(1.03);
 }
@@ -83,7 +84,8 @@
 .retainerCard h3 {
   margin: 0;
   font-size: 1rem;
-  color: #1b5e20;
+  color: var(--color-forest);
+  font-family: var(--font-sans);
 }
 
 .retainerCard:hover .cardIcon {

@@ -23,6 +23,7 @@ export function injectCssIntoHtml(html: string, compiledCss: string): string {
             line-height: 1.6;
             color: #000;
             margin: 0;
+            background-color: white;
           }
 
           .retainerTitle {

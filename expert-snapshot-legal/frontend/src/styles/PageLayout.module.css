@@ -1,7 +1,5 @@
-/* src/styles/PageLayout.module.css */
-
 .pageWrapper {
-  background-color: #f9f7f2;
+  background-color: var(--color-creme);
   height: 100vh;
   display: flex;
   flex-direction: column;

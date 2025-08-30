@@ -1,0 +1,14 @@
+/* src/styles/theme.css */
+
+:root {
+  --color-forest: #1b5e20;
+  --color-gold: #d4af37;
+  --color-creme: #f9f7f2;
+  --color-creme-light: #fef6d3;
+
+  --font-serif: 'Georgia', serif;
+  --font-sans: 'Inter', sans-serif;
+
+  --radius-sm: 4px;
+  --radius-md: 8px;
+}

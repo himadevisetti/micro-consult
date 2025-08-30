@@ -2,6 +2,7 @@
 import React, { useEffect } from 'react';
 import ReactDOM from 'react-dom/client';
 import App from './App.js';
+import './styles/theme.css';
 import './styles/global.css';
 
 function Root() {
