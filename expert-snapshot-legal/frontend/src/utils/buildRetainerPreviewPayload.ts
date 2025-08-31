@@ -1,7 +1,7 @@
 // src/utils/buildRetainerPreviewPayload.ts
 
-import { standardRetainerSchema } from '../schemas/standardRetainerSchema';
 import type { RetainerFormData } from '../types/RetainerFormData';
+import type { RetainerFieldConfig } from '../types/RetainerFieldConfig';
 import { normalizeValue } from './normalizeValue';
 
 export type RetainerPreviewPayload = {
@@ -9,11 +9,14 @@ export type RetainerPreviewPayload = {
   metadata: Record<string, string>;
 };
 
-export function buildRetainerPreviewPayload(formData: RetainerFormData): RetainerPreviewPayload {
+export function buildRetainerPreviewPayload(
+  formData: RetainerFormData,
+  schema: Record<string, RetainerFieldConfig>
+): RetainerPreviewPayload {
   const clauses: RetainerPreviewPayload['clauses'] = [];
   const metadata: RetainerPreviewPayload['metadata'] = {};
 
-  for (const [key, config] of Object.entries(standardRetainerSchema)) {
+  for (const [key, config] of Object.entries(schema)) {
     const field = key as keyof RetainerFormData;
     const rawValue = formData[field];
 

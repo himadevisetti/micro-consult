@@ -15,7 +15,7 @@ const HomePage = () => {
   }, []);
 
   const handleStart = (templateId: FormType) => {
-    navigate(`/builder?template=${templateId}`);
+    navigate(`/form/${templateId}`);
   };
 
   return (

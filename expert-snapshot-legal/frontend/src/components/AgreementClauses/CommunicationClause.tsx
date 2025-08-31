@@ -1,4 +1,10 @@
-export default function CommunicationClause({ clientName }: { clientName?: string }) {
+// src/components/AgreementClauses/CommunicationClause.tsx
+
+type CommunicationClauseProps = {
+  clientName?: string; // already normalized
+};
+
+export default function CommunicationClause({ clientName }: CommunicationClauseProps) {
   const resolvedClient = clientName?.trim() || 'Client';
 
   return (

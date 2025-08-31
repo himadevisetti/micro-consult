@@ -1,4 +1,10 @@
-export default function GoverningLawClause({ jurisdiction }: { jurisdiction?: string }) {
+// src/components/AgreementClauses/GoverningLawClause.tsx
+
+type GoverningLawClauseProps = {
+  jurisdiction?: string; // already normalized
+};
+
+export default function GoverningLawClause({ jurisdiction }: GoverningLawClauseProps) {
   const resolvedJurisdiction = jurisdiction?.trim() || 'California';
 
   return (

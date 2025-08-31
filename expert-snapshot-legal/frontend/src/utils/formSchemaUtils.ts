@@ -1,11 +1,13 @@
-// src/utils/getDefaultRawFormData.ts
+// src/utils/formSchemaUtils.ts
 
-import { standardRetainerSchema } from '../schemas/standardRetainerSchema';
+import type { RetainerFieldConfig } from '../types/RetainerFieldConfig';
 
-export function getDefaultRawFormData(): Record<string, string> {
+export function getDefaultRawFormData(
+  schema: Record<string, RetainerFieldConfig>
+): Record<string, string> {
   const defaults: Record<string, string> = {};
-  for (const key in standardRetainerSchema) {
-    const config = standardRetainerSchema[key];
+  for (const key in schema) {
+    const config = schema[key];
     defaults[key] = config.default ?? '';
   }
   return defaults;
@@ -31,5 +33,3 @@ export function isEmptyValue(value: unknown): boolean {
     (value instanceof Date && isNaN(value.getTime()))
   );
 }
-
-

@@ -1,17 +1,21 @@
+// src/components/AgreementClauses/FeeClause.tsx
+
+type FeeClauseProps = {
+  structure?: string;
+  feeAmount?: string;         // already formatted, e.g. "350.00"
+  retainerAmount?: string;    // already formatted, e.g. "1500.00"
+  jurisdiction?: string;
+};
+
 export default function FeeClause({
   structure,
   feeAmount,
   retainerAmount,
   jurisdiction,
-}: {
-  structure?: string;
-  feeAmount?: string;
-  retainerAmount?: string;
-  jurisdiction?: string;
-}) {
+}: FeeClauseProps) {
   const resolvedStructure = structure?.trim() || 'hourly';
-  const resolvedFee = feeAmount?.trim() || '350';
-  const resolvedRetainer = retainerAmount?.trim() || '1500';
+  const resolvedFee = feeAmount?.trim() || '350.00';
+  const resolvedRetainer = retainerAmount?.trim() || '1500.00';
   const resolvedJurisdiction = jurisdiction?.trim() || 'California';
 
   return (

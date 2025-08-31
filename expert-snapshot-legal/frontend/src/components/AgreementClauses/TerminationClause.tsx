@@ -1,8 +1,10 @@
-export default function TerminationClause({
-  endDate,
-}: {
-  endDate?: string;
-}) {
+// src/components/AgreementClauses/TerminationClause.tsx
+
+type TerminationClauseProps = {
+  endDate?: string; // already formatted, e.g. "August 30, 2025"
+};
+
+export default function TerminationClause({ endDate }: TerminationClauseProps) {
   const resolvedEndDate = endDate?.trim() || 'the end date of this Agreement';
 
   return (

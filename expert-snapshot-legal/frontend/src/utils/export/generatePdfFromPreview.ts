@@ -1,13 +1,16 @@
 import puppeteer from 'puppeteer';
 import { injectCssIntoHtml } from '../../server/injectCssIntoHtml.js';
 import { findCompiledCss } from '../findCompiledCss.js';
+import { extractTitleFromHtml } from '../formatTitle.js';
 
 export async function generatePdfFromPreview(html: string): Promise<Uint8Array> {
   // Load compiled CSS from Vite build
   const compiledCss = findCompiledCss();
 
+  const title = extractTitleFromHtml(html) ?? 'RETAINER AGREEMENT';
+
   // Inject CSS into raw HTML
-  const styledHtml = injectCssIntoHtml(html, compiledCss);
+  const styledHtml = injectCssIntoHtml(html, compiledCss, title);
 
   const browser = await puppeteer.launch({ headless: true });
   const page = await browser.newPage();

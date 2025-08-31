@@ -1,4 +1,10 @@
-export default function ScopeClause({ matterDescription }: { matterDescription?: string }) {
+// src/components/AgreementClauses/ScopeClause.tsx
+
+type ScopeClauseProps = {
+  matterDescription?: string; // already normalized and trimmed
+};
+
+export default function ScopeClause({ matterDescription }: ScopeClauseProps) {
   const resolvedPurpose = matterDescription?.trim() || 'general legal services';
 
   return (

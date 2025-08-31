@@ -1,7 +1,7 @@
 /**
  * Injects compiled CSS into raw HTML for PDF rendering.
  */
-export function injectCssIntoHtml(html: string, compiledCss: string): string {
+export function injectCssIntoHtml(html: string, compiledCss: string, title: string): string {
   const escapedCss = compiledCss.replace(/<\/style>/gi, '<\\/style>');
 
   return `
@@ -9,7 +9,7 @@ export function injectCssIntoHtml(html: string, compiledCss: string): string {
     <html lang="en">
       <head>
         <meta charset="UTF-8" />
-        <title>STANDARD RETAINER AGREEMENT</title>
+        <title>${title}</title>
         <style>
           ${escapedCss}
 

@@ -1,7 +1,6 @@
 // src/components/FormFlows/StandardRetainerFlow.tsx
 
 import { useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
 import StandardRetainerForm from './StandardRetainerForm';
 import { useRetainerState } from '../../hooks/useRetainerState';
 import { useSessionFormState } from '../../hooks/useSessionFormState';
@@ -9,11 +8,14 @@ import type { RetainerFormData } from '../../types/RetainerFormData';
 import { defaultRetainerFormData } from '../../types/RetainerFormData';
 import { normalizeFormData } from '../../utils/normalizeFormData';
 import { formatDateMMDDYYYY } from '../../utils/formatDate';
-import PageLayout from '../PageLayout';
-import styles from '../../styles/StandardRetainerForm.module.css';
+import { RetainerFieldConfig } from '@/types/RetainerFieldConfig';
+import { FormType } from '@/types/FormType';
 
-export default function StandardRetainerFlow() {
-  const navigate = useNavigate();
+interface Props {
+  schema: Record<string, RetainerFieldConfig>;
+}
+
+export default function StandardRetainerFlow({ schema }: Props) {
   const today = new Date();
   const formattedToday = formatDateMMDDYYYY(today);
 
@@ -38,7 +40,7 @@ export default function StandardRetainerFlow() {
     touched,
     markTouched,
     handleSubmit,
-  } = useRetainerState(rawFormData, formData, setFormData);
+  } = useRetainerState(rawFormData, formData, setFormData, schema, FormType.StandardRetainer);
 
   const onChange = (field: keyof RetainerFormData, value: string | number | Date) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
@@ -58,6 +60,7 @@ export default function StandardRetainerFlow() {
 
   return (
     <StandardRetainerForm
+      schema={schema}
       formData={formData}
       rawFormData={rawFormData}
       onChange={onChange}

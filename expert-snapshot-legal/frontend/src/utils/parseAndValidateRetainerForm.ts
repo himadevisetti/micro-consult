@@ -1,17 +1,17 @@
-import { standardRetainerSchema } from '../schemas/standardRetainerSchema.js';
-// import { defaultRetainerFormData } from '../types/RetainerFormData.js';
 import type { RetainerFormData } from '../types/RetainerFormData.js';
+import type { RetainerFieldConfig } from '../types/RetainerFieldConfig.js';
 import { normalizeForValidation, isEmptyValue } from '../utils/formSchemaUtils.js';
 
 export type ValidationErrors = Partial<Record<keyof RetainerFormData, string>>;
 
 export function parseAndValidateRetainerForm(
-  rawFormData: RetainerFormData
+  rawFormData: RetainerFormData,
+  schema: Record<string, RetainerFieldConfig>
 ): { parsed: RetainerFormData; errors: ValidationErrors } {
   const errors: ValidationErrors = {};
   const parsedRaw: Partial<Record<keyof RetainerFormData, RetainerFormData[keyof RetainerFormData]>> = {};
 
-  for (const [key, config] of Object.entries(standardRetainerSchema)) {
+  for (const [key, config] of Object.entries(schema)) {
     const field = key as keyof RetainerFormData;
     const rawValue = rawFormData[field];
 

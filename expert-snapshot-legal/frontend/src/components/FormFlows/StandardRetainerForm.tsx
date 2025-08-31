@@ -1,14 +1,15 @@
 // src/components/FormFlows/StandardRetainerForm.tsx
 
 import React, { useState, useEffect } from 'react';
-import { standardRetainerSchema } from '../../schemas/standardRetainerSchema';
 import type { RetainerFormData } from '../../types/RetainerFormData';
 import { FormType, RetainerTypeLabel } from '@/types/FormType';
+import { RetainerFieldConfig } from '@/types/RetainerFieldConfig';
 import { getDateInputValue } from '../../utils/formRenderUtils';
 import CustomDatePicker from '../Inputs/CustomDatePicker';
 import styles from '../../styles/StandardRetainerForm.module.css';
 
 export interface StandardRetainerFormProps {
+  schema: Record<string, RetainerFieldConfig>;
   formData: RetainerFormData;
   rawFormData: RetainerFormData;
   errors?: Partial<Record<keyof RetainerFormData, string>>;
@@ -21,6 +22,7 @@ export interface StandardRetainerFormProps {
 }
 
 export default function StandardRetainerForm({
+  schema,
   formData,
   rawFormData,
   errors,
@@ -31,14 +33,13 @@ export default function StandardRetainerForm({
   onSubmit,
   markTouched,
 }: StandardRetainerFormProps) {
-
   const [submitted, setSubmitted] = useState(false);
 
   const handleChange = (field: keyof RetainerFormData) => (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
   ) => {
     const raw = e.target.value;
-    const config = standardRetainerSchema[field];
+    const config = schema[field];
 
     let parsed: string | number = raw;
     if (field === 'feeAmount' || field === 'retainerAmount') {
@@ -61,8 +62,7 @@ export default function StandardRetainerForm({
     e.preventDefault();
     setSubmitted(true);
 
-    // Mark all fields touched so per-field errors render immediately
-    Object.keys(standardRetainerSchema).forEach((k) => {
+    Object.keys(schema).forEach((k) => {
       const key = k as keyof RetainerFormData;
       markTouched?.(key);
     });
@@ -92,7 +92,7 @@ export default function StandardRetainerForm({
     const el = document.getElementById(firstErrorField);
     el?.scrollIntoView({ behavior: 'smooth', block: 'center' });
 
-    setSubmitted(false); // reset after scroll
+    setSubmitted(false);
   }, [submitted, errors]);
 
   return (
@@ -108,7 +108,7 @@ export default function StandardRetainerForm({
             📝 {RetainerTypeLabel[FormType.StandardRetainer]} Form
           </h2>
 
-          {Object.entries(standardRetainerSchema).map(([key, config]) => {
+          {Object.entries(schema).map(([key, config]) => {
             const field = key as keyof RetainerFormData;
             const value = formData[field];
 
@@ -212,6 +212,6 @@ export default function StandardRetainerForm({
           </div>
         </form>
       </div>
-    </div >
+    </div>
   );
 }

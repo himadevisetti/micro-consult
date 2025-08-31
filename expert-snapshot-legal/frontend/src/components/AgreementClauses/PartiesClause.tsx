@@ -1,12 +1,16 @@
+// src/components/AgreementClauses/PartiesClause.tsx
+
+type PartiesClauseProps = {
+  clientName?: string;
+  providerName?: string;
+  effectiveDate?: string; // already formatted, e.g. "August 30, 2025"
+};
+
 export default function PartiesClause({
   clientName,
   providerName,
   effectiveDate,
-}: {
-  clientName?: string;
-  providerName?: string;
-  effectiveDate?: string;
-}) {
+}: PartiesClauseProps) {
   const resolvedClient = clientName?.trim() || 'the Client';
   const resolvedProvider = providerName?.trim() || 'the Attorney';
   const resolvedDate = effectiveDate?.trim() || 'the effective date of this Agreement';

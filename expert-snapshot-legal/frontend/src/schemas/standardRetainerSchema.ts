@@ -1,15 +1,5 @@
-import type { RetainerFormData } from '../types/RetainerFormData.js';
-
-export interface RetainerFieldConfig {
-  label: string;
-  type: string;
-  required: boolean;
-  placeholder: string;
-  clauseTemplate?: string;
-  options?: string[];
-  validate?: (val: string, form?: RetainerFormData) => boolean;
-  default?: string;
-}
+import type { RetainerFormData } from '../types/RetainerFormData';
+import { RetainerFieldConfig } from '../types/RetainerFieldConfig';
 
 export const standardRetainerSchema: Record<string, RetainerFieldConfig> = {
   clientName: { label: 'Client Name', type: 'text', required: true, placeholder: 'e.g. Acme Corp', clauseTemplate: 'This agreement is made with {{clientName}}.' },
