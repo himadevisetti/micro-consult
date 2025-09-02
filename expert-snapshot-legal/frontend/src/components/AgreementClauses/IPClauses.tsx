@@ -22,6 +22,7 @@ export function getIPClauses(formData: EnrichedIPFormData): IPClauseTemplate[] {
         <PartiesClause
           clientName={fd.clientName}
           providerName={fd.providerName}
+          inventorName={fd.inventorName}
           effectiveDate={fd.formattedEffectiveDateLong}
         />
       ),
@@ -84,7 +85,9 @@ export function getIPClauses(formData: EnrichedIPFormData): IPClauseTemplate[] {
       ? [
         {
           id: 'inventionAssignmentClause',
-          render: () => <InventionAssignmentClause />,
+          render: (fd: EnrichedIPFormData) => (
+            <InventionAssignmentClause clientName={fd.clientName} />
+          ),
         },
       ]
       : []),
