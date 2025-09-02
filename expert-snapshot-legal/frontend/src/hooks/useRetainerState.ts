@@ -1,52 +1,51 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { parseAndValidateRetainerForm } from '../utils/parseAndValidateRetainerForm';
-import { buildRetainerPreviewPayload } from '../utils/buildRetainerPreviewPayload';
-import { getSerializedClauses } from '../utils/serializeClauses';
-import type { RetainerFormData } from '../types/RetainerFormData';
-import type { RetainerFieldConfig } from '../types/RetainerFieldConfig';
 import { FormType } from '@/types/FormType';
 import { formatRetainerTitle } from '@/utils/formatTitle';
 
-export type RetainerFormErrors = Partial<Record<keyof RetainerFormData, string>>;
-
-export function useRetainerState(
-  rawFormData: RetainerFormData,
-  formData: RetainerFormData,
-  setFormData: React.Dispatch<React.SetStateAction<RetainerFormData>>,
-  schema: Record<string, RetainerFieldConfig>,
-  formType: FormType
+/**
+ * Generic hook for managing form state, validation, and preview generation.
+ * Works across all flows by accepting flow-specific logic.
+ */
+export function useRetainerState<T extends Record<string, any>>(
+  rawFormData: T,
+  formData: T,
+  setFormData: React.Dispatch<React.SetStateAction<T>>,
+  schema: Record<string, any>,
+  formType: FormType,
+  validateForm: (raw: T, schema: Record<string, any>) => { parsed: T; errors: Partial<Record<keyof T, string>> },
+  buildPreviewPayload: (formData: T, schema: Record<string, any>) => { metadata: Record<string, string> },
+  getSerializedClauses: (formData: T) => Record<string, React.ReactNode>,
+  sessionStorageKey: string
 ) {
-  const [errors, setErrors] = useState<RetainerFormErrors>({});
-  const [touched, setTouched] = useState<Partial<Record<keyof RetainerFormData, boolean>>>({});
+  const [errors, setErrors] = useState<Partial<Record<keyof T, string>>>({});
+  const [touched, setTouched] = useState<Partial<Record<keyof T, boolean>>>({});
   const [previewHtml, setPreviewHtml] = useState<string>('');
   const [metadata, setMetadata] = useState<Record<string, string>>({});
 
   const navigate = useNavigate();
 
-  function validate(rawFormData?: RetainerFormData) {
-    if (!rawFormData) {
-      throw new Error('rawFormData is undefined during submission');
-    }
-    const { parsed, errors } = parseAndValidateRetainerForm(rawFormData, schema);
+  function validate(raw?: T) {
+    if (!raw) throw new Error('rawFormData is undefined during submission');
+    const { parsed, errors } = validateForm(raw, schema);
     setFormData(parsed);
     setErrors(errors);
     return Object.keys(errors).length === 0;
   }
 
-  const markTouched = (field: keyof RetainerFormData) => {
-    setTouched(prev => ({ ...prev, [field]: true }));
+  const markTouched = (field: keyof T) => {
+    setTouched((prev) => ({ ...prev, [field]: true }));
   };
 
-  const updateField = (field: keyof RetainerFormData, value: string | number | Date) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
+  const updateField = (field: keyof T, value: string | number | boolean | Date) => {
+    setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
   const generatePreview = async (): Promise<string> => {
-    const payload = buildRetainerPreviewPayload(formData, schema);
+    const payload = buildPreviewPayload(formData, schema);
     setMetadata(payload.metadata);
 
-    const clauseHtmlMap = getSerializedClauses(formData); // ✅ clauseTemplates now built internally
+    const clauseHtmlMap = getSerializedClauses(formData);
 
     const html = `
       <div style="margin-top:60px;">
@@ -60,18 +59,17 @@ export function useRetainerState(
     return html;
   };
 
-  const handleSubmit = async (rawFormData: RetainerFormData) => {
-    const isValid = validate(rawFormData);
+  const handleSubmit = async (raw: T) => {
+    const isValid = validate(raw);
     if (!isValid) {
       console.warn('Form submission blocked due to validation errors:', errors);
       return;
     }
 
     const html = await generatePreview();
-    const payload = rawFormData;
+    const payload = raw;
 
-    sessionStorage.setItem('retainerFormData', JSON.stringify(rawFormData));
-
+    sessionStorage.setItem(sessionStorageKey, JSON.stringify(payload));
     console.log('Form submitted successfully:', payload);
 
     navigate(`/preview/${formType}`, {

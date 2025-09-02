@@ -1,8 +1,5 @@
-import { RetainerFormErrors } from '../hooks/useRetainerState'
-
-export function sanitizeErrors(errors: RetainerFormErrors): Record<string, string> {
+export function sanitizeErrors(errors: Record<string, unknown>): Record<string, string> {
   return Object.fromEntries(
-    Object.entries(errors).filter(([_, value]) => typeof value === 'string')
-  )
+    Object.entries(errors).map(([key, value]) => [key, String(value)])
+  );
 }
-

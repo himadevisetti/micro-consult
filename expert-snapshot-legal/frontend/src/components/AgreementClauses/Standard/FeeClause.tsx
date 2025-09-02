@@ -1,4 +1,4 @@
-// src/components/AgreementClauses/FeeClause.tsx
+// src/components/AgreementClauses/Standard/FeeClause.tsx
 
 type FeeClauseProps = {
   structure?: string;

@@ -1,10 +1,8 @@
-// src/components/RetainerCard.tsx
-
 import React from 'react';
 import styles from '../styles/HomePage.module.css';
 import { FormType } from '@/types/FormType';
 
-type IconName = 'standard-retainer' | 'ip-counsel' | 'custom-template';
+type IconName = 'standard-retainer' | 'ip-rights-licensing' | 'custom-template';
 
 interface RetainerCardProps {
   title: string;
@@ -18,8 +16,8 @@ const RetainerCard: React.FC<RetainerCardProps> = ({ title, templateId, iconSrc,
     switch (iconName) {
       case 'standard-retainer':
         return 'Standard Retainer Icon';
-      case 'ip-counsel':
-        return 'IP Counsel Retainer Icon';
+      case 'ip-rights-licensing':
+        return 'IP Rights & Licensing Icon';
       case 'custom-template':
         return 'Custom Template Icon';
     }
@@ -38,4 +36,3 @@ const RetainerCard: React.FC<RetainerCardProps> = ({ title, templateId, iconSrc,
 };
 
 export default RetainerCard;
-

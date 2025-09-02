@@ -142,7 +142,6 @@ export default function StandardRetainerForm({
                   </div>
                 ) : config.type === 'date' ? (
                   (() => {
-                    const isoValue = getDateInputValue(rawFormData[field]);
                     return (
                       <CustomDatePicker
                         id={field}

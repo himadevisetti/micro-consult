@@ -1,4 +1,4 @@
-// src/components/AgreementClauses/PartiesClause.tsx
+// src/components/AgreementClauses/Standard/PartiesClause.tsx
 
 type PartiesClauseProps = {
   clientName?: string;

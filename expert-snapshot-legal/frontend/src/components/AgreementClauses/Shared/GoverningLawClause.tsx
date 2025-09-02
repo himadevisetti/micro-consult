@@ -1,4 +1,4 @@
-// src/components/AgreementClauses/GoverningLawClause.tsx
+// src/components/AgreementClauses/Shared/GoverningLawClause.tsx
 
 type GoverningLawClauseProps = {
   jurisdiction?: string; // already normalized

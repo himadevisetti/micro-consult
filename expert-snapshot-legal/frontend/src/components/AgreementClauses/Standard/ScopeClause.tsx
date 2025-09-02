@@ -1,4 +1,4 @@
-// src/components/AgreementClauses/ScopeClause.tsx
+// src/components/AgreementClauses/Standard/ScopeClause.tsx
 
 type ScopeClauseProps = {
   matterDescription?: string; // already normalized and trimmed

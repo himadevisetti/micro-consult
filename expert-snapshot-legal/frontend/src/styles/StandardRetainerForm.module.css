@@ -221,3 +221,42 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   background-size: 1rem;
   padding-right: 2rem;
 }
+
+/* Add spacing above the first checkbox */
+.clauseToggle:first-of-type {
+  margin-top: 1.25rem;
+  /* creates a visual pause after the last label */
+}
+
+/* Base styling */
+.clauseToggle {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.95rem;
+  margin-bottom: 0.75rem;
+  cursor: pointer;
+  /* makes the whole row feel interactive */
+  transition: background-color 0.2s ease;
+}
+
+/* Optional hover effect */
+.clauseToggle:hover {
+  background-color: var(--hover-bg, #f5f5f5);
+  /* use theme token if available */
+}
+
+/* Checkbox styling */
+.clauseToggle input[type='checkbox'] {
+  accent-color: var(--forest-green);
+  width: 1rem;
+  height: 1rem;
+  flex-shrink: 0;
+  margin: 0;
+}
+
+/* Focus state for accessibility */
+.clauseToggle input[type='checkbox']:focus {
+  outline: 2px solid var(--forest-green);
+  outline-offset: 2px;
+}

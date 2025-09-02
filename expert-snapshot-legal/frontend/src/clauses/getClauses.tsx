@@ -3,17 +3,17 @@
 import { FormType } from '@/types/FormType';
 import type { ClauseTemplate } from '@/utils/serializeClauses';
 
-import PartiesClause from '@/components/AgreementClauses/PartiesClause';
-import ScopeClause from '@/components/AgreementClauses/ScopeClause';
-import ResponsibilitiesClause from '@/components/AgreementClauses/ResponsibilitiesClause';
-import CommunicationClause from '@/components/AgreementClauses/CommunicationClause';
-import FeeClause from '@/components/AgreementClauses/FeeClause';
-import CostsClause from '@/components/AgreementClauses/CostsClause';
-import ConfidentialityClause from '@/components/AgreementClauses/ConfidentialityClause';
-import TerminationClause from '@/components/AgreementClauses/TerminationClause';
-import GoverningLawClause from '@/components/AgreementClauses/GoverningLawClause';
-import EntireAgreementClause from '@/components/AgreementClauses/EntireAgreementClause';
-import SignatureClause from '@/components/AgreementClauses/SignatureClause';
+import PartiesClause from '@/components/AgreementClauses/Standard/PartiesClause';
+import ScopeClause from '@/components/AgreementClauses/Standard/ScopeClause';
+import ResponsibilitiesClause from '@/components/AgreementClauses/Standard/ResponsibilitiesClause';
+import CommunicationClause from '@/components/AgreementClauses/Standard/CommunicationClause';
+import FeeClause from '@/components/AgreementClauses/Standard/FeeClause';
+import CostsClause from '@/components/AgreementClauses/Standard/CostsClause';
+import ConfidentialityClause from '@/components/AgreementClauses/Standard/ConfidentialityClause';
+import TerminationClause from '@/components/AgreementClauses/Standard/TerminationClause';
+import GoverningLawClause from '@/components/AgreementClauses/Shared/GoverningLawClause';
+import EntireAgreementClause from '@/components/AgreementClauses/Shared/EntireAgreementClause';
+import SignatureClause from '@/components/AgreementClauses/Shared/SignatureClause';
 
 export function getClauses(type: FormType): ClauseTemplate[] {
   switch (type) {

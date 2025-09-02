@@ -1,5 +1,6 @@
 import { Document, Packer, Paragraph, TextRun } from 'docx';
 import { formatClauseContent } from '../formatClauseContent.js';
+import { extractTitleFromHtml } from '../formatTitle.js';
 
 type DOCXInput = {
   html: string;
@@ -20,9 +21,12 @@ export async function generateDOCX(input: DOCXInput): Promise<Blob> {
   const sections: Paragraph[] = [];
 
   // 📄 Document title
+
+  const title = extractTitleFromHtml(html) ?? 'RETAINER AGREEMENT';
+
   sections.push(
     new Paragraph({
-      children: [new TextRun({ text: 'STANDARD RETAINER AGREEMENT', bold: true, size: 32 })],
+      children: [new TextRun({ text: title, bold: true, size: 32 })],
       alignment: 'center',
       spacing: { after: 300 },
     })

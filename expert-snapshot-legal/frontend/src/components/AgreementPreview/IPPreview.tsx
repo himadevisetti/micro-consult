@@ -1,32 +1,32 @@
-// src/components/StandardPreview.tsx
+// src/components/AgreementPreview/IPPreview.tsx
 
 import React, { useRef } from 'react';
 import styles from '../../styles/StandardPreview.module.css';
 import { exportRetainer } from '../../utils/export/exportHandler';
 import DownloadToggle from '../Export/DownloadToggle';
-import type { RetainerFormData } from '../../types/RetainerFormData.js';
-import { getSerializedClauses } from '../../utils/serializeClauses';
+import type { IPRightsLicensingFormData } from '../../types/IPRightsLicensingFormData';
+import { getSerializedIPClauses } from '../../utils/serializeIPClauses';
 import { FormType } from '@/types/FormType';
 import { formatRetainerTitle } from '@/utils/formatTitle';
 
-export interface PreviewProps {
+export interface IPPreviewProps {
   html: string; // still used for PDF export
   onRefresh: () => void;
   metadata?: Record<string, any>;
-  formData: RetainerFormData;
+  formData: IPRightsLicensingFormData;
   formType: FormType;
 }
 
-export default function StandardPreview({
+export default function IPPreview({
   html,
   onRefresh,
   metadata,
   formData,
   formType,
-}: PreviewProps) {
+}: IPPreviewProps) {
   const previewRef = useRef<HTMLDivElement>(null);
 
-  const clauseComponents = getSerializedClauses(formData); // ✅ clauseTemplates built internally
+  const clauseComponents = getSerializedIPClauses(formData);
 
   const handleExport = async (type: 'pdf' | 'docx') => {
     const content = previewRef.current?.innerHTML;
@@ -38,7 +38,7 @@ export default function StandardPreview({
     try {
       await exportRetainer(type, formType, formData, content);
     } catch (err) {
-      console.error(`${type.toUpperCase()} export failed in StandardPreview:`, err);
+      console.error(`${type.toUpperCase()} export failed in IPPreview:`, err);
     }
   };
 
@@ -57,3 +57,4 @@ export default function StandardPreview({
     </div>
   );
 }
+

@@ -6,10 +6,13 @@ import { useRetainerState } from '../../hooks/useRetainerState';
 import { useSessionFormState } from '../../hooks/useSessionFormState';
 import type { RetainerFormData } from '../../types/RetainerFormData';
 import { defaultRetainerFormData } from '../../types/RetainerFormData';
-import { normalizeFormData } from '../../utils/normalizeFormData';
+import { normalizeRawFormData, normalizeFormData } from '../../utils/normalizeFormData';
 import { formatDateMMDDYYYY } from '../../utils/formatDate';
 import { RetainerFieldConfig } from '@/types/RetainerFieldConfig';
 import { FormType } from '@/types/FormType';
+import { parseAndValidateRetainerForm } from '../../utils/parseAndValidateRetainerForm';
+import { buildRetainerPreviewPayload } from '../../utils/buildRetainerPreviewPayload';
+import { getSerializedClauses } from '../../utils/serializeClauses';
 
 interface Props {
   schema: Record<string, RetainerFieldConfig>;
@@ -32,7 +35,11 @@ export default function StandardRetainerFlow({ schema }: Props) {
     handleBlur,
     setFormData,
     setRawFormData,
-  } = useSessionFormState('standardRetainerDraft', hydratedDefaults);
+  } = useSessionFormState<RetainerFormData>(
+    'standardRetainerDraft',
+    hydratedDefaults,
+    normalizeRawFormData
+  );
 
   const {
     updateField,
@@ -40,7 +47,17 @@ export default function StandardRetainerFlow({ schema }: Props) {
     touched,
     markTouched,
     handleSubmit,
-  } = useRetainerState(rawFormData, formData, setFormData, schema, FormType.StandardRetainer);
+  } = useRetainerState<RetainerFormData>(
+    rawFormData,
+    formData,
+    setFormData,
+    schema,
+    FormType.StandardRetainer,
+    parseAndValidateRetainerForm,
+    buildRetainerPreviewPayload,
+    getSerializedClauses,
+    'retainerFormData'
+  );
 
   const onChange = (field: keyof RetainerFormData, value: string | number | Date) => {
     setFormData((prev) => ({ ...prev, [field]: value }));

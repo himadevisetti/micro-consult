@@ -2,13 +2,14 @@
 
 export enum FormType {
   StandardRetainer = 'standard-retainer',
-  IPCounselRetainer = 'ip-counsel-retainer',
+  IPRightsLicensing = 'ip-rights-licensing',
   CustomTemplate = 'custom-template',
 }
 
 export const RetainerTypeLabel: Record<FormType, string> = {
   [FormType.StandardRetainer]: 'Standard Retainer',
-  [FormType.IPCounselRetainer]: 'IP Counsel Retainer',
+  [FormType.IPRightsLicensing]: 'IP Rights & Licensing',
   [FormType.CustomTemplate]: 'Custom Template',
 };
+
 

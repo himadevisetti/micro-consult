@@ -1,4 +1,4 @@
-// src/components/AgreementClauses/SignatureClause.tsx
+// src/components/AgreementClauses/Shared/SignatureClause.tsx
 
 type SignatureClauseProps = {
   clientName?: string;

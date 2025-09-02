@@ -1,9 +1,11 @@
 // src/App.tsx
-import React from 'react';
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+
+import { BrowserRouter, Routes, Route, useParams } from 'react-router-dom';
 import HomePage from './pages/HomePage';
 import RetainerFormPage from './pages/RetainerFormPage';
 import RetainerPreviewPage from './pages/RetainerPreviewPage';
+import IPRightsLicensingPreviewPage from './pages/IPRightsLicensingPreviewPage';
+import { FormType } from '@/types/FormType';
 
 export default function App() {
   return (
@@ -11,8 +13,21 @@ export default function App() {
       <Routes>
         <Route path="/" element={<HomePage />} />
         <Route path="/form/:type" element={<RetainerFormPage />} />
-        <Route path="/preview/:type" element={<RetainerPreviewPage />} />
+        <Route path="/preview/:type" element={<PreviewRouter />} />
       </Routes>
     </BrowserRouter>
   );
+}
+
+function PreviewRouter() {
+  const { type } = useParams();
+
+  switch (type) {
+    case FormType.IPRightsLicensing:
+      return <IPRightsLicensingPreviewPage />;
+    case FormType.StandardRetainer:
+      return <RetainerPreviewPage />;
+    default:
+      return <div>Unknown preview type: {type}</div>;
+  }
 }

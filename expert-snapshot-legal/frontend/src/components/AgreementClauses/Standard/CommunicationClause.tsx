@@ -1,4 +1,4 @@
-// src/components/AgreementClauses/CommunicationClause.tsx
+// src/components/AgreementClauses/Standard/CommunicationClause.tsx
 
 type CommunicationClauseProps = {
   clientName?: string; // already normalized

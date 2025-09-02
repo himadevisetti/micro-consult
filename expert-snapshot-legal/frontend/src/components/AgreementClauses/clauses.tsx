@@ -2,17 +2,17 @@
 
 import type { EnrichedFormData } from '@/utils/serializeClauses';
 
-import PartiesClause from './PartiesClause.js';
-import ScopeClause from './ScopeClause.js';
-import ResponsibilitiesClause from './ResponsibilitiesClause.js';
-import FeeClause from './FeeClause.js';
-import CostsClause from './CostsClause.js';
-import CommunicationClause from './CommunicationClause.js';
-import ConfidentialityClause from './ConfidentialityClause.js';
-import TerminationClause from './TerminationClause.js';
-import GoverningLawClause from './GoverningLawClause.js';
-import EntireAgreementClause from './EntireAgreementClause.js';
-import SignatureClause from './SignatureClause.js';
+import PartiesClause from './Standard/PartiesClause.js';
+import ScopeClause from './Standard/ScopeClause.js';
+import ResponsibilitiesClause from './Standard/ResponsibilitiesClause.js';
+import FeeClause from './Standard/FeeClause.js';
+import CostsClause from './Standard/CostsClause.js';
+import CommunicationClause from './Standard/CommunicationClause.js';
+import ConfidentialityClause from './Standard/ConfidentialityClause.js';
+import TerminationClause from './Standard/TerminationClause.js';
+import GoverningLawClause from './Shared/GoverningLawClause.js';
+import EntireAgreementClause from './Shared/EntireAgreementClause.js';
+import SignatureClause from './Shared/SignatureClause.js';
 
 export function getClauses(formData: EnrichedFormData) {
   return [

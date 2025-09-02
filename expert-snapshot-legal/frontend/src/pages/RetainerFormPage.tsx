@@ -1,20 +1,20 @@
+// src/pages/RetainerFormPage.tsx
+
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import StandardRetainerFlow from '../components/FormFlows/StandardRetainerFlow';
-import IPCounselForm from '../components/FormFlows/IPCounselForm';
-import CustomUploadForm from '../components/FormFlows/CustomUploadForm';
+import IPRightsLicensingFlow from '../components/FormFlows/IPRightsLicensingFlow';
+// import CustomUploadForm from '../components/FormFlows/CustomUploadForm'; // keep commented until used
 import PageLayout from '../components/PageLayout';
 import { FormType } from '@/types/FormType';
 import { formSchemas } from '../schemas/formSchemas';
-import { RetainerFieldConfig } from '@/types/RetainerFieldConfig';
 
 const RetainerFormPage = () => {
   const navigate = useNavigate();
-  const { type } = useParams(); // e.g. 'standard-retainer', 'ip-counsel-retainer'
+  const { type } = useParams(); // e.g. 'standard-retainer', 'ip-rights-licensing'
 
   const isValidType = type && Object.values(FormType).includes(type as FormType);
   const formType = isValidType ? (type as FormType) : FormType.StandardRetainer;
-  const schema = formSchemas[formType] as Record<string, RetainerFieldConfig>;
 
   const [isValid, setIsValid] = useState(false);
 
@@ -29,10 +29,10 @@ const RetainerFormPage = () => {
   const renderForm = () => {
     switch (formType) {
       case FormType.StandardRetainer:
-        return <StandardRetainerFlow schema={schema} />;
+        return <StandardRetainerFlow schema={formSchemas[FormType.StandardRetainer]} />;
 
-      // case FormType.IPCounselRetainer:
-      //   return <IPCounselForm schema={schema} />;
+      case FormType.IPRightsLicensing:
+        return <IPRightsLicensingFlow schema={formSchemas[FormType.IPRightsLicensing]} />;
 
       // case FormType.CustomTemplate:
       //   return <CustomUploadForm />;

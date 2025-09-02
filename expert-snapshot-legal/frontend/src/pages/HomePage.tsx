@@ -37,9 +37,9 @@ const HomePage = () => {
               onStart={handleStart}
             />
             <RetainerCard
-              title={RetainerTypeLabel[FormType.IPCounselRetainer]}
-              templateId={FormType.IPCounselRetainer}
-              iconSrc="ip-counsel"
+              title={RetainerTypeLabel[FormType.IPRightsLicensing]}
+              templateId={FormType.IPRightsLicensing}
+              iconSrc="ip-rights-licensing"
               onStart={handleStart}
             />
             <RetainerCard

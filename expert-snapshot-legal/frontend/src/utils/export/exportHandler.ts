@@ -1,19 +1,44 @@
 import { generateDOCX } from './generateDOCX.js';
 import { getFilename } from '../../utils/generateFilename.js';
-import type { RetainerFormData } from '../../types/RetainerFormData.js';
 import { FormType, RetainerTypeLabel } from '@/types/FormType';
 
-export async function exportRetainer(
+function slugifyFormType(formType: FormType): string {
+  return String(formType)
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')   // collapse non-alphanumerics to hyphens
+    .replace(/^-+|-+$/g, '');      // trim leading/trailing hyphens
+}
+
+function resolveMetadata(formData: Record<string, any>, formType: FormType) {
+  const client = formData.clientName?.trim() || 'Client';
+
+  const purpose = (() => {
+    switch (formType) {
+      case FormType.IPRightsLicensing:
+        return 'IP rights licensing agreement';
+      case FormType.StandardRetainer:
+        return 'Standard retainer agreement';
+      default:
+        return 'Legal services agreement';
+    }
+  })();
+
+  return { client, purpose };
+}
+
+export async function exportRetainer<T extends Record<string, any>>(
   type: 'pdf' | 'docx',
-  formData: RetainerFormData,
+  formType: FormType,
+  formData: T,
   html?: string
 ) {
-  const resolvedClient = formData.clientName?.trim() || 'Client';
-  const resolvedMatter = formData.matterDescription?.trim() || 'general legal services';
+  const { client: resolvedClient, purpose: resolvedMatter } = resolveMetadata(formData, formType);
 
-  const retainerType = RetainerTypeLabel[FormType.StandardRetainer];
-  const normalizedFormType = FormType.StandardRetainer.replace(/\s+/g, '_');
-  const today = new Date().toISOString();
+  const retainerType = RetainerTypeLabel[formType];
+  const normalizedFormType = slugifyFormType(formType); // e.g. 'ip-rights-licensing'
+  const today = new Date().toISOString(); // let getFilename handle date formatting
+
   const filename = getFilename(
     type === 'pdf' ? 'final' : 'draft',
     resolvedClient,
@@ -24,9 +49,9 @@ export async function exportRetainer(
   let blob: Blob | null = null;
 
   try {
-    if (type === 'pdf') {
-      if (!html) throw new Error('Missing HTML for PDF export');
+    if (!html) throw new Error(`Missing HTML for ${type.toUpperCase()} export`);
 
+    if (type === 'pdf') {
       const response = await fetch('/api/export-pdf', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -38,8 +63,6 @@ export async function exportRetainer(
       const arrayBuffer = await response.arrayBuffer();
       blob = new Blob([arrayBuffer], { type: 'application/pdf' });
     } else {
-      if (!html) throw new Error('Missing HTML for DOCX export');
-
       blob = await generateDOCX({ html, filename });
     }
   } catch (err) {
@@ -63,6 +86,7 @@ export async function exportRetainer(
             client: resolvedClient,
             purpose: resolvedMatter,
             template: retainerType,
+            formType: normalizedFormType,
           },
         }),
       });

@@ -1,4 +1,4 @@
-// src/components/AgreementClauses/TerminationClause.tsx
+// src/components/AgreementClauses/Standard/TerminationClause.tsx
 
 type TerminationClauseProps = {
   endDate?: string; // already formatted, e.g. "August 30, 2025"
