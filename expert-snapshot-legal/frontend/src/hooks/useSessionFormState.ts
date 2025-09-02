@@ -30,11 +30,11 @@ export function useSessionFormState<T extends Record<string, any>>(
   }, [formData, sessionKey]);
 
   // Keep these signatures aligned with existing forms (they pass strings from inputs)
-  const handleChange = (name: keyof T, value: string) => {
+  const handleChange = <K extends keyof T>(name: K, value: T[K]) => {
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleBlur = (name: keyof T, value: string) => {
+  const handleBlur = <K extends keyof T>(name: K, value: T[K]) => {
     setRawFormData((prev) => ({ ...prev, [name]: value }));
   };
 

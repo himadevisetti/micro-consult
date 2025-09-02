@@ -7,6 +7,7 @@ import { IPRetainerFieldConfig } from '@/types/IPRetainerFieldConfig';
 import { getDateInputValue } from '../../utils/formRenderUtils';
 import CustomDatePicker from '../Inputs/CustomDatePicker';
 import styles from '../../styles/StandardRetainerForm.module.css';
+import { FormBlurHandler } from '@/types/FormUtils';
 
 export interface IPRightsLicensingFormProps {
   schema: Record<string, IPRetainerFieldConfig>;
@@ -16,7 +17,7 @@ export interface IPRightsLicensingFormProps {
   touched?: Partial<Record<keyof IPRightsLicensingFormData, boolean>>;
   onChange: (field: keyof IPRightsLicensingFormData, value: string | number | boolean | Date) => void;
   onRawChange: (field: keyof IPRightsLicensingFormData, value: string) => void;
-  onBlur: (field: keyof IPRightsLicensingFormData, value: string) => void;
+  onBlur: FormBlurHandler<IPRightsLicensingFormData>;
   onSubmit?: (rawFormData: IPRightsLicensingFormData) => Promise<void>;
   markTouched?: (field: keyof IPRightsLicensingFormData) => void;
 }
@@ -124,7 +125,7 @@ export default function IPRightsLicensingForm({
                       checked={!!value}
                       onChange={handleChange(field)}
                       onBlur={() => {
-                        onBlur(field, String(value));
+                        onBlur(field, value);
                         markTouched?.(field);
                       }}
                     />
