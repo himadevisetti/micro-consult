@@ -1,0 +1,26 @@
+.sectionHeader {
+  font-weight: bold;
+  margin-top: 0.75rem;
+  margin-bottom: 0.25rem;
+  color: var(--forest-green);
+}
+
+.flowList {
+  list-style: none;
+  padding-left: 0;
+  margin: 0;
+}
+
+.flowList li {
+  font-family: var(--font-sans);
+  font-size: 0.9rem;
+  padding: 0.15rem 0;
+}
+
+.arrow {
+  text-align: center;
+  font-size: 1.2rem;
+  margin: 0.25rem 0;
+  color: var(--forest-green);
+}
+
