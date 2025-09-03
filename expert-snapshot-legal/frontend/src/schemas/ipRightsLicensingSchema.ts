@@ -8,7 +8,7 @@ export const ipRightsLicensingSchema: Record<string, IPRetainerFieldConfig> = {
     label: 'Inventor Name',
     type: 'text',
     required: true,
-    placeholder: 'e.g. Alice Smith',
+    placeholder: 'Comma-separated names (e.g., Alice Smith, Bob Lee)',
     clauseTemplate: 'This agreement is made with {{inventorName}}.',
     validate: (val: string, form?: IPRightsLicensingFormData) => {
       if (form?.ipType === 'Patent' || form?.ipType === 'Trade Secret') {
@@ -30,6 +30,15 @@ export const ipRightsLicensingSchema: Record<string, IPRetainerFieldConfig> = {
     required: true,
     placeholder: 'e.g. Jane Doe IP Counsel',
     clauseTemplate: 'The provider of IP legal services is {{providerName}}.'
+  },
+  filingEntity: {
+    label: 'Filing Party',
+    type: 'dropdown',
+    required: true,
+    options: ['Inventor', 'Client'],
+    placeholder: 'Select who is filing',
+    clauseTemplate: 'The filing party is {{filingEntity}}.',
+    default: 'Client'
   },
   effectiveDate: {
     label: 'Effective Date',

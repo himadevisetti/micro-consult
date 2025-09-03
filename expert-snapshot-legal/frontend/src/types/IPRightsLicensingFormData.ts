@@ -2,6 +2,7 @@
 
 export type IPType = 'Patent' | 'Trademark' | 'Copyright' | 'Trade Secret';
 export type FeeStructure = 'Flat' | 'Hourly' | 'Monthly' | 'Contingency';
+export type FilingEntity = 'Inventor' | 'Client';
 
 export interface IPRightsLicensingFormData {
   // Parties & Dates
@@ -11,6 +12,7 @@ export interface IPRightsLicensingFormData {
   effectiveDate: string;     // ISO format: YYYY-MM-DD
   executionDate: string;     // ISO format
   expirationDate: string;    // ISO format
+  filingEntity: FilingEntity;
 
   // IP Description & Scope
   ipTitle: string;
@@ -36,6 +38,7 @@ export const defaultIPRightsLicensingFormData: IPRightsLicensingFormData = {
   effectiveDate: '',
   executionDate: '',
   expirationDate: '',
+  filingEntity: 'Client',
   ipTitle: '',
   ipType: 'Patent',
   licenseScope: '',
@@ -47,4 +50,3 @@ export const defaultIPRightsLicensingFormData: IPRightsLicensingFormData = {
   includeConfidentiality: false,
   includeInventionAssignment: false,
 };
-

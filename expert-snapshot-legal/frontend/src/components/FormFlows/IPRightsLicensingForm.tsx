@@ -118,7 +118,7 @@ export default function IPRightsLicensingForm({
             return (
               <div key={field} className={styles.formRow}>
                 {config.type === 'checkbox' ? (
-                  <div className={styles.clauseToggle}>
+                  <label className={styles.clauseToggle}>
                     <input
                       id={field}
                       type="checkbox"
@@ -129,11 +129,11 @@ export default function IPRightsLicensingForm({
                         markTouched?.(field);
                       }}
                     />
-                    <label htmlFor={field}>{config.label}</label>
+                    {config.label}
                     {(submitted || touched?.[field]) && errors?.[field] && (
                       <span className={styles.error}>{errors[field]}</span>
                     )}
-                  </div>
+                  </label>
                 ) : (
                   <>
                     <label htmlFor={field} className={styles.label}>

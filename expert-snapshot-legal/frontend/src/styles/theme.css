@@ -1,14 +1,29 @@
 /* src/styles/theme.css */
 
 :root {
+  /* Base palette */
   --color-forest: #1b5e20;
   --color-gold: #d4af37;
   --color-creme: #f9f7f2;
   --color-creme-light: #fef6d3;
 
+  /* Aliases (preferred app tokens) */
+  --forest-green: var(--color-forest);
+  --gold: var(--color-gold);
+  --cream: var(--color-creme);
+  --cream-light: var(--color-creme-light);
+
+  /* UI intent tokens */
+  --hover-bg: var(--cream-light);
+  /* or set to #f5f5f5 for neutral gray */
+  --focus-ring: var(--forest-green);
+  --accent-color: var(--forest-green);
+
+  /* Typography */
   --font-serif: 'Georgia', serif;
   --font-sans: 'Inter', sans-serif;
 
+  /* Radii */
   --radius-sm: 4px;
   --radius-md: 8px;
 }

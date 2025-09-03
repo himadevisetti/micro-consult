@@ -1,6 +1,6 @@
 // src/utils/normalizeIPFormData.ts
 
-import type { IPRightsLicensingFormData, FeeStructure, IPType } from '../types/IPRightsLicensingFormData';
+import type { IPRightsLicensingFormData, FeeStructure, IPType, FilingEntity } from '../types/IPRightsLicensingFormData';
 
 /**
  * Normalize incoming raw data into canonical form for storage/state.
@@ -14,6 +14,8 @@ export function normalizeIPFormData(raw: Record<string, any>): IPRightsLicensing
     effectiveDate: typeof raw.effectiveDate === 'string' ? raw.effectiveDate : '',
     executionDate: typeof raw.executionDate === 'string' ? raw.executionDate : '',
     expirationDate: typeof raw.expirationDate === 'string' ? raw.expirationDate : '',
+
+    filingEntity: raw.filingEntity as FilingEntity,
 
     ipTitle: String(raw.ipTitle ?? ''),
     ipType: raw.ipType as IPType,

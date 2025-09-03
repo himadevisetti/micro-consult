@@ -22,7 +22,7 @@ export default function PartiesClause({
       <p>
         This Agreement is entered into between <strong>{resolvedClient}</strong> and{' '}
         <strong>{resolvedProvider}</strong>, concerning intellectual property created by{' '}
-        <strong>{resolvedInventor}</strong>, effective as of <strong>{resolvedDate}</strong>.
+        <strong>{resolvedInventor}</strong> effective as of <strong>{resolvedDate}</strong>.
       </p>
     </section>
   );

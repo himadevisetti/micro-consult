@@ -228,6 +228,13 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   /* creates a visual pause after the last label */
 }
 
+/* Make the entire label and all its children share the same cursor */
+.clauseToggle,
+.clauseToggle *,
+.clauseToggle input[type='checkbox'] {
+  cursor: pointer;
+}
+
 /* Base styling */
 .clauseToggle {
   display: flex;

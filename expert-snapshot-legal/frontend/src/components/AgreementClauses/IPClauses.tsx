@@ -12,7 +12,7 @@ import FeeClause from './IP/FeeClause.js';
 import GoverningLawClause from './Shared/GoverningLawClause.js';
 import ExpirationClause from './IP/ExpirationClause.js';
 import EntireAgreementClause from './Shared/EntireAgreementClause.js';
-import SignatureClause from './Shared/SignatureClause.js';
+import SignatureClause from './IP/SignatureClause.js';
 
 export function getIPClauses(formData: EnrichedIPFormData): IPClauseTemplate[] {
   return [
@@ -93,13 +93,19 @@ export function getIPClauses(formData: EnrichedIPFormData): IPClauseTemplate[] {
       : []),
     {
       id: 'signatureClause',
-      render: (fd) => (
-        <SignatureClause
-          clientName={fd.clientName}
-          providerName={fd.providerName}
-          executionDate={fd.formattedExecutionDateLong}
-        />
-      ),
+      render: (fd) => {
+        const isInventorSigning = fd.filingEntity === 'Inventor';
+        const inventorList =
+          fd.inventorName?.split(',').map((name) => name.trim()).filter(Boolean) ?? [];
+
+        return (
+          <SignatureClause
+            signingParty={isInventorSigning ? inventorList : [fd.clientName]}
+            providerName={fd.providerName}
+            executionDate={fd.formattedExecutionDateLong}
+          />
+        );
+      },
     },
   ];
 }
