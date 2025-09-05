@@ -10,18 +10,12 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 2rem;
+  padding: 0.75rem;
 }
 
 .hero {
   text-align: center;
-  margin-bottom: 2rem;
-}
-
-.hero h1 {
-  font-size: 2rem;
-  color: var(--color-forest);
-  font-family: var(--font-serif);
+  margin-bottom: 1rem;
 }
 
 .hero p {
@@ -33,59 +27,131 @@
 
 .templateOptions {
   text-align: center;
+  margin-top: 0.5rem;
+  /* pulls cards closer to hero text */
 }
 
 .templateOptions h2 {
   font-size: 1.25rem;
   margin-bottom: 1.5rem;
+  /* slightly reduced */
+  color: var(--color-forest);
+  font-family: var(--font-sans);
+}
+
+/* Group background zones */
+.cardGroup {
+  background-color: rgba(46, 125, 50, 0.05);
+  border-radius: var(--radius-md);
+  padding: 1.25rem;
+  /* slightly reduced */
+  margin-bottom: 2rem;
+  /* reduced to fit no-scroll */
+}
+
+.cardGroup h3 {
+  font-size: 1.1rem;
+  margin-bottom: 1rem;
+  /* space between heading and cards */
   color: var(--color-forest);
   font-family: var(--font-sans);
 }
 
 .retainerCardGrid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 1.5rem;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 2.5rem;
   width: 100%;
-  max-width: 800px;
+  max-width: 1200px;
   margin: 0 auto;
+}
+
+@media (max-width: 1024px) {
+  .retainerCardGrid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 2rem;
+  }
+
+  .retainerCard {
+    width: 170px;
+    padding: 2rem 1.25rem;
+  }
+}
+
+@media (max-width: 640px) {
+  .retainerCardGrid {
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+  }
+
+  .retainerCard {
+    width: 100%;
+    max-width: 320px;
+    padding: 1.5rem 1rem;
+  }
 }
 
 .retainerCard {
   all: unset;
+  box-sizing: border-box;
+  position: relative;
   display: block;
-  background-color: white;
-  border: 1px solid #ddd;
+  background-color: #fff;
   border-radius: var(--radius-md);
-  padding: 1.5rem;
+  padding: 2rem 1.25rem;
   text-align: center;
   cursor: pointer;
-  transition: transform 0.3s ease, box-shadow 0.3s ease;
-  will-change: transform, box-shadow;
+  box-shadow:
+    0 4px 8px rgba(0, 0, 0, 0.18),
+    0 8px 20px rgba(0, 0, 0, 0.16);
+  transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease;
+  will-change: transform, box-shadow, border-color;
   font-family: var(--font-sans);
+  width: 210px;
+  margin: 0 auto;
 }
 
+.retainerCard h3 {
+  margin: 0;
+  font-size: 0.8875rem;
+  color: var(--color-forest);
+  font-family: var(--font-sans);
+  line-height: 1.2;
+  /* tighter for wrapped titles */
+  text-align: center;
+}
+
+/* Accent bar */
+.retainerCard::before {
+  content: '';
+  display: block;
+  height: 16px;
+  background-color: var(--color-forest);
+  border-top-left-radius: var(--radius-md);
+  border-top-right-radius: var(--radius-md);
+  position: absolute;
+  top: -2px;
+  left: -2px;
+  right: -2px;
+  z-index: 0;
+}
+
+/* Hover state */
 .retainerCard:hover {
   background-color: var(--color-creme-light);
   box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
   transform: translateY(-4px) scale(1.03);
+  border-color: var(--color-gold);
 }
 
 .cardIcon {
-  width: 64px;
+  width: 56px;
   height: auto;
   display: block;
   margin: 0 auto 0.5rem auto;
   pointer-events: none;
   background-color: transparent;
   transition: filter 0.3s ease;
-}
-
-.retainerCard h3 {
-  margin: 0;
-  font-size: 1rem;
-  color: var(--color-forest);
-  font-family: var(--font-sans);
 }
 
 .retainerCard:hover .cardIcon {

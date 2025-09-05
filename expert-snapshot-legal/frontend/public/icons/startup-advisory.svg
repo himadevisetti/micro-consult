@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="96" height="96" viewBox="0 0 96 96">
+  <!-- Document -->
+  <rect x="28" y="16" width="40" height="64" rx="4"
+        fill="none" stroke="#2E7D32" stroke-width="3"/>
+  
+  <!-- Rocket (clear silhouette, bold inner strokes) -->
+  <g transform="translate(48,47)">
+    <!-- Body -->
+    <path d="M0,-16 L7,-7 L7,5 L0,9 L-7,5 L-7,-7 Z"
+          fill="#FBC02D" stroke="#2E7D32" stroke-width="3"/>
+    <!-- Fins -->
+    <polygon points="-7,5 -13,9 -7,9"
+             fill="#F4A000" stroke="#2E7D32" stroke-width="3"/>
+    <polygon points="7,5 13,9 7,9"
+             fill="#F4A000" stroke="#2E7D32" stroke-width="3"/>
+    <!-- Window -->
+    <circle cx="0" cy="-6" r="3"
+            fill="#FFFFFF" stroke="#2E7D32" stroke-width="3"/>
+    <!-- Flame -->
+    <polygon points="-4,11 4,11 0,19"
+             fill="#F4A000" stroke="#2E7D32" stroke-width="3"/>
+  </g>
+</svg>
+

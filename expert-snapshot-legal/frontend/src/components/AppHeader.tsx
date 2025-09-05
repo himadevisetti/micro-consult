@@ -7,16 +7,23 @@ interface AppHeaderProps {
   showHomeButton?: boolean;
   onHomeClick?: () => void;
   onBackClick?: () => void;
+  mainHeading?: string;
 }
 
 const AppHeader: React.FC<AppHeaderProps> = ({
   showHomeButton = false,
   onHomeClick,
   onBackClick,
+  mainHeading,
 }) => {
   return (
     <header className={styles.header}>
       <div className={styles.logoSlot}>Logo</div>
+
+      {mainHeading && (
+        <h1 className={styles.mainHeading}>{mainHeading}</h1>
+      )}
+
       <div className={styles.navRight}>
         {onBackClick && (
           <button

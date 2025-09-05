@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="96" height="96" viewBox="0 0 96 96">
+  <!-- Document -->
+  <rect x="28" y="16" width="40" height="64" rx="4" fill="none" stroke="#2E7D32" stroke-width="3"/>
+  <!-- Inner doc + user -->
+  <g transform="translate(48,48)">
+    <!-- Inner document -->
+    <rect x="-16" y="-16" width="22" height="28" rx="2" fill="#FBC02D" stroke="#2E7D32" stroke-width="3"/>
+    <!-- Doc lines -->
+    <line x1="-12" y1="-8" x2="-2" y2="-8" stroke="#2E7D32" stroke-width="3"/>
+    <line x1="-12" y1="-2" x2="-4" y2="-2" stroke="#2E7D32" stroke-width="3"/>
+    <!-- User (overlay to the right) -->
+    <circle cx="10" cy="-2" r="6" fill="#F4A000" stroke="#2E7D32" stroke-width="3"/>
+    <path d="M 2,10 Q 10,6 18,10" fill="none" stroke="#2E7D32" stroke-width="3"/>
+  </g>
+</svg>
+

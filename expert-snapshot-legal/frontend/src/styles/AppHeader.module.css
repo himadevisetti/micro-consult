@@ -1,4 +1,6 @@
 .header {
+  position: relative;
+  /* allow absolute positioning of heading */
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -14,12 +16,29 @@
   font-size: 1.2rem;
   color: white;
   font-family: var(--font-sans);
+  z-index: 1;
+  /* ensure logo stays above heading if overlapping */
+}
+
+.mainHeading {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: white;
+  font-family: var(--font-sans);
+  text-align: center;
+  white-space: nowrap;
 }
 
 .navRight {
   display: flex;
   align-items: center;
   gap: 0.75rem;
+  z-index: 1;
+  /* ensure buttons stay above heading if overlapping */
 }
 
 .homeButton {
