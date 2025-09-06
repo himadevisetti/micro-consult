@@ -5,7 +5,8 @@ import type {
   AdvisorRole,
   CompensationType,
   PaymentFrequency,
-  IPOwnership
+  IPOwnership,
+  InitialPaymentType
 } from '../types/StartupAdvisoryFormData';
 
 /**
@@ -25,7 +26,8 @@ export function normalizeStartupAdvisoryFormData(
     advisorRole: raw.advisorRole as AdvisorRole,
 
     scopeOfWork: String(raw.scopeOfWork ?? ''),
-    timeCommitment: String(raw.timeCommitment ?? ''),
+    timeCommitmentValue: String(raw.timeCommitmentValue ?? ''),
+    timeCommitmentUnit: String(raw.timeCommitmentUnit ?? ''),
 
     compensationType: raw.compensationType as CompensationType,
     equityPercentage:
@@ -38,28 +40,24 @@ export function normalizeStartupAdvisoryFormData(
     totalVestingPeriod: String(raw.totalVestingPeriod ?? ''),
     cashAmount:
       raw.cashAmount !== undefined ? Number(raw.cashAmount) : undefined,
-    paymentFrequency: raw.paymentFrequency as PaymentFrequency,
+    initialPayment: raw.initialPayment as InitialPaymentType,
+    ongoingPaymentFrequency: raw.ongoingPaymentFrequency as PaymentFrequency,
     expenseReimbursement: raw.expenseReimbursement ?? false,
     expenseDetails: String(raw.expenseDetails ?? ''),
 
     includeConfidentiality: raw.includeConfidentiality ?? true,
     ipOwnership: raw.ipOwnership as IPOwnership,
+    includeTerminationForCause: raw.includeTerminationForCause ?? true,
+    includeEntireAgreementClause: raw.includeEntireAgreementClause ?? true,
     nonCompete: raw.nonCompete ?? false,
     nonCompeteDuration: String(raw.nonCompeteDuration ?? ''),
 
-    terminationNoticePeriod: String(raw.terminationNoticePeriod ?? ''),
-    includeTerminationForCause: raw.includeTerminationForCause ?? true,
-
     governingLaw: String(raw.governingLaw ?? 'California'),
     disputeResolution: raw.disputeResolution ?? 'Arbitration',
-    includeEntireAgreementClause: raw.includeEntireAgreementClause ?? true,
     additionalProvisions: String(raw.additionalProvisions ?? ''),
 
     companyRepName: String(raw.companyRepName ?? ''),
-    companyRepTitle: String(raw.companyRepTitle ?? ''),
-    companySignature: String(raw.companySignature ?? ''),
-    advisorSignature: String(raw.advisorSignature ?? ''),
-    dateSigned: typeof raw.dateSigned === 'string' ? raw.dateSigned : '',
+    companyRepTitle: String(raw.companyRepTitle ?? '')
   };
 }
 
@@ -76,11 +74,7 @@ export function normalizeRawStartupAdvisoryFormData(
     const field = key as keyof StartupAdvisoryFormData;
     const value = data[field];
 
-    if (
-      field === 'effectiveDate' ||
-      field === 'vestingStartDate' ||
-      field === 'dateSigned'
-    ) {
+    if (field === 'effectiveDate' || field === 'vestingStartDate') {
       normalized[field] = normalizeDate(value);
     } else {
       assign(normalized, field, value);
@@ -115,4 +109,3 @@ function normalizeDate(input: unknown): string {
 
   return '';
 }
-

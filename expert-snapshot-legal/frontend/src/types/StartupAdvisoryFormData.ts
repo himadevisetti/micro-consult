@@ -11,7 +11,8 @@ export type AdvisorRole =
 
 // Compensation structure options
 export type CompensationType = 'Equity' | 'Cash' | 'Equity + Cash' | 'None';
-export type PaymentFrequency = 'Monthly' | 'Quarterly' | 'One-time';
+export type PaymentFrequency = 'Monthly' | 'Quarterly' | 'Annually';
+export type InitialPaymentType = 'None' | 'One-time';
 export type IPOwnership = 'Company' | 'Advisor' | 'Joint';
 
 export interface StartupAdvisoryFormData {
@@ -26,42 +27,38 @@ export interface StartupAdvisoryFormData {
 
   // Scope of Services
   scopeOfWork: string;
-  timeCommitment: string;     // e.g., "10 hours/month"
+  timeCommitmentValue: string; // numeric string in raw form
+  timeCommitmentUnit: string;  // e.g., "hours/week"
 
   // Compensation & Benefits
   compensationType: CompensationType;
-  equityPercentage?: number;  // if Equity or Equity + Cash
-  equityShares?: number;      // optional alternative to percentage
-  vestingStartDate: string;  // ISO format
-  cliffPeriod?: string;       // e.g., "6 months"
-  totalVestingPeriod?: string;// e.g., "24 months"
-  cashAmount?: number;        // if Cash or Equity + Cash
-  paymentFrequency?: PaymentFrequency;
-  expenseReimbursement?: boolean;
+  equityPercentage?: number;
+  equityShares?: number;
+  vestingStartDate: string;   // ISO format
+  cliffPeriod?: string;
+  totalVestingPeriod?: string;
+  cashAmount?: number;
+  initialPayment?: InitialPaymentType;
+  ongoingPaymentFrequency?: PaymentFrequency;
+  expenseReimbursement: boolean | 'true' | 'false';
   expenseDetails?: string;
 
   // Confidentiality & IP
-  includeConfidentiality: boolean;
+  includeConfidentiality: boolean | 'true' | 'false';
   ipOwnership: IPOwnership;
-  nonCompete?: boolean;
+  includeTerminationForCause: boolean | 'true' | 'false';
+  includeEntireAgreementClause: boolean | 'true' | 'false';
+  nonCompete: boolean | 'true' | 'false';
   nonCompeteDuration?: string;
-
-  // Termination
-  terminationNoticePeriod: string; // e.g., "30 days"
-  includeTerminationForCause: boolean;
 
   // Miscellaneous
   governingLaw: string;
   disputeResolution: 'Arbitration' | 'Mediation' | 'Court';
-  includeEntireAgreementClause: boolean;
   additionalProvisions?: string;
 
-  // Signatures
+  // Signatures (only name/title kept per schema)
   companyRepName: string;
   companyRepTitle: string;
-  companySignature: string;   // could be base64 or file ref
-  advisorSignature: string;   // could be base64 or file ref
-  dateSigned: string;         // ISO format
 }
 
 export const defaultStartupAdvisoryFormData: StartupAdvisoryFormData = {
@@ -74,7 +71,8 @@ export const defaultStartupAdvisoryFormData: StartupAdvisoryFormData = {
   advisorRole: 'Generic Advisor',
 
   scopeOfWork: '',
-  timeCommitment: '',
+  timeCommitmentValue: '',
+  timeCommitmentUnit: '',
 
   compensationType: 'None',
   equityPercentage: undefined,
@@ -83,27 +81,22 @@ export const defaultStartupAdvisoryFormData: StartupAdvisoryFormData = {
   cliffPeriod: '',
   totalVestingPeriod: '',
   cashAmount: undefined,
-  paymentFrequency: undefined,
-  expenseReimbursement: false,
+  initialPayment: 'None',
+  ongoingPaymentFrequency: undefined,
+  expenseReimbursement: 'false',
   expenseDetails: '',
 
-  includeConfidentiality: true,
+  includeConfidentiality: 'true',
   ipOwnership: 'Company',
-  nonCompete: false,
+  includeTerminationForCause: 'true',
+  includeEntireAgreementClause: 'true',
+  nonCompete: 'false',
   nonCompeteDuration: '',
-
-  terminationNoticePeriod: '',
-  includeTerminationForCause: true,
 
   governingLaw: 'California',
   disputeResolution: 'Arbitration',
-  includeEntireAgreementClause: true,
   additionalProvisions: '',
 
   companyRepName: '',
-  companyRepTitle: '',
-  companySignature: '',
-  advisorSignature: '',
-  dateSigned: '',
+  companyRepTitle: ''
 };
-

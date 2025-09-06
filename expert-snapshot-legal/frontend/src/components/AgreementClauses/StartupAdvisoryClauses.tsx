@@ -17,6 +17,9 @@ import SignatureClause from './Startup/SignatureClause.js';
 export function getStartupAdvisoryClauses(
   formData: EnrichedStartupAdvisoryFormData
 ): StartupAdvisoryClauseTemplate[] {
+  // Helper to coerce boolean | 'true' | 'false' -> boolean
+  const asBool = (v: unknown) => v === true || v === 'true';
+
   return [
     {
       id: 'partiesClause',
@@ -36,7 +39,8 @@ export function getStartupAdvisoryClauses(
       render: (fd) => (
         <ScopeOfWorkClause
           scopeOfWork={fd.scopeOfWork}
-          timeCommitment={fd.timeCommitment}
+          // CHANGED: timeCommitment was split; pass a single human-readable string
+          timeCommitment={`${fd.timeCommitmentValue || ''} ${fd.timeCommitmentUnit || ''}`.trim()}
         />
       ),
     },
@@ -51,13 +55,16 @@ export function getStartupAdvisoryClauses(
           cliffPeriod={fd.cliffPeriod}
           totalVestingPeriod={fd.totalVestingPeriod}
           cashAmount={fd.formattedCashAmount}
-          paymentFrequency={fd.paymentFrequency}
-          expenseReimbursement={fd.expenseReimbursement}
+          // CHANGED: paymentFrequency -> ongoingPaymentFrequency (maps to the old prop name)
+          paymentFrequency={fd.ongoingPaymentFrequency}
+          // CHANGED: coerce to real boolean
+          expenseReimbursement={asBool(fd.expenseReimbursement)}
           expenseDetails={fd.expenseDetails}
         />
       ),
     },
-    ...(formData.includeConfidentiality
+    // CHANGED: ensure strict boolean check for conditional clauses
+    ...(asBool(formData.includeConfidentiality)
       ? ([
         {
           id: 'confidentialityClause',
@@ -67,11 +74,9 @@ export function getStartupAdvisoryClauses(
       : []),
     {
       id: 'ipOwnershipClause',
-      render: (fd) => (
-        <IPOwnershipClause ipOwnership={fd.ipOwnership} />
-      ),
+      render: (fd) => <IPOwnershipClause ipOwnership={fd.ipOwnership} />,
     },
-    ...(formData.nonCompete
+    ...(asBool(formData.nonCompete)
       ? ([
         {
           id: 'nonCompeteClause',
@@ -85,19 +90,17 @@ export function getStartupAdvisoryClauses(
       id: 'terminationClause',
       render: (fd) => (
         <TerminationClause
-          noticePeriod={fd.terminationNoticePeriod}
-          includeTerminationForCause={fd.includeTerminationForCause}
+          // CHANGED: terminationNoticePeriod no longer exists — omit this prop
+          includeTerminationForCause={asBool(fd.includeTerminationForCause)}
           responsibleParty={fd.companyName}
         />
       ),
     },
     {
       id: 'governingLawClause',
-      render: (fd) => (
-        <GoverningLawClause jurisdiction={fd.governingLaw} />
-      ),
+      render: (fd) => <GoverningLawClause jurisdiction={fd.governingLaw} />,
     },
-    ...(formData.includeEntireAgreementClause
+    ...(asBool(formData.includeEntireAgreementClause)
       ? ([
         {
           id: 'entireAgreementClause',
@@ -112,10 +115,9 @@ export function getStartupAdvisoryClauses(
           companyRepName={fd.companyRepName}
           companyRepTitle={fd.companyRepTitle}
           advisorName={fd.advisorName}
-          dateSigned={fd.formattedDateSignedLong}
+          dateSigned={fd.formattedEffectiveDateLong}
         />
       ),
     },
   ];
 }
-

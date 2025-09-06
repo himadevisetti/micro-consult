@@ -42,9 +42,17 @@ export default function StartupAdvisoryForm({
     const config = schema[field];
 
     let parsed: string | number | boolean = raw;
+
     if (config.type === 'checkbox') {
-      parsed = (e.target as HTMLInputElement).checked;
-    } else if (config.type === 'number') {
+      const checked = (e.target as HTMLInputElement).checked;
+      parsed = checked;
+      onRawChange(field, checked ? 'true' : 'false');
+      onChange(field, parsed);
+      markTouched?.(field);
+      return;
+    }
+
+    if (config.type === 'number') {
       parsed = raw === '' ? 0 : parseFloat(raw);
     }
 
@@ -79,148 +87,238 @@ export default function StartupAdvisoryForm({
   useEffect(() => {
     const formEl = document.getElementById('startup-advisory-form');
     if (!formEl) return;
-
     const editable = formEl.querySelector(
       'input:not([type="hidden"]):not([disabled]):not([tabindex="-1"]), textarea:not([disabled]), select:not([disabled])'
     ) as HTMLElement | null;
-
     editable?.focus();
   }, []);
 
   useEffect(() => {
     if (!submitted || !errors || Object.keys(errors).length === 0) return;
-
     const firstErrorField = Object.keys(errors)[0];
     const el = document.getElementById(firstErrorField);
     el?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-
     setSubmitted(false);
   }, [submitted, errors]);
+
+  useEffect(() => {
+    Object.entries(schema).forEach(([key, config]) => {
+      if (config.showIf && !config.showIf(formData)) {
+        const field = key as keyof StartupAdvisoryFormData;
+        if (formData[field] !== undefined && formData[field] !== '') {
+          if (config.type === 'checkbox') {
+            onRawChange(field, 'false');
+            onChange(field, false);
+          } else {
+            onRawChange(field, '');
+            onChange(field, '');
+          }
+        }
+      }
+    });
+  }, [formData, schema, onChange, onRawChange]);
+
+  const visibleFields = Object.entries(schema).filter(
+    ([, cfg]) => !cfg.showIf || cfg.showIf(formData)
+  );
+
+  const groupOrder = { main: 1, clauses: 2 } as const;
+
+  const sortedFields = [...visibleFields].sort((a, b) => {
+    // Primary sort: by group order
+    const groupDiff =
+      groupOrder[(a[1].group ?? 'main')] - groupOrder[(b[1].group ?? 'main')];
+    if (groupDiff !== 0) return groupDiff;
+
+    // Secondary sort: for checkboxes in the 'clauses' group, put opt-outs (default true) before opt-ins (default false)
+    if (a[1].group === 'clauses' && b[1].group === 'clauses') {
+      const aDefaultTrue =
+        (a[1].default as unknown) === true || (a[1].default as unknown) === 'true';
+      const bDefaultTrue =
+        (b[1].default as unknown) === true || (b[1].default as unknown) === 'true';
+      if (aDefaultTrue !== bDefaultTrue) {
+        return aDefaultTrue ? -1 : 1; // true first, then false
+      }
+    }
+
+    // Otherwise, keep original order
+    return 0;
+  });
+
+
+  const rendered = new Set<string>();
+
+  const renderField = (
+    field: keyof StartupAdvisoryFormData,
+    config: StartupAdvisoryFieldConfig,
+    suppressLabel = false
+  ) => {
+    const value = formData[field];
+    if (config.type === 'checkbox') {
+      return (
+        <label className={styles.clauseToggle}>
+          <input
+            id={field}
+            type="checkbox"
+            checked={value === true || value === 'true'}
+            onChange={handleChange(field)}
+            onBlur={() => {
+              onBlur(field, value as string);
+              markTouched?.(field);
+            }}
+          />
+          {config.label}
+          {(submitted || touched?.[field]) && errors?.[field] && (
+            <span className={styles.error}>{errors[field]}</span>
+          )}
+        </label>
+      );
+    }
+
+    return (
+      <>
+        {!suppressLabel && config.label && (
+          <label htmlFor={field} className={styles.label}>
+            {config.required === false ? (
+              <>
+                {config.label}
+                <br />
+                <span className={styles.optionalLabel}>(Optional)</span>
+              </>
+            ) : (
+              config.label
+            )}
+          </label>
+        )}
+
+        {config.type === 'number' ? (
+          <input
+            id={field}
+            type="number"
+            step="0.01"
+            value={typeof value === 'number' ? value : ''}
+            onChange={handleChange(field)}
+            onBlur={handleBlur(field)}
+            placeholder={config.placeholder}
+            className={styles.input}
+          />
+        ) : config.type === 'date' ? (
+          (() => {
+            const rawValue = rawFormData[field];
+            return (
+              <CustomDatePicker
+                id={field}
+                value={typeof rawValue === 'string' ? rawValue : ''}
+                onChange={(newIso: string) => {
+                  onRawChange(field, newIso);
+                  onChange(field, newIso);
+                  markTouched?.(field);
+                }}
+                onBlur={() => {
+                  const safeValue = typeof rawValue === 'string' ? rawValue : '';
+                  onBlur(field, safeValue);
+                  markTouched?.(field);
+                }}
+                placeholder={config.placeholder}
+                className={styles.input}
+                style={{ flex: 1 }}
+              />
+            );
+          })()
+        ) : config.type === 'textarea' ? (
+          <textarea
+            id={field}
+            value={value as string}
+            onChange={handleChange(field)}
+            onBlur={handleBlur(field)}
+            placeholder={config.placeholder}
+            className={`${styles.input} ${styles.textarea}`}
+          />
+        ) : config.type === 'dropdown' && config.options ? (
+          <select
+            id={field}
+            value={value as string}
+            onChange={handleChange(field)}
+            onBlur={handleBlur(field)}
+            className={styles.select}
+          >
+            <option value="">-- Select --</option>
+            {config.options.map((opt) => (
+              <option key={opt} value={opt}>
+                {opt}
+              </option>
+            ))}
+          </select>
+        ) : (
+          <input
+            id={field}
+            type={config.type}
+            value={value as string}
+            onChange={handleChange(field)}
+            onBlur={handleBlur(field)}
+            placeholder={config.placeholder}
+            className={styles.input}
+          />
+        )}
+
+        {(submitted || touched?.[field]) && errors?.[field] && (
+          <span className={styles.error}>{errors[field]}</span>
+        )}
+      </>
+    );
+  };
 
   return (
     <div className={styles.pageContainer}>
       <div className={styles.formWrapper}>
-        <form id="startup-advisory-form" className={styles.formInner} onSubmit={handleFormSubmit}>
+        <form
+          id="startup-advisory-form"
+          className={styles.formInner}
+          onSubmit={handleFormSubmit}
+        >
           {errors && Object.keys(errors).length > 0 && (
             <div className={styles.errorBanner}>
               Please fix the highlighted fields below.
             </div>
           )}
+
           <h2 className={styles.formTitle}>
             🚀 {RetainerTypeLabel[FormType.StartupAdvisory]} Form
           </h2>
 
-          {Object.entries(schema).map(([key, config]) => {
-            const field = key as keyof StartupAdvisoryFormData;
-            const value = formData[field];
+          {sortedFields.map(([key, config]) => {
+            if (rendered.has(key)) return null;
 
-            return (
-              <div key={field} className={styles.formRow}>
-                {config.type === 'checkbox' ? (
-                  <label className={styles.clauseToggle}>
-                    <input
-                      id={field}
-                      type="checkbox"
-                      checked={!!value}
-                      onChange={handleChange(field)}
-                      onBlur={() => {
-                        onBlur(field, value);
-                        markTouched?.(field);
-                      }}
-                    />
-                    {config.label}
-                    {(submitted || touched?.[field]) && errors?.[field] && (
-                      <span className={styles.error}>{errors[field]}</span>
-                    )}
-                  </label>
-                ) : (
-                  <>
-                    <label htmlFor={field} className={styles.label}>
-                      {config.required === false ? (
-                        <>
-                          {config.label}
-                          <br />
-                          <span className={styles.optionalLabel}>(Optional)</span>
-                        </>
-                      ) : (
-                        config.label
+            // Inline pair handling
+            if (config.inlineWith) {
+              const partnerKey = config.inlineWith as string;
+              const partnerCfg = schema[partnerKey];
+              if (partnerCfg) {
+                rendered.add(key);
+                rendered.add(partnerKey);
+                return (
+                  <div key={key} className={styles.formRow}>
+                    {/* Only show the label from the first field */}
+                    <label className={styles.label}>{config.label}</label>
+                    <div className={styles.inlinePair}>
+                      {renderField(key as keyof StartupAdvisoryFormData, config, true)}
+                      {/* Render partner input without its label */}
+                      {renderField(
+                        partnerKey as keyof StartupAdvisoryFormData,
+                        partnerCfg,
+                        true // suppressLabel
                       )}
-                    </label>
+                    </div>
+                  </div>
+                );
+              }
+            }
 
-                    {config.type === 'number' ? (
-                      <input
-                        id={field}
-                        type="number"
-                        step="0.01"
-                        value={typeof value === 'number' ? value : ''}
-                        onChange={handleChange(field)}
-                        onBlur={handleBlur(field)}
-                        placeholder={config.placeholder}
-                        className={styles.input}
-                      />
-                    ) : config.type === 'date' ? (
-                      (() => {
-                        const rawValue = rawFormData[field];
-                        return (
-                          <CustomDatePicker
-                            id={field}
-                            value={typeof rawValue === 'string' ? rawValue : ''}
-                            onChange={(newIso: string) => {
-                              onRawChange(field, newIso);
-                              onChange(field, newIso);
-                              markTouched?.(field);
-                            }}
-                            onBlur={() => {
-                              const safeValue = typeof rawValue === 'string' ? rawValue : '';
-                              onBlur(field, safeValue);
-                              markTouched?.(field);
-                            }}
-                            placeholder={config.placeholder}
-                            className={styles.input}
-                            style={{ flex: 1 }}
-                          />
-                        );
-                      })()
-                    ) : config.type === 'textarea' ? (
-                      <textarea
-                        id={field}
-                        value={value as string}
-                        onChange={handleChange(field)}
-                        onBlur={handleBlur(field)}
-                        placeholder={config.placeholder}
-                        className={`${styles.input} ${styles.textarea}`}
-                      />
-                    ) : config.type === 'dropdown' && config.options ? (
-                      <select
-                        id={field}
-                        value={value as string}
-                        onChange={handleChange(field)}
-                        onBlur={handleBlur(field)}
-                        className={styles.select}
-                      >
-                        {config.options.map((opt) => (
-                          <option key={opt} value={opt}>
-                            {opt}
-                          </option>
-                        ))}
-                      </select>
-                    ) : (
-                      <input
-                        id={field}
-                        type={config.type}
-                        value={value as string}
-                        onChange={handleChange(field)}
-                        onBlur={handleBlur(field)}
-                        placeholder={config.placeholder}
-                        className={styles.input}
-                      />
-                    )}
-
-                    {(submitted || touched?.[field]) && errors?.[field] && (
-                      <span className={styles.error}>{errors[field]}</span>
-                    )}
-                  </>
-                )}
+            // Normal single field
+            rendered.add(key);
+            return (
+              <div key={key} className={styles.formRow}>
+                {renderField(key as keyof StartupAdvisoryFormData, config)}
               </div>
             );
           })}
@@ -235,4 +333,3 @@ export default function StartupAdvisoryForm({
     </div>
   );
 }
-

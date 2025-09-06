@@ -11,7 +11,6 @@ import { getStartupAdvisoryClauses } from '@/components/AgreementClauses/Startup
 export type EnrichedStartupAdvisoryFormData = StartupAdvisoryFormData & {
   formattedEffectiveDateLong: string;
   formattedVestingStartDateLong: string;
-  formattedDateSignedLong: string;
   formattedEquityPercentage: string;
   formattedEquityShares: string;
   formattedCashAmount: string;
@@ -33,7 +32,6 @@ export function getSerializedStartupAdvisoryClauses(
 
   const formattedEffectiveDateLong = formatDateLong(normalized.effectiveDate);
   const formattedVestingStartDateLong = formatDateLong(normalized.vestingStartDate);
-  const formattedDateSignedLong = formatDateLong(normalized.dateSigned);
 
   const formattedEquityPercentage =
     normalized.equityPercentage != null && !Number.isNaN(normalized.equityPercentage)
@@ -54,13 +52,11 @@ export function getSerializedStartupAdvisoryClauses(
     ...formData,
     effectiveDate: normalized.effectiveDate,
     vestingStartDate: normalized.vestingStartDate,
-    dateSigned: normalized.dateSigned,
     equityPercentage: normalized.equityPercentage,
     equityShares: normalized.equityShares,
     cashAmount: normalized.cashAmount,
     formattedEffectiveDateLong,
     formattedVestingStartDateLong,
-    formattedDateSignedLong,
     formattedEquityPercentage,
     formattedEquityShares,
     formattedCashAmount,

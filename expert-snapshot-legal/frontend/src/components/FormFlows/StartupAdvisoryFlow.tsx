@@ -29,8 +29,7 @@ export default function StartupAdvisoryFlow({ schema }: Props) {
   const hydratedDefaults: StartupAdvisoryFormData = {
     ...defaultStartupAdvisoryFormData,
     effectiveDate: formattedToday,
-    vestingStartDate: formattedToday,
-    dateSigned: formattedToday
+    vestingStartDate: formattedToday
   };
 
   const {
