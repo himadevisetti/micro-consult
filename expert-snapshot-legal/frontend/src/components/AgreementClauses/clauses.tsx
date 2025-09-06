@@ -8,8 +8,8 @@ import ResponsibilitiesClause from './Standard/ResponsibilitiesClause.js';
 import FeeClause from './Standard/FeeClause.js';
 import CostsClause from './Standard/CostsClause.js';
 import CommunicationClause from './Standard/CommunicationClause.js';
-import ConfidentialityClause from './Standard/ConfidentialityClause.js';
-import TerminationClause from './Standard/TerminationClause.js';
+import ConfidentialityClause from './Shared/ConfidentialityClause.js';
+import TerminationClause from './Shared/TerminationClause.js';
 import GoverningLawClause from './Shared/GoverningLawClause.js';
 import EntireAgreementClause from './Shared/EntireAgreementClause.js';
 import SignatureClause from './Shared/SignatureClause.js';
@@ -64,7 +64,10 @@ export function getClauses(formData: EnrichedFormData) {
     {
       id: 'terminationClause',
       render: () => (
-        <TerminationClause endDate={formData.formattedEndDateLong} />
+        <TerminationClause
+          endDate={formData.formattedEndDateLong}
+          responsibleParty="the Client"
+        />
       ),
     },
     {

@@ -6,7 +6,7 @@ import type { IPClauseTemplate } from '@/utils/serializeIPClauses';
 import PartiesClause from './IP/PartiesClause.js';
 import IPDescriptionClause from './IP/IPDescriptionClause.js';
 import LicenseClause from './IP/LicenseClause.js';
-import ConfidentialityClause from './IP/ConfidentialityClause.js';
+import ConfidentialityClause from './Shared/ConfidentialityClause.js';
 import InventionAssignmentClause from './IP/InventionAssignmentClause.js';
 import FeeClause from './IP/FeeClause.js';
 import GoverningLawClause from './Shared/GoverningLawClause.js';
