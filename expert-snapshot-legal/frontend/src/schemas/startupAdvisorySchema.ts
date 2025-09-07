@@ -275,7 +275,7 @@ export const startupAdvisorySchema: Record<string, StartupAdvisoryFieldConfig> =
     required: false,
     placeholder: 'Describe reimbursable expenses',
     clauseTemplate: 'Reimbursable expenses include {{expenseDetails}}.',
-    showIf: (form: StartupAdvisoryFormData) => !!form.expenseReimbursement,
+    showIf: (form: StartupAdvisoryFormData) => form.expenseReimbursement,
     group: 'clauses'
   },
   ipOwnership: {
@@ -325,7 +325,7 @@ export const startupAdvisorySchema: Record<string, StartupAdvisoryFieldConfig> =
     required: false,
     placeholder: 'e.g. 12 months',
     clauseTemplate: 'The non-compete period is {{nonCompeteDuration}}.',
-    showIf: (form: StartupAdvisoryFormData) => !!form.nonCompete,
+    showIf: (form: StartupAdvisoryFormData) => form.nonCompete,
     group: 'clauses'
   },
   governingLaw: {
