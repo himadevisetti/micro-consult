@@ -271,19 +271,17 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 .inlinePair {
   display: flex;
   gap: 8px;
-
-  /* Match .input's width constraints exactly */
   width: 100%;
   max-width: 480px;
   box-sizing: border-box;
 }
 
-.inlinePair input {
+.inlinePair>*:first-child {
   flex: 0 0 calc(40% - 4px);
   max-width: calc(40% - 4px);
 }
 
-.inlinePair select {
+.inlinePair>*:last-child {
   flex: 0 0 calc(60% - 4px);
   max-width: calc(60% - 4px);
 }

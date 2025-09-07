@@ -45,12 +45,22 @@ export const startupAdvisorySchema: Record<string, StartupAdvisoryFieldConfig> =
     validate: (val: string) => /^\d{4}-\d{2}-\d{2}$/.test(val),
     group: 'main'
   },
-  agreementDuration: {
+  agreementDurationValue: {
     label: 'Agreement Duration',
-    type: 'text',
+    type: 'number',
     required: true,
-    placeholder: 'e.g. 12 months',
-    clauseTemplate: 'The term of this agreement is {{agreementDuration}}.',
+    placeholder: 'e.g. 12',
+    clauseTemplate: '',
+    group: 'main',
+    inlineWith: 'agreementDurationUnit'
+  },
+  agreementDurationUnit: {
+    label: 'Unit',
+    type: 'dropdown',
+    required: true,
+    options: ['days', 'weeks', 'months', 'years'],
+    placeholder: 'Select unit',
+    clauseTemplate: 'The term of this agreement is {{agreementDurationValue}} {{agreementDurationUnit}}.',
     group: 'main'
   },
   advisorRole: {
@@ -104,6 +114,55 @@ export const startupAdvisorySchema: Record<string, StartupAdvisoryFieldConfig> =
     clauseTemplate: 'The Advisor will be compensated via {{compensationType}}.',
     group: 'main'
   },
+  splitEquityGrant: {
+    label: 'Split equity grant into initial and future portions',
+    type: 'checkbox',
+    required: false,
+    default: 'false',
+    showIf: (form: StartupAdvisoryFormData) =>
+      form.compensationType === 'Equity' || form.compensationType === 'Equity + Cash',
+    group: 'main'
+  },
+  // NEW: initial grant fields
+  initialEquityPercentage: {
+    label: 'Initial Grant',
+    type: 'number',
+    required: false,
+    placeholder: 'e.g. 0.25',
+    clauseTemplate: 'The Advisor will receive an initial grant of {{initialEquityPercentage}}% equity.',
+    showIf: (form: StartupAdvisoryFormData) => !!form.splitEquityGrant,
+    group: 'main',
+    inlineWith: 'initialEquityShares'
+  },
+  initialEquityShares: {
+    label: 'Shares',
+    type: 'number',
+    required: false,
+    placeholder: 'e.g. 5000',
+    clauseTemplate: 'The Advisor will receive an initial grant of {{initialEquityShares}} shares.',
+    showIf: (form: StartupAdvisoryFormData) => !!form.splitEquityGrant,
+    group: 'main'
+  },
+  // NEW: future grant fields
+  futureEquityPercentage: {
+    label: 'Future Grant',
+    type: 'number',
+    required: false,
+    placeholder: 'e.g. 1.25',
+    clauseTemplate: 'The Advisor will receive a future grant of {{futureEquityPercentage}}% equity.',
+    showIf: (form: StartupAdvisoryFormData) => !!form.splitEquityGrant,
+    group: 'main',
+    inlineWith: 'futureEquityShares'
+  },
+  futureEquityShares: {
+    label: 'Shares',
+    type: 'number',
+    required: false,
+    placeholder: 'e.g. 20000',
+    clauseTemplate: 'The Advisor will receive a future grant of {{futureEquityShares}} shares.',
+    showIf: (form: StartupAdvisoryFormData) => !!form.splitEquityGrant,
+    group: 'main'
+  },
   equityPercentage: {
     label: 'Equity Percentage',
     type: 'number',
@@ -111,7 +170,8 @@ export const startupAdvisorySchema: Record<string, StartupAdvisoryFieldConfig> =
     placeholder: 'e.g. 1.5',
     clauseTemplate: 'The Advisor will receive {{equityPercentage}}% equity.',
     showIf: (form: StartupAdvisoryFormData) =>
-      form.compensationType === 'Equity' || form.compensationType === 'Equity + Cash',
+      (form.compensationType === 'Equity' || form.compensationType === 'Equity + Cash') &&
+      !form.splitEquityGrant, // now a pure boolean
     validate: (val: string, form?: StartupAdvisoryFormData) => {
       if (form?.compensationType === 'Equity' || form?.compensationType === 'Equity + Cash') {
         const num = parseFloat(val);
@@ -128,7 +188,8 @@ export const startupAdvisorySchema: Record<string, StartupAdvisoryFieldConfig> =
     placeholder: 'e.g. 1000',
     clauseTemplate: 'The Advisor will receive {{equityShares}} shares.',
     showIf: (form: StartupAdvisoryFormData) =>
-      form.compensationType === 'Equity' || form.compensationType === 'Equity + Cash',
+      (form.compensationType === 'Equity' || form.compensationType === 'Equity + Cash') &&
+      !form.splitEquityGrant, // now a pure boolean
     group: 'main'
   },
   vestingStartDate: {
@@ -190,7 +251,7 @@ export const startupAdvisorySchema: Record<string, StartupAdvisoryFieldConfig> =
     group: 'main'
   },
   ongoingPaymentFrequency: {
-    label: 'Ongoing Payment Frequency',
+    label: 'Payout Frequency',
     type: 'dropdown',
     required: false,
     options: ['Monthly', 'Quarterly', 'Annually'],
@@ -214,7 +275,7 @@ export const startupAdvisorySchema: Record<string, StartupAdvisoryFieldConfig> =
     required: false,
     placeholder: 'Describe reimbursable expenses',
     clauseTemplate: 'Reimbursable expenses include {{expenseDetails}}.',
-    showIf: (form: StartupAdvisoryFormData) => form.expenseReimbursement === true,
+    showIf: (form: StartupAdvisoryFormData) => !!form.expenseReimbursement,
     group: 'clauses'
   },
   ipOwnership: {
@@ -259,12 +320,12 @@ export const startupAdvisorySchema: Record<string, StartupAdvisoryFieldConfig> =
     group: 'clauses'
   },
   nonCompeteDuration: {
-    label: 'Non-Compete Duration',
+    label: 'Duration',
     type: 'text',
     required: false,
     placeholder: 'e.g. 12 months',
     clauseTemplate: 'The non-compete period is {{nonCompeteDuration}}.',
-    showIf: (form: StartupAdvisoryFormData) => form.nonCompete === true,
+    showIf: (form: StartupAdvisoryFormData) => !!form.nonCompete,
     group: 'clauses'
   },
   governingLaw: {

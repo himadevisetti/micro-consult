@@ -22,7 +22,8 @@ export interface StartupAdvisoryFormData {
   advisorName: string;
   advisorAddress: string;
   effectiveDate: string;      // ISO format: YYYY-MM-DD
-  agreementDuration: string;  // e.g., "12 months"
+  agreementDurationValue: string; // numeric string in raw form
+  agreementDurationUnit: string;  // e.g., "months"
   advisorRole: AdvisorRole;
 
   // Scope of Services
@@ -32,23 +33,33 @@ export interface StartupAdvisoryFormData {
 
   // Compensation & Benefits
   compensationType: CompensationType;
+
+  // NEW: split grant toggle + fields
+  splitEquityGrant?: boolean;
+  initialEquityPercentage?: number;
+  initialEquityShares?: number;
+  futureEquityPercentage?: number;
+  futureEquityShares?: number;
+
+  // Existing equity fields (used when splitEquityGrant is false/unchecked)
   equityPercentage?: number;
   equityShares?: number;
+
   vestingStartDate: string;   // ISO format
   cliffPeriod?: string;
   totalVestingPeriod?: string;
   cashAmount?: number;
   initialPayment?: InitialPaymentType;
-  ongoingPaymentFrequency?: PaymentFrequency;
-  expenseReimbursement: boolean | 'true' | 'false';
+  ongoingPaymentFrequency?: PaymentFrequency; // label changed to "Payout Frequency" in schema
+  expenseReimbursement: boolean;
   expenseDetails?: string;
 
   // Confidentiality & IP
-  includeConfidentiality: boolean | 'true' | 'false';
+  includeConfidentiality: boolean;
   ipOwnership: IPOwnership;
-  includeTerminationForCause: boolean | 'true' | 'false';
-  includeEntireAgreementClause: boolean | 'true' | 'false';
-  nonCompete: boolean | 'true' | 'false';
+  includeTerminationForCause: boolean;
+  includeEntireAgreementClause: boolean;
+  nonCompete: boolean;
   nonCompeteDuration?: string;
 
   // Miscellaneous
@@ -56,7 +67,7 @@ export interface StartupAdvisoryFormData {
   disputeResolution: 'Arbitration' | 'Mediation' | 'Court';
   additionalProvisions?: string;
 
-  // Signatures (only name/title kept per schema)
+  // Signatures
   companyRepName: string;
   companyRepTitle: string;
 }
@@ -67,7 +78,8 @@ export const defaultStartupAdvisoryFormData: StartupAdvisoryFormData = {
   advisorName: '',
   advisorAddress: '',
   effectiveDate: '',
-  agreementDuration: '',
+  agreementDurationValue: '',
+  agreementDurationUnit: '',
   advisorRole: 'Generic Advisor',
 
   scopeOfWork: '',
@@ -75,22 +87,31 @@ export const defaultStartupAdvisoryFormData: StartupAdvisoryFormData = {
   timeCommitmentUnit: '',
 
   compensationType: 'None',
+
+  // NEW: defaults for split grant fields
+  splitEquityGrant: false,
+  initialEquityPercentage: undefined,
+  initialEquityShares: undefined,
+  futureEquityPercentage: undefined,
+  futureEquityShares: undefined,
+
   equityPercentage: undefined,
   equityShares: undefined,
+
   vestingStartDate: '',
   cliffPeriod: '',
   totalVestingPeriod: '',
   cashAmount: undefined,
   initialPayment: 'None',
   ongoingPaymentFrequency: undefined,
-  expenseReimbursement: 'false',
+  expenseReimbursement: false,
   expenseDetails: '',
 
-  includeConfidentiality: 'true',
+  includeConfidentiality: true,
   ipOwnership: 'Company',
-  includeTerminationForCause: 'true',
-  includeEntireAgreementClause: 'true',
-  nonCompete: 'false',
+  includeTerminationForCause: true,
+  includeEntireAgreementClause: true,
+  nonCompete: false,
   nonCompeteDuration: '',
 
   governingLaw: 'California',
@@ -100,3 +121,4 @@ export const defaultStartupAdvisoryFormData: StartupAdvisoryFormData = {
   companyRepName: '',
   companyRepTitle: ''
 };
+

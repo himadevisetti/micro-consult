@@ -16,13 +16,18 @@ import type {
 export function normalizeStartupAdvisoryFormData(
   raw: Record<string, any>
 ): StartupAdvisoryFormData {
+  const toBool = (val: unknown) => val === true || val === 'true';
+
+  const splitGrant = toBool(raw.splitEquityGrant);
+
   return {
     companyName: String(raw.companyName ?? ''),
     companyAddress: String(raw.companyAddress ?? ''),
     advisorName: String(raw.advisorName ?? ''),
     advisorAddress: String(raw.advisorAddress ?? ''),
     effectiveDate: typeof raw.effectiveDate === 'string' ? raw.effectiveDate : '',
-    agreementDuration: String(raw.agreementDuration ?? ''),
+    agreementDurationValue: String(raw.agreementDurationValue ?? ''),
+    agreementDurationUnit: String(raw.agreementDurationUnit ?? ''),
     advisorRole: raw.advisorRole as AdvisorRole,
 
     scopeOfWork: String(raw.scopeOfWork ?? ''),
@@ -30,10 +35,30 @@ export function normalizeStartupAdvisoryFormData(
     timeCommitmentUnit: String(raw.timeCommitmentUnit ?? ''),
 
     compensationType: raw.compensationType as CompensationType,
-    equityPercentage:
-      raw.equityPercentage !== undefined ? Number(raw.equityPercentage) : undefined,
-    equityShares:
-      raw.equityShares !== undefined ? Number(raw.equityShares) : undefined,
+
+    // Split grant toggle + fields
+    splitEquityGrant: toBool(raw.splitEquityGrant),
+    initialEquityPercentage: splitGrant && raw.initialEquityPercentage !== undefined
+      ? Number(raw.initialEquityPercentage)
+      : undefined,
+    initialEquityShares: splitGrant && raw.initialEquityShares !== undefined
+      ? Number(raw.initialEquityShares)
+      : undefined,
+    futureEquityPercentage: splitGrant && raw.futureEquityPercentage !== undefined
+      ? Number(raw.futureEquityPercentage)
+      : undefined,
+    futureEquityShares: splitGrant && raw.futureEquityShares !== undefined
+      ? Number(raw.futureEquityShares)
+      : undefined,
+
+    // Existing equity fields (only when splitEquityGrant is false)
+    equityPercentage: !splitGrant && raw.equityPercentage !== undefined
+      ? Number(raw.equityPercentage)
+      : undefined,
+    equityShares: !splitGrant && raw.equityShares !== undefined
+      ? Number(raw.equityShares)
+      : undefined,
+
     vestingStartDate:
       typeof raw.vestingStartDate === 'string' ? raw.vestingStartDate : '',
     cliffPeriod: String(raw.cliffPeriod ?? ''),
@@ -42,14 +67,16 @@ export function normalizeStartupAdvisoryFormData(
       raw.cashAmount !== undefined ? Number(raw.cashAmount) : undefined,
     initialPayment: raw.initialPayment as InitialPaymentType,
     ongoingPaymentFrequency: raw.ongoingPaymentFrequency as PaymentFrequency,
-    expenseReimbursement: raw.expenseReimbursement ?? false,
+
+    // ✅ All checkbox fields coerced to boolean
+    expenseReimbursement: toBool(raw.expenseReimbursement),
     expenseDetails: String(raw.expenseDetails ?? ''),
 
-    includeConfidentiality: raw.includeConfidentiality ?? true,
+    includeConfidentiality: toBool(raw.includeConfidentiality),
     ipOwnership: raw.ipOwnership as IPOwnership,
-    includeTerminationForCause: raw.includeTerminationForCause ?? true,
-    includeEntireAgreementClause: raw.includeEntireAgreementClause ?? true,
-    nonCompete: raw.nonCompete ?? false,
+    includeTerminationForCause: toBool(raw.includeTerminationForCause),
+    includeEntireAgreementClause: toBool(raw.includeEntireAgreementClause),
+    nonCompete: toBool(raw.nonCompete),
     nonCompeteDuration: String(raw.nonCompeteDuration ?? ''),
 
     governingLaw: String(raw.governingLaw ?? 'California'),
