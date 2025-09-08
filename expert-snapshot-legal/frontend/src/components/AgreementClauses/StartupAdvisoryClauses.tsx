@@ -39,7 +39,6 @@ export function getStartupAdvisoryClauses(
       render: (fd) => (
         <ScopeOfWorkClause
           scopeOfWork={fd.scopeOfWork}
-          // CHANGED: timeCommitment was split; pass a single human-readable string
           timeCommitment={`${fd.timeCommitmentValue || ''} ${fd.timeCommitmentUnit || ''}`.trim()}
         />
       ),
@@ -52,18 +51,17 @@ export function getStartupAdvisoryClauses(
           equityPercentage={fd.formattedEquityPercentage}
           equityShares={fd.formattedEquityShares}
           vestingStartDate={fd.formattedVestingStartDateLong}
-          cliffPeriod={fd.cliffPeriod}
-          totalVestingPeriod={fd.totalVestingPeriod}
+          // UPDATED: combine split fields for clause rendering
+          cliffPeriod={`${fd.cliffPeriodValue || ''} ${fd.cliffPeriodUnit || ''}`.trim()}
+          totalVestingPeriod={`${fd.totalVestingPeriodValue || ''} ${fd.totalVestingPeriodUnit || ''}`.trim()}
           cashAmount={fd.formattedCashAmount}
-          // CHANGED: paymentFrequency -> ongoingPaymentFrequency (maps to the old prop name)
+          // Keep existing field name for payment frequency
           paymentFrequency={fd.ongoingPaymentFrequency}
-          // CHANGED: coerce to real boolean
           expenseReimbursement={asBool(fd.expenseReimbursement)}
           expenseDetails={fd.expenseDetails}
         />
       ),
     },
-    // CHANGED: ensure strict boolean check for conditional clauses
     ...(asBool(formData.includeConfidentiality)
       ? ([
         {
@@ -81,7 +79,9 @@ export function getStartupAdvisoryClauses(
         {
           id: 'nonCompeteClause',
           render: (fd: EnrichedStartupAdvisoryFormData) => (
-            <NonCompeteClause duration={fd.nonCompeteDuration} />
+            <NonCompeteClause
+              duration={`${fd.nonCompeteDurationValue || ''} ${fd.nonCompeteDurationUnit || ''}`.trim()}
+            />
           ),
         },
       ] satisfies StartupAdvisoryClauseTemplate[])
@@ -90,7 +90,6 @@ export function getStartupAdvisoryClauses(
       id: 'terminationClause',
       render: (fd) => (
         <TerminationClause
-          // CHANGED: terminationNoticePeriod no longer exists — omit this prop
           includeTerminationForCause={asBool(fd.includeTerminationForCause)}
           responsibleParty={fd.companyName}
         />

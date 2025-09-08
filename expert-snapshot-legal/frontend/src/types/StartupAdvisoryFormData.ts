@@ -11,7 +11,7 @@ export type AdvisorRole =
 
 // Compensation structure options
 export type CompensationType = 'Equity' | 'Cash' | 'Equity + Cash' | 'None';
-export type PaymentFrequency = 'Monthly' | 'Quarterly' | 'Annually';
+export type PaymentFrequency = 'Weekly' | 'Biweekly' | 'Monthly' | 'Quarterly' | 'Annually';
 export type InitialPaymentType = 'None' | 'One-time';
 export type IPOwnership = 'Company' | 'Advisor' | 'Joint';
 
@@ -46,8 +46,10 @@ export interface StartupAdvisoryFormData {
   equityShares?: number;
 
   vestingStartDate: string;   // ISO format
-  cliffPeriod?: string;
-  totalVestingPeriod?: string;
+  cliffPeriodValue: string; // numeric string in raw form
+  cliffPeriodUnit: string;  // e.g., "months", "years"
+  totalVestingPeriodValue: string; // numeric string in raw form
+  totalVestingPeriodUnit: string;  // e.g., "months", "years"
   cashAmount?: number;
   initialPayment?: InitialPaymentType;
   ongoingPaymentFrequency?: PaymentFrequency; // label changed to "Payout Frequency" in schema
@@ -60,7 +62,8 @@ export interface StartupAdvisoryFormData {
   includeTerminationForCause: boolean;
   includeEntireAgreementClause: boolean;
   nonCompete: boolean;
-  nonCompeteDuration?: string;
+  nonCompeteDurationValue: string; // numeric string in raw form
+  nonCompeteDurationUnit: string;  // e.g., "days", "weeks", "months", "years"
 
   // Miscellaneous
   governingLaw: string;
@@ -99,8 +102,10 @@ export const defaultStartupAdvisoryFormData: StartupAdvisoryFormData = {
   equityShares: undefined,
 
   vestingStartDate: '',
-  cliffPeriod: '',
-  totalVestingPeriod: '',
+  cliffPeriodValue: '',
+  cliffPeriodUnit: '',
+  totalVestingPeriodValue: '',
+  totalVestingPeriodUnit: '',
   cashAmount: undefined,
   initialPayment: 'None',
   ongoingPaymentFrequency: undefined,
@@ -112,7 +117,8 @@ export const defaultStartupAdvisoryFormData: StartupAdvisoryFormData = {
   includeTerminationForCause: true,
   includeEntireAgreementClause: true,
   nonCompete: false,
-  nonCompeteDuration: '',
+  nonCompeteDurationValue: '',
+  nonCompeteDurationUnit: '',
 
   governingLaw: 'California',
   disputeResolution: 'Arbitration',

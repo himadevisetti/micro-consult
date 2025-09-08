@@ -29,6 +29,9 @@ export default function CompensationClause({
   const hasEquity = resolvedType.includes('Equity');
   const hasCash = resolvedType.includes('Cash');
 
+  const resolvedCliff = cliffPeriod?.trim();
+  const resolvedTotalVesting = totalVestingPeriod?.trim();
+
   return (
     <section>
       <h3 style={{ fontWeight: 'bold' }}>Compensation</h3>
@@ -43,8 +46,8 @@ export default function CompensationClause({
           {equityShares && `(${equityShares} shares)`}, subject to the Company’s equity plan.
           Vesting shall commence on{' '}
           <strong>{vestingStartDate || 'the vesting start date'}</strong>
-          {cliffPeriod && `, with a cliff period of ${cliffPeriod}`}
-          {totalVestingPeriod && `, over a total vesting period of ${totalVestingPeriod}`}.
+          {resolvedCliff && `, with a cliff period of ${resolvedCliff}`}
+          {resolvedTotalVesting && `, over a total vesting period of ${resolvedTotalVesting}`}.
         </p>
       )}
 
@@ -67,4 +70,3 @@ export default function CompensationClause({
     </section>
   );
 }
-

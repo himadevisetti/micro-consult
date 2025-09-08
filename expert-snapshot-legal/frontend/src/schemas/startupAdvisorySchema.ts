@@ -202,25 +202,49 @@ export const startupAdvisorySchema: Record<string, StartupAdvisoryFieldConfig> =
       form.compensationType === 'Equity' || form.compensationType === 'Equity + Cash',
     group: 'main'
   },
-  cliffPeriod: {
+  cliffPeriodValue: {
     label: 'Cliff Period',
-    type: 'text',
+    type: 'number',
     required: false,
-    placeholder: 'e.g. 6 months',
-    clauseTemplate: 'The agreement includes a cliff period of {{cliffPeriod}}.',
+    placeholder: 'e.g. 6',
+    clauseTemplate: '',
+    group: 'main',
+    inlineWith: 'cliffPeriodUnit',
     showIf: (form: StartupAdvisoryFormData) =>
-      form.compensationType === 'Equity' || form.compensationType === 'Equity + Cash',
-    group: 'main'
+      form.compensationType === 'Equity' || form.compensationType === 'Equity + Cash'
   },
-  totalVestingPeriod: {
-    label: 'Total Vesting Period',
-    type: 'text',
+  cliffPeriodUnit: {
+    label: 'Unit',
+    type: 'dropdown',
     required: false,
-    placeholder: 'e.g. 24 months',
-    clauseTemplate: 'The total vesting period is {{totalVestingPeriod}}.',
+    options: ['months', 'years'],
+    placeholder: 'Select unit',
+    clauseTemplate: 'The cliff period is {{cliffPeriodValue}} {{cliffPeriodUnit}}.',
+    group: 'main',
     showIf: (form: StartupAdvisoryFormData) =>
-      form.compensationType === 'Equity' || form.compensationType === 'Equity + Cash',
-    group: 'main'
+      form.compensationType === 'Equity' || form.compensationType === 'Equity + Cash'
+  },
+  totalVestingPeriodValue: {
+    label: 'Total Vesting Period',
+    type: 'number',
+    required: false,
+    placeholder: 'e.g. 48',
+    clauseTemplate: '',
+    group: 'main',
+    inlineWith: 'totalVestingPeriodUnit',
+    showIf: (form: StartupAdvisoryFormData) =>
+      form.compensationType === 'Equity' || form.compensationType === 'Equity + Cash'
+  },
+  totalVestingPeriodUnit: {
+    label: 'Unit',
+    type: 'dropdown',
+    required: false,
+    options: ['months', 'years'],
+    placeholder: 'Select unit',
+    clauseTemplate: 'The total vesting period is {{totalVestingPeriodValue}} {{totalVestingPeriodUnit}}.',
+    group: 'main',
+    showIf: (form: StartupAdvisoryFormData) =>
+      form.compensationType === 'Equity' || form.compensationType === 'Equity + Cash'
   },
   cashAmount: {
     label: 'Cash Amount',
@@ -254,7 +278,7 @@ export const startupAdvisorySchema: Record<string, StartupAdvisoryFieldConfig> =
     label: 'Payout Frequency',
     type: 'dropdown',
     required: false,
-    options: ['Monthly', 'Quarterly', 'Annually'],
+    options: ['Weekly', 'Biweekly', 'Monthly', 'Quarterly', 'Annually'],
     placeholder: 'Select ongoing frequency',
     clauseTemplate: 'Payments will be made {{initialPayment}} and then on a {{ongoingPaymentFrequency}} basis.',
     showIf: (form: StartupAdvisoryFormData) =>
@@ -319,14 +343,25 @@ export const startupAdvisorySchema: Record<string, StartupAdvisoryFieldConfig> =
     default: 'false',
     group: 'clauses'
   },
-  nonCompeteDuration: {
+  nonCompeteDurationValue: {
     label: 'Duration',
-    type: 'text',
+    type: 'number',
     required: false,
-    placeholder: 'e.g. 12 months',
-    clauseTemplate: 'The non-compete period is {{nonCompeteDuration}}.',
-    showIf: (form: StartupAdvisoryFormData) => form.nonCompete,
-    group: 'clauses'
+    placeholder: 'e.g. 12',
+    clauseTemplate: '',
+    group: 'clauses',
+    inlineWith: 'nonCompeteDurationUnit',
+    showIf: (form: StartupAdvisoryFormData) => form.nonCompete
+  },
+  nonCompeteDurationUnit: {
+    label: 'Unit',
+    type: 'dropdown',
+    required: false,
+    options: ['days', 'weeks', 'months', 'years'],
+    placeholder: 'Select unit',
+    clauseTemplate: 'The non-compete period is {{nonCompeteDurationValue}} {{nonCompeteDurationUnit}}.',
+    group: 'clauses',
+    showIf: (form: StartupAdvisoryFormData) => form.nonCompete
   },
   governingLaw: {
     label: 'Governing Law',

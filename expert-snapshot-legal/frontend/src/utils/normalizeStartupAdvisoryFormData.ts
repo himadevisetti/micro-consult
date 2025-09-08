@@ -61,8 +61,11 @@ export function normalizeStartupAdvisoryFormData(
 
     vestingStartDate:
       typeof raw.vestingStartDate === 'string' ? raw.vestingStartDate : '',
-    cliffPeriod: String(raw.cliffPeriod ?? ''),
-    totalVestingPeriod: String(raw.totalVestingPeriod ?? ''),
+    cliffPeriodValue: raw.cliffPeriodValue?.trim() || '',
+    cliffPeriodUnit: raw.cliffPeriodUnit || '',
+
+    totalVestingPeriodValue: raw.totalVestingPeriodValue?.trim() || '',
+    totalVestingPeriodUnit: raw.totalVestingPeriodUnit || '',
     cashAmount:
       raw.cashAmount !== undefined ? Number(raw.cashAmount) : undefined,
     initialPayment: raw.initialPayment as InitialPaymentType,
@@ -77,7 +80,8 @@ export function normalizeStartupAdvisoryFormData(
     includeTerminationForCause: toBool(raw.includeTerminationForCause),
     includeEntireAgreementClause: toBool(raw.includeEntireAgreementClause),
     nonCompete: toBool(raw.nonCompete),
-    nonCompeteDuration: String(raw.nonCompeteDuration ?? ''),
+    nonCompeteDurationValue: raw.nonCompeteDurationValue?.trim() || '',
+    nonCompeteDurationUnit: raw.nonCompeteDurationUnit || '',
 
     governingLaw: String(raw.governingLaw ?? 'California'),
     disputeResolution: raw.disputeResolution ?? 'Arbitration',
