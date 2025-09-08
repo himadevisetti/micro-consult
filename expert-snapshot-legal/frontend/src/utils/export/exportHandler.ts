@@ -11,18 +11,55 @@ function slugifyFormType(formType: FormType): string {
 }
 
 function resolveMetadata(formData: Record<string, any>, formType: FormType) {
-  const client = formData.clientName?.trim() || 'Client';
+  let client: string;
+  let purpose: string;
 
-  const purpose = (() => {
-    switch (formType) {
-      case FormType.IPRightsLicensing:
-        return 'IP rights licensing agreement';
-      case FormType.StandardRetainer:
-        return 'Standard retainer agreement';
-      default:
-        return 'Legal services agreement';
-    }
-  })();
+  switch (formType) {
+    case FormType.IPRightsLicensing:
+      client = formData.clientName?.trim() || 'Client';
+      purpose = 'IP rights licensing agreement';
+      break;
+
+    case FormType.StandardRetainer:
+      client = formData.clientName?.trim() || 'Client';
+      purpose = 'Standard retainer agreement';
+      break;
+
+    case FormType.StartupAdvisory:
+      client = formData.companyName?.trim() || 'Company';
+      purpose = 'Startup advisory agreement';
+      break;
+
+    case FormType.EmploymentAgreement:
+      client = formData.clientName?.trim() || 'Client';
+      purpose = 'Employment agreement';
+      break;
+
+    case FormType.LitigationEngagement:
+      client = formData.clientName?.trim() || 'Client';
+      purpose = 'Litigation engagement agreement';
+      break;
+
+    case FormType.RealEstateContract:
+      client = formData.clientName?.trim() || 'Client';
+      purpose = 'Real estate contract';
+      break;
+
+    case FormType.FamilyLawAgreement:
+      client = formData.clientName?.trim() || 'Client';
+      purpose = 'Family law agreement';
+      break;
+
+    case FormType.CustomTemplate:
+      client = formData.clientName?.trim() || 'Client';
+      purpose = 'Custom legal document';
+      break;
+
+    default:
+      client = formData.clientName?.trim() || 'Client';
+      purpose = 'Legal services agreement';
+      break;
+  }
 
   return { client, purpose };
 }
