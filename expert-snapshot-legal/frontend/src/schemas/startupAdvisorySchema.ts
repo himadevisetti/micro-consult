@@ -123,14 +123,13 @@ export const startupAdvisorySchema: Record<string, StartupAdvisoryFieldConfig> =
       form.compensationType === 'Equity' || form.compensationType === 'Equity + Cash',
     group: 'main'
   },
-  // NEW: initial grant fields
   initialEquityPercentage: {
     label: 'Initial Grant',
     type: 'number',
     required: false,
     placeholder: 'e.g. 0.25',
     clauseTemplate: 'The Advisor will receive an initial grant of {{initialEquityPercentage}}% equity.',
-    showIf: (form: StartupAdvisoryFormData) => !!form.splitEquityGrant,
+    showIf: (form: StartupAdvisoryFormData) => form.splitEquityGrant === true,
     group: 'main',
     inlineWith: 'initialEquityShares'
   },
@@ -140,7 +139,7 @@ export const startupAdvisorySchema: Record<string, StartupAdvisoryFieldConfig> =
     required: false,
     placeholder: 'e.g. 5000',
     clauseTemplate: 'The Advisor will receive an initial grant of {{initialEquityShares}} shares.',
-    showIf: (form: StartupAdvisoryFormData) => !!form.splitEquityGrant,
+    showIf: (form: StartupAdvisoryFormData) => form.splitEquityGrant === true,
     group: 'main'
   },
   // NEW: future grant fields
@@ -150,7 +149,7 @@ export const startupAdvisorySchema: Record<string, StartupAdvisoryFieldConfig> =
     required: false,
     placeholder: 'e.g. 1.25',
     clauseTemplate: 'The Advisor will receive a future grant of {{futureEquityPercentage}}% equity.',
-    showIf: (form: StartupAdvisoryFormData) => !!form.splitEquityGrant,
+    showIf: (form: StartupAdvisoryFormData) => form.splitEquityGrant === true,
     group: 'main',
     inlineWith: 'futureEquityShares'
   },
@@ -160,7 +159,7 @@ export const startupAdvisorySchema: Record<string, StartupAdvisoryFieldConfig> =
     required: false,
     placeholder: 'e.g. 20000',
     clauseTemplate: 'The Advisor will receive a future grant of {{futureEquityShares}} shares.',
-    showIf: (form: StartupAdvisoryFormData) => !!form.splitEquityGrant,
+    showIf: (form: StartupAdvisoryFormData) => form.splitEquityGrant === true,
     group: 'main'
   },
   equityPercentage: {
@@ -171,7 +170,7 @@ export const startupAdvisorySchema: Record<string, StartupAdvisoryFieldConfig> =
     clauseTemplate: 'The Advisor will receive {{equityPercentage}}% equity.',
     showIf: (form: StartupAdvisoryFormData) =>
       (form.compensationType === 'Equity' || form.compensationType === 'Equity + Cash') &&
-      !form.splitEquityGrant, // now a pure boolean
+      form.splitEquityGrant === false,
     validate: (val: string, form?: StartupAdvisoryFormData) => {
       if (form?.compensationType === 'Equity' || form?.compensationType === 'Equity + Cash') {
         const num = parseFloat(val);
@@ -189,7 +188,7 @@ export const startupAdvisorySchema: Record<string, StartupAdvisoryFieldConfig> =
     clauseTemplate: 'The Advisor will receive {{equityShares}} shares.',
     showIf: (form: StartupAdvisoryFormData) =>
       (form.compensationType === 'Equity' || form.compensationType === 'Equity + Cash') &&
-      !form.splitEquityGrant, // now a pure boolean
+      form.splitEquityGrant === false,
     group: 'main'
   },
   vestingStartDate: {

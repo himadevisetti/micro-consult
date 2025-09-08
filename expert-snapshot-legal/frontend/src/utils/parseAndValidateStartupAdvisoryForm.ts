@@ -23,33 +23,40 @@ export function parseAndValidateStartupAdvisoryForm(
   for (const [key, config] of Object.entries(schema)) {
     const field = key as keyof StartupAdvisoryFormData;
     const rawValue = rawFormData[field];
-
     let parsedValue: unknown = rawValue;
 
     if (config.type === 'number') {
       parsedValue = rawValue !== undefined ? Number(rawValue) : undefined;
     }
-
     if (config.type === 'string' || config.type === 'date') {
       parsedValue = typeof rawValue === 'string' ? rawValue.trim() : rawValue;
     }
 
     parsedRaw[field] = parsedValue as StartupAdvisoryFormData[typeof field];
 
+    // Skip validation if field is hidden
+    const formSnapshot = { ...rawFormData, ...parsedRaw } as StartupAdvisoryFormData;
+    const isVisible =
+      typeof (config as any).showIf === 'function'
+        ? !!(config as any).showIf(formSnapshot)
+        : true;
+
+    if (!isVisible) {
+      continue;
+    }
+
     if (config.required && isEmptyValue(parsedValue)) {
       errors[field] = `${config.label} is required.`;
-      console.log(`⚠️ [${String(field)}] missing required value`);
+      console.warn(`⚠️ Missing required: ${String(field)}`);
       continue;
     }
 
     if (config.validate) {
       const normalized = normalizeForValidation(parsedValue, config.type);
-      const parsedFormData = parsedRaw as StartupAdvisoryFormData;
-
-      const result = config.validate(normalized, parsedFormData);
-
+      const result = config.validate(normalized, formSnapshot);
       if (!result) {
         errors[field] = `${config.label} is invalid.`;
+        console.warn(`⚠️ Invalid: ${String(field)}`);
       }
     }
   }
@@ -59,4 +66,3 @@ export function parseAndValidateStartupAdvisoryForm(
     errors,
   };
 }
-

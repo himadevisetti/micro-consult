@@ -5,6 +5,7 @@ import HomePage from './pages/HomePage';
 import RetainerFormPage from './pages/RetainerFormPage';
 import RetainerPreviewPage from './pages/RetainerPreviewPage';
 import IPRightsLicensingPreviewPage from './pages/IPRightsLicensingPreviewPage';
+import StartupAdvisoryPreviewPage from './pages/StartupAdvisoryPreviewPage';
 import { FormType } from '@/types/FormType';
 
 export default function App() {
@@ -27,6 +28,8 @@ function PreviewRouter() {
       return <IPRightsLicensingPreviewPage />;
     case FormType.StandardRetainer:
       return <RetainerPreviewPage />;
+    case FormType.StartupAdvisory:
+      return <StartupAdvisoryPreviewPage />;
     default:
       return <div>Unknown preview type: {type}</div>;
   }
