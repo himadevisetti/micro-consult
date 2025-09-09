@@ -175,6 +175,11 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   font-family: var(--font-sans);
 }
 
+.formRow input[type="date"]+.error,
+.formRow .dateInputWrapper+.error {
+  flex-basis: 100%;
+}
+
 .submitRow {
   text-align: center;
   margin-top: 1rem;

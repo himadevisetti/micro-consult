@@ -48,7 +48,7 @@ export const startupAdvisorySchema: Record<string, StartupAdvisoryFieldConfig> =
   agreementDurationValue: {
     label: 'Agreement Duration',
     type: 'number',
-    required: true,
+    required: false,
     placeholder: 'e.g. 12',
     clauseTemplate: '',
     group: 'main',
@@ -57,7 +57,7 @@ export const startupAdvisorySchema: Record<string, StartupAdvisoryFieldConfig> =
   agreementDurationUnit: {
     label: 'Unit',
     type: 'dropdown',
-    required: true,
+    required: false,
     options: ['days', 'weeks', 'months', 'years'],
     placeholder: 'Select unit',
     clauseTemplate: 'The term of this agreement is {{agreementDurationValue}} {{agreementDurationUnit}}.',
@@ -90,7 +90,7 @@ export const startupAdvisorySchema: Record<string, StartupAdvisoryFieldConfig> =
   timeCommitmentValue: {
     label: 'Time Commitment',
     type: 'number',
-    required: true,
+    required: false,
     placeholder: 'e.g. 10',
     clauseTemplate: '',
     group: 'main',
@@ -99,7 +99,7 @@ export const startupAdvisorySchema: Record<string, StartupAdvisoryFieldConfig> =
   timeCommitmentUnit: {
     label: 'Time Unit',
     type: 'dropdown',
-    required: true,
+    required: false,
     options: ['hours/week', 'hours/month', 'days/week', 'days/month'],
     placeholder: 'Select unit',
     clauseTemplate: 'The Advisor will commit approximately {{timeCommitmentValue}} {{timeCommitmentUnit}}.',
@@ -194,11 +194,19 @@ export const startupAdvisorySchema: Record<string, StartupAdvisoryFieldConfig> =
   vestingStartDate: {
     label: 'Vesting Start Date',
     type: 'date',
-    required: false,
+    required: false, // conditional requirement handled via validate
     placeholder: 'MM/DD/YYYY',
     clauseTemplate: 'Vesting will commence on {{vestingStartDate}}.',
     showIf: (form: StartupAdvisoryFormData) =>
       form.compensationType === 'Equity' || form.compensationType === 'Equity + Cash',
+    validate: (_val: string, form?: StartupAdvisoryFormData) => {
+      // Only runs when showIf is true
+      return (
+        typeof form?.vestingStartDate === 'string' &&
+        form.vestingStartDate.trim() !== '' &&
+        form.vestingStartDate.trim() !== 'MM/DD/YYYY'
+      );
+    },
     group: 'main'
   },
   cliffPeriodValue: {

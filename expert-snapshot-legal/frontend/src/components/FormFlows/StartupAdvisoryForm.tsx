@@ -300,19 +300,21 @@ export default function StartupAdvisoryForm({
               if (partnerCfg) {
                 rendered.add(key);
                 rendered.add(partnerKey);
+
+                const combinedErrorKey = `${key}__${partnerKey}`;
+                const combinedError =
+                  (errors as Record<string, string> | undefined)?.[combinedErrorKey];
+
                 return (
                   <div key={key} className={styles.formRow}>
-                    {/* Only show the label from the first field */}
                     <label className={styles.label}>{config.label}</label>
                     <div className={styles.inlinePair}>
                       {renderField(key as keyof StartupAdvisoryFormData, config, true)}
-                      {/* Render partner input without its label */}
-                      {renderField(
-                        partnerKey as keyof StartupAdvisoryFormData,
-                        partnerCfg,
-                        true // suppressLabel
-                      )}
+                      {renderField(partnerKey as keyof StartupAdvisoryFormData, partnerCfg, true)}
                     </div>
+                    {combinedError && (
+                      <span className={styles.error}>{combinedError}</span>
+                    )}
                   </div>
                 );
               }
