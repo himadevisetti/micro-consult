@@ -18,10 +18,9 @@ export default function ScopeOfWorkClause({
     <section>
       <h3 style={{ fontWeight: 'bold' }}>Scope of Work</h3>
       <p>
-        The Advisor shall provide <strong>{resolvedScope}</strong> to the Company,
-        dedicating approximately <strong>{resolvedTime}</strong> during the term of this Agreement.
+        The scope of work includes <strong>{resolvedScope}</strong>, dedicating approximately{' '}
+        <strong>{resolvedTime}</strong> during the term of this Agreement.
       </p>
     </section>
   );
 }
-
