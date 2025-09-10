@@ -61,6 +61,7 @@ export function getStartupAdvisoryClauses(
           cliffPeriod={`${fd.cliffPeriodValue || ''} ${fd.cliffPeriodUnit || ''}`.trim()}
           totalVestingPeriod={`${fd.totalVestingPeriodValue || ''} ${fd.totalVestingPeriodUnit || ''}`.trim()}
           cashAmount={fd.formattedCashAmount}
+          initialPayment={fd.formattedInitialPayment}
           paymentFrequency={fd.ongoingPaymentFrequency}
           expenseReimbursement={asBool(fd.expenseReimbursement)}
           expenseDetails={fd.expenseDetails}

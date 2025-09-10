@@ -176,7 +176,8 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 }
 
 .formRow input[type="date"]+.error,
-.formRow .dateInputWrapper+.error {
+.formRow .dateInputWrapper+.error,
+.formRow select+.error {
   flex-basis: 100%;
 }
 

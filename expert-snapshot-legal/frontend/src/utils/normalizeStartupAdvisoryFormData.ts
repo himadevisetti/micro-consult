@@ -68,10 +68,26 @@ export function normalizeStartupAdvisoryFormData(
     totalVestingPeriodUnit: raw.totalVestingPeriodUnit || '',
     cashAmount:
       raw.cashAmount !== undefined ? Number(raw.cashAmount) : undefined,
-    initialPayment: raw.initialPayment as InitialPaymentType,
+    initialPayment: (() => {
+      const hasInit = raw.initialPayment !== undefined && raw.initialPayment !== null && raw.initialPayment !== '';
+      if (hasInit) {
+        return Number(raw.initialPayment);
+      }
+
+      const hasCash = raw.cashAmount !== undefined && raw.cashAmount !== null && raw.cashAmount !== '';
+      const freq = String(raw.ongoingPaymentFrequency ?? '').trim().toLowerCase();
+
+      // Only auto-fill to full upfront if NOT Rule 4
+      if (hasCash && freq !== 'none' && freq !== '') {
+        return Number(raw.cashAmount);
+      }
+
+      // Leave blank for Rule 4
+      return undefined;
+    })(),
     ongoingPaymentFrequency: raw.ongoingPaymentFrequency as PaymentFrequency,
 
-    // ✅ All checkbox fields coerced to boolean
+    // All checkbox fields coerced to boolean
     expenseReimbursement: toBool(raw.expenseReimbursement),
     expenseDetails: String(raw.expenseDetails ?? ''),
 

@@ -11,7 +11,7 @@ export type AdvisorRole =
 
 // Compensation structure options
 export type CompensationType = 'Equity' | 'Cash' | 'Equity + Cash' | 'None';
-export type PaymentFrequency = 'Weekly' | 'Biweekly' | 'Monthly' | 'Quarterly' | 'Annually';
+export type PaymentFrequency = 'None' | 'Weekly' | 'Biweekly' | 'Monthly' | 'Quarterly' | 'Annually';
 export type InitialPaymentType = 'None' | 'One-time';
 export type IPOwnership = 'Company' | 'Advisor' | 'Joint';
 
@@ -51,7 +51,7 @@ export interface StartupAdvisoryFormData {
   totalVestingPeriodValue: string; // numeric string in raw form
   totalVestingPeriodUnit: string;  // e.g., "months", "years"
   cashAmount?: number;
-  initialPayment?: InitialPaymentType;
+  initialPayment?: number;
   ongoingPaymentFrequency?: PaymentFrequency; // label changed to "Payout Frequency" in schema
   expenseReimbursement: boolean;
   expenseDetails?: string;
@@ -107,8 +107,8 @@ export const defaultStartupAdvisoryFormData: StartupAdvisoryFormData = {
   totalVestingPeriodValue: '',
   totalVestingPeriodUnit: '',
   cashAmount: undefined,
-  initialPayment: 'None',
-  ongoingPaymentFrequency: undefined,
+  initialPayment: undefined,
+  ongoingPaymentFrequency: 'None',
   expenseReimbursement: false,
   expenseDetails: '',
 

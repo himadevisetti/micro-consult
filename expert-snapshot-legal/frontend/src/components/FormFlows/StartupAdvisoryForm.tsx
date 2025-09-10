@@ -1,7 +1,7 @@
 // src/components/FormFlows/StartupAdvisoryForm.tsx
 
 import React, { useState, useEffect } from 'react';
-import type { StartupAdvisoryFormData } from '../../types/StartupAdvisoryFormData';
+import { StartupAdvisoryFormData, defaultStartupAdvisoryFormData } from '../../types/StartupAdvisoryFormData';
 import { FormType, RetainerTypeLabel } from '@/types/FormType';
 import { StartupAdvisoryFieldConfig } from '@/types/StartupAdvisoryFieldConfig';
 import CustomDatePicker from '../Inputs/CustomDatePicker';
@@ -101,17 +101,52 @@ export default function StartupAdvisoryForm({
     setSubmitted(false);
   }, [submitted, errors]);
 
+  // --- helper: strongly-typed default reader
+  function getDefault<K extends keyof StartupAdvisoryFormData>(
+    key: K,
+    schema: Record<string, any>
+  ): StartupAdvisoryFormData[K] {
+    const fromSchema = schema[key]?.default as StartupAdvisoryFormData[K] | undefined;
+    return fromSchema !== undefined ? fromSchema : defaultStartupAdvisoryFormData[key];
+  }
+
+  // --- helper: robust boolean coercion for checkbox fields
+  function toBool(val: unknown): boolean {
+    return val === true || val === 'true' || val === 1 || val === '1';
+  }
+
+  // --- effect: preserve defaults when fields are hidden via showIf
   useEffect(() => {
     Object.entries(schema).forEach(([key, config]) => {
       if (config.showIf && !config.showIf(formData)) {
         const field = key as keyof StartupAdvisoryFormData;
-        if (formData[field] !== undefined && formData[field] !== '') {
-          if (config.type === 'checkbox') {
-            onRawChange(field, 'false');
-            onChange(field, false);
+
+        if (config.type === 'checkbox') {
+          const defaultVal = toBool(getDefault(field, schema));
+          const current = toBool(formData[field]);
+
+          // Only reset if user deviated from the default
+          if (current !== defaultVal) {
+            onRawChange(field, String(defaultVal));
+            onChange(field, defaultVal);
+          }
+        } else {
+          const defaultVal = getDefault(field, schema);
+
+          // If we have a known default, preserve it; otherwise, clear only non-empty values
+          if (defaultVal !== undefined) {
+            const currentVal = formData[field] as unknown;
+
+            // Only clear if current deviates from the true initial default
+            if (currentVal !== undefined && currentVal !== '' && currentVal !== defaultVal) {
+              onRawChange(field, '');
+              onChange(field, '');
+            }
           } else {
-            onRawChange(field, '');
-            onChange(field, '');
+            if (formData[field] !== undefined && formData[field] !== '') {
+              onRawChange(field, '');
+              onChange(field, '');
+            }
           }
         }
       }

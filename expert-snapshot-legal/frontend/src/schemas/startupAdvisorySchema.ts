@@ -272,24 +272,65 @@ export const startupAdvisorySchema: Record<string, StartupAdvisoryFieldConfig> =
   },
   initialPayment: {
     label: 'Initial Payment',
-    type: 'dropdown',
-    required: false,
-    options: ['None', 'One-time'],
-    placeholder: 'Select initial payment type',
+    type: 'number',
+    required: false, // let validator enforce conditional requirement
+    placeholder: 'e.g. 3000.00',
     clauseTemplate: '',
     showIf: (form: StartupAdvisoryFormData) =>
       form.compensationType === 'Cash' || form.compensationType === 'Equity + Cash',
+    validate: (val: string, form?: StartupAdvisoryFormData) => {
+      if (form?.compensationType === 'Cash' || form?.compensationType === 'Equity + Cash') {
+        const total = form?.cashAmount ?? 0;
+
+        // Treat as blank if null/empty string OR (0 and payout frequency is 'None')
+        const isBlank =
+          val == null ||
+          String(val).trim() === '' ||
+          (Number(val) === 0 &&
+            (form?.ongoingPaymentFrequency ?? '').toLowerCase() === 'none');
+
+        // Rule 4: If blank, treat as full upfront and accept if there's a cash amount
+        if (isBlank) {
+          return total > 0;
+        }
+
+        const num = parseFloat(val);
+        return !isNaN(num) && num >= 0 && num <= total;
+      }
+      return true;
+    },
     group: 'main'
   },
   ongoingPaymentFrequency: {
     label: 'Payout Frequency',
     type: 'dropdown',
-    required: false,
-    options: ['Weekly', 'Biweekly', 'Monthly', 'Quarterly', 'Annually'],
+    required: false, // conditional in validate
+    options: ['None', 'Weekly', 'Biweekly', 'Monthly', 'Quarterly', 'Annually'],
     placeholder: 'Select ongoing frequency',
-    clauseTemplate: 'Payments will be made {{initialPayment}} and then on a {{ongoingPaymentFrequency}} basis.',
+    clauseTemplate: '',
     showIf: (form: StartupAdvisoryFormData) =>
       form.compensationType === 'Cash' || form.compensationType === 'Equity + Cash',
+    validate: (val: string, form?: StartupAdvisoryFormData) => {
+      if (form?.compensationType === 'Cash' || form?.compensationType === 'Equity + Cash') {
+        const total = form?.cashAmount ?? 0;
+
+        const rawInit = form?.initialPayment;
+        const freq = String(val ?? '').trim().toLowerCase();
+
+        // Treat as blank if null/empty OR (0 and frequency is None)
+        const isBlank =
+          rawInit == null ||
+          String(rawInit).trim() === '' ||
+          (Number(rawInit) === 0 && freq === 'none');
+
+        const init = isBlank ? total : Number(rawInit);
+
+        if (init < total) {
+          return !!val && val.trim() !== '' && freq !== 'none';
+        }
+      }
+      return true;
+    },
     group: 'main'
   },
   expenseReimbursement: {

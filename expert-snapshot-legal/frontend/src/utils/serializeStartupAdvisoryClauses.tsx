@@ -14,6 +14,7 @@ export type EnrichedStartupAdvisoryFormData = StartupAdvisoryFormData & {
   formattedEquityPercentage: string;
   formattedEquityShares: string;
   formattedCashAmount: string;
+  formattedInitialPayment: string;
 };
 
 export interface StartupAdvisoryClauseTemplate {
@@ -48,6 +49,11 @@ export function getSerializedStartupAdvisoryClauses(
       ? normalized.cashAmount.toFixed(2)
       : '';
 
+  const formattedInitialPayment =
+    normalized.initialPayment != null && !Number.isNaN(normalized.initialPayment)
+      ? normalized.initialPayment.toFixed(2)
+      : '';
+
   const enrichedFormData: EnrichedStartupAdvisoryFormData = {
     ...formData,
     effectiveDate: normalized.effectiveDate,
@@ -55,11 +61,13 @@ export function getSerializedStartupAdvisoryClauses(
     equityPercentage: normalized.equityPercentage,
     equityShares: normalized.equityShares,
     cashAmount: normalized.cashAmount,
+    initialPayment: normalized.initialPayment,
     formattedEffectiveDateLong,
     formattedVestingStartDateLong,
     formattedEquityPercentage,
     formattedEquityShares,
     formattedCashAmount,
+    formattedInitialPayment,
   };
 
   const clauseTemplates: StartupAdvisoryClauseTemplate[] =
@@ -77,4 +85,3 @@ export function getSerializedStartupAdvisoryClauses(
 
   return clauses;
 }
-
