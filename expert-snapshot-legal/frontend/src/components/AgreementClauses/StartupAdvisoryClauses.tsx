@@ -13,6 +13,8 @@ import TerminationClause from './Startup/TerminationClause.js';
 import GoverningLawClause from './Shared/GoverningLawClause.js';
 import EntireAgreementClause from './Shared/EntireAgreementClause.js';
 import SignatureClause from './Startup/SignatureClause.js';
+import AdditionalTermsClause from './Startup/AdditionalTermsClause.js';
+import DisputeResolutionClause from './Shared/DisputeResolutionClause.js';
 
 export function getStartupAdvisoryClauses(
   formData: EnrichedStartupAdvisoryFormData
@@ -115,6 +117,16 @@ export function getStartupAdvisoryClauses(
           agreementDurationUnit={fd.agreementDurationUnit}
           companyName={fd.companyName}
           advisorName={fd.advisorName}
+          includeForCause={asBool(fd.includeTerminationForCause)}
+        />
+      ),
+    },
+    {
+      id: 'disputeResolutionClause',
+      render: (fd) => (
+        <DisputeResolutionClause
+          method={fd.disputeResolution}
+          jurisdiction={fd.governingLaw}
         />
       ),
     },
@@ -127,6 +139,16 @@ export function getStartupAdvisoryClauses(
         {
           id: 'entireAgreementClause',
           render: () => <EntireAgreementClause />,
+        },
+      ] satisfies StartupAdvisoryClauseTemplate[])
+      : []),
+    ...(formData.additionalProvisions?.trim()
+      ? ([
+        {
+          id: 'additionalTermsClause',
+          render: (fd) => (
+            <AdditionalTermsClause additionalProvisions={fd.additionalProvisions ?? ''} />
+          ),
         },
       ] satisfies StartupAdvisoryClauseTemplate[])
       : []),

@@ -32,6 +32,29 @@ export default function StartupAdvisoryFlow({ schema }: Props) {
     vestingStartDate: formattedToday
   };
 
+  // Clear persisted state only on hard reload
+  const isHardReload = (() => {
+    if (typeof performance === 'undefined') return false;
+
+    // Prefer Navigation Timing Level 2
+    const entries = performance.getEntriesByType?.('navigation') as
+      | PerformanceNavigationTiming[]
+      | undefined;
+
+    if (entries && entries.length > 0) {
+      return entries[0].type === 'reload';
+    }
+
+    // Fallback to deprecated API (still widely supported)
+    const nav = (performance as any).navigation;
+    return !!nav && nav.type === nav.TYPE_RELOAD;
+  })();
+
+  if (isHardReload) {
+    sessionStorage.removeItem('startupAdvisoryDraft');
+    sessionStorage.removeItem('startupAdvisoryFormData');
+  }
+
   const {
     formData,
     rawFormData,

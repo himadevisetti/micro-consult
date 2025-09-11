@@ -24,8 +24,12 @@ export default function NonCompeteClause({
       <h3 style={{ fontWeight: 'bold' }}>Non‑Compete</h3>
       <p>
         During the term of this Agreement
-        {hasDuration && ` and for ${durationText} thereafter`},{' '}
-        <strong>{advisorName}</strong> shall not engage, directly or indirectly, in any business or
+        {hasDuration && (
+          <>
+            {' '}and for <strong>{durationText}</strong> thereafter
+          </>
+        )}
+        , <strong>{advisorName}</strong> shall not engage, directly or indirectly, in any business or
         activity that competes with <strong>{companyName}</strong>’s business, without{' '}
         <strong>{companyName}</strong>’s prior written consent.
       </p>
