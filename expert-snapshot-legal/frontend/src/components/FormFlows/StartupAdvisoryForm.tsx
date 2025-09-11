@@ -1,6 +1,6 @@
 // src/components/FormFlows/StartupAdvisoryForm.tsx
 
-import React, { useState, useEffect } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import { StartupAdvisoryFormData, defaultStartupAdvisoryFormData } from '../../types/StartupAdvisoryFormData';
 import { FormType, RetainerTypeLabel } from '@/types/FormType';
 import { StartupAdvisoryFieldConfig } from '@/types/StartupAdvisoryFieldConfig';
@@ -115,6 +115,8 @@ export default function StartupAdvisoryForm({
     return val === true || val === 'true' || val === 1 || val === '1';
   }
 
+  const prevVisibilityRef = useRef<Record<string, boolean>>({});
+
   // --- effect: preserve defaults when fields are hidden via showIf
   useEffect(() => {
     const normalise = (v: unknown) =>
@@ -124,16 +126,21 @@ export default function StartupAdvisoryForm({
       const field = key as keyof StartupAdvisoryFormData;
       const visible = !config.showIf || config.showIf(formData);
       const defaultVal = getDefault(field, schema);
+      const prevVisible = prevVisibilityRef.current[field];
 
-      // ✅ NEW: if visible and empty, set default
-      if (visible && defaultVal !== undefined && normalise(formData[field]) === '') {
+      // Only set default on hidden → visible
+      if (
+        visible &&
+        prevVisible === false &&
+        defaultVal !== undefined &&
+        normalise(formData[field]) === ''
+      ) {
         onRawChange(field, String(defaultVal));
         onChange(field, defaultVal as any);
-        return; // skip hidden logic for this field this pass
       }
 
-      // Hidden-field preservation / clearing
-      if (!visible) {
+      // Only run hidden-field logic on visible → hidden
+      if (!visible && prevVisible === true) {
         if (config.type === 'checkbox') {
           const defBool = toBool(defaultVal);
           const current = toBool(formData[field]);
@@ -160,6 +167,9 @@ export default function StartupAdvisoryForm({
           }
         }
       }
+
+      // Update previous visibility
+      prevVisibilityRef.current[field] = visible;
     });
   }, [formData, schema, onChange, onRawChange]);
 
