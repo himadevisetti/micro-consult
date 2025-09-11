@@ -117,28 +117,38 @@ export default function StartupAdvisoryForm({
 
   // --- effect: preserve defaults when fields are hidden via showIf
   useEffect(() => {
+    const normalise = (v: unknown) =>
+      v === undefined || v === null ? '' : String(v).trim().toLowerCase();
+
     Object.entries(schema).forEach(([key, config]) => {
-      if (config.showIf && !config.showIf(formData)) {
-        const field = key as keyof StartupAdvisoryFormData;
+      const field = key as keyof StartupAdvisoryFormData;
+      const visible = !config.showIf || config.showIf(formData);
+      const defaultVal = getDefault(field, schema);
 
+      // ✅ NEW: if visible and empty, set default
+      if (visible && defaultVal !== undefined && normalise(formData[field]) === '') {
+        onRawChange(field, String(defaultVal));
+        onChange(field, defaultVal as any);
+        return; // skip hidden logic for this field this pass
+      }
+
+      // Hidden-field preservation / clearing
+      if (!visible) {
         if (config.type === 'checkbox') {
-          const defaultVal = toBool(getDefault(field, schema));
+          const defBool = toBool(defaultVal);
           const current = toBool(formData[field]);
-
-          // Only reset if user deviated from the default
-          if (current !== defaultVal) {
-            onRawChange(field, String(defaultVal));
-            onChange(field, defaultVal);
+          if (current !== defBool) {
+            onRawChange(field, String(defBool));
+            onChange(field, defBool);
           }
         } else {
-          const defaultVal = getDefault(field, schema);
-
-          // If we have a known default, preserve it; otherwise, clear only non-empty values
           if (defaultVal !== undefined) {
             const currentVal = formData[field] as unknown;
-
-            // Only clear if current deviates from the true initial default
-            if (currentVal !== undefined && currentVal !== '' && currentVal !== defaultVal) {
+            if (
+              currentVal !== undefined &&
+              currentVal !== '' &&
+              normalise(currentVal) !== normalise(defaultVal)
+            ) {
               onRawChange(field, '');
               onChange(field, '');
             }

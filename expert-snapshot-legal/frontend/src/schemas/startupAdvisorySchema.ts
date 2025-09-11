@@ -307,6 +307,7 @@ export const startupAdvisorySchema: Record<string, StartupAdvisoryFieldConfig> =
     required: false, // conditional in validate
     options: ['None', 'Weekly', 'Biweekly', 'Monthly', 'Quarterly', 'Annually'],
     placeholder: 'Select ongoing frequency',
+    default: 'None',
     clauseTemplate: '',
     showIf: (form: StartupAdvisoryFormData) =>
       form.compensationType === 'Cash' || form.compensationType === 'Equity + Cash',
