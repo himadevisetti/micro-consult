@@ -13,9 +13,9 @@ export function injectCssIntoHtml(html: string, compiledCss: string, title: stri
         <style>
           ${escapedCss}
 
-          /* Page margins: top 1.25in, sides 1in, bottom 1in */
+          /* Page margins: top 1.75in, sides 1in, bottom 1in */
           @page {
-            margin: 1.25in 1in;
+            margin: 1.75in 1in 1in 1in;
           }
 
           html, body {
@@ -86,8 +86,25 @@ export function injectCssIntoHtml(html: string, compiledCss: string, title: stri
               break-before: avoid-page !important;
               page-break-before: avoid !important;
             }
+
+            /* Allow breaks only inside the clauseBlock containing the Signatures heading */
+            .print-allow-break {
+              break-inside: auto !important;
+              page-break-inside: auto !important;
+            }
           }
         </style>
+        <script>
+          // Tag the clauseBlock containing the "Signatures" heading
+          document.addEventListener('DOMContentLoaded', function() {
+            document.querySelectorAll('.clauseBlock').forEach(block => {
+              const heading = block.querySelector('section > h3, h3');
+              if (heading && heading.textContent.trim().toLowerCase() === 'signatures') {
+                block.classList.add('print-allow-break');
+              }
+            });
+          });
+        </script>
       </head>
       <body>
         ${html}
