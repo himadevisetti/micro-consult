@@ -1,8 +1,17 @@
 /**
  * Injects compiled CSS into raw HTML for PDF rendering.
+ * - Tags the "Signatures" <h3> in-string with data-signatures (no JS).
+ * - Scopes print rules to the section containing that heading.
  */
 export function injectCssIntoHtml(html: string, compiledCss: string, title: string): string {
   const escapedCss = compiledCss.replace(/<\/style>/gi, '<\\/style>');
+
+  // Tag the Signatures heading so we can target it in CSS without JS.
+  // Keeps any existing attributes on <h3>.
+  const htmlTagged = html.replace(
+    /(<h3)([^>]*>)\s*Signatures\s*(<\/h3>)/i,
+    (_m, open, rest, close) => `${open} data-signatures="true"${rest}Signatures${close}`
+  );
 
   return `
     <!DOCTYPE html>
@@ -77,7 +86,7 @@ export function injectCssIntoHtml(html: string, compiledCss: string, title: stri
               break-inside: auto !important;
             }
 
-            /* Keep clause heading with first paragraph */
+            /* Keep every clause heading with its first paragraph */
             .clauseBlock h3 {
               break-after: avoid-page !important;
               page-break-after: avoid !important;
@@ -87,27 +96,43 @@ export function injectCssIntoHtml(html: string, compiledCss: string, title: stri
               page-break-before: avoid !important;
             }
 
-            /* Allow breaks only inside the clauseBlock containing the Signatures heading */
-            .print-allow-break {
+            /* Signature clause special rules (scoped to the section with the tagged heading) */
+            section:has(> h3[data-signatures]) {
               break-inside: auto !important;
               page-break-inside: auto !important;
+              overflow: visible !important;
+              display: block !important;
+            }
+
+            /* Keep Signatures heading with intro paragraph */
+            h3[data-signatures] {
+              break-after: avoid-page !important;
+              page-break-after: avoid !important;
+            }
+            h3[data-signatures] + p {
+              break-before: avoid-page !important;
+              page-break-before: avoid !important;
+              break-inside: avoid-page !important;
+              page-break-inside: avoid !important;
+            }
+
+            /* Keep the IN WITNESS WHEREOF line intact (same as the intro p above) */
+            /* Already covered by h3[data-signatures] + p rules */
+
+            /* Keep underline with following name/title, push both down if needed */
+            section:has(> h3[data-signatures]) p:has(+ p strong) {
+              break-inside: avoid-page !important;
+              page-break-inside: avoid !important;
+            }
+            section:has(> h3[data-signatures]) p strong {
+              break-before: avoid-page !important;
+              page-break-before: avoid !important;
             }
           }
         </style>
-        <script>
-          // Tag the clauseBlock containing the "Signatures" heading
-          document.addEventListener('DOMContentLoaded', function() {
-            document.querySelectorAll('.clauseBlock').forEach(block => {
-              const heading = block.querySelector('section > h3, h3');
-              if (heading && heading.textContent.trim().toLowerCase() === 'signatures') {
-                block.classList.add('print-allow-break');
-              }
-            });
-          });
-        </script>
       </head>
       <body>
-        ${html}
+        ${htmlTagged}
       </body>
     </html>
   `;
