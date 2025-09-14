@@ -1,3 +1,5 @@
+// src/utils/export/exportHandler.ts
+
 import { generateDOCX } from './generateDOCX.js';
 import { getFilename } from '../../utils/generateFilename.js';
 import { FormType, RetainerTypeLabel } from '@/types/FormType';
@@ -13,26 +15,40 @@ function slugifyFormType(formType: FormType): string {
 function resolveMetadata(formData: Record<string, any>, formType: FormType) {
   let client: string;
   let purpose: string;
+  let extraMetadata: Record<string, string> = {};
 
   switch (formType) {
     case FormType.IPRightsLicensing:
       client = formData.clientName?.trim() || 'Client';
       purpose = 'IP rights licensing agreement';
+      extraMetadata = {
+        inventorName: formData.inventorName?.trim() || 'Inventor',
+        providerName: formData.providerName?.trim() || 'Provider',
+      };
       break;
 
     case FormType.StandardRetainer:
       client = formData.clientName?.trim() || 'Client';
       purpose = 'Standard retainer agreement';
+      extraMetadata = {
+        providerName: formData.providerName?.trim() || 'Service Provider',
+      };
       break;
 
     case FormType.StartupAdvisory:
       client = formData.companyName?.trim() || 'Company';
       purpose = 'Startup advisory agreement';
+      extraMetadata = {
+        advisorName: formData.advisorName?.trim() || 'Advisor',
+      };
       break;
 
     case FormType.EmploymentAgreement:
-      client = formData.clientName?.trim() || 'Client';
+      client = formData.employeeName?.trim() || 'Employee';
       purpose = 'Employment agreement';
+      extraMetadata = {
+        employerName: formData.employerName?.trim() || 'Employer',
+      };
       break;
 
     case FormType.LitigationEngagement:
@@ -61,7 +77,7 @@ function resolveMetadata(formData: Record<string, any>, formType: FormType) {
       break;
   }
 
-  return { client, purpose };
+  return { client, purpose, extraMetadata };
 }
 
 export async function exportRetainer<T extends Record<string, any>>(
@@ -70,7 +86,8 @@ export async function exportRetainer<T extends Record<string, any>>(
   formData: T,
   html?: string
 ) {
-  const { client: resolvedClient, purpose: resolvedMatter } = resolveMetadata(formData, formType);
+  const { client: resolvedClient, purpose: resolvedMatter, extraMetadata } =
+    resolveMetadata(formData, formType);
 
   const retainerType = RetainerTypeLabel[formType];
   const normalizedFormType = slugifyFormType(formType); // e.g. 'ip-rights-licensing'
@@ -108,6 +125,7 @@ export async function exportRetainer<T extends Record<string, any>>(
     return;
   }
 
+  // Dev-only save to backend for debugging/QA
   if (process.env.NODE_ENV === 'development' && blob && typeof blob.arrayBuffer === 'function') {
     try {
       const fileArrayBuffer = await blob.arrayBuffer();
@@ -124,6 +142,7 @@ export async function exportRetainer<T extends Record<string, any>>(
             purpose: resolvedMatter,
             template: retainerType,
             formType: normalizedFormType,
+            ...extraMetadata,
           },
         }),
       });

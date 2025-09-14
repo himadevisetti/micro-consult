@@ -31,6 +31,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         filename,
         clientName: metadata.client,
         retainerType: metadata.template,
+        employerName: metadata.employerName || null,
+        advisorName: metadata.advisorName || null,
+        inventorName: metadata.inventorName || null,
+        providerName: metadata.providerName || null,
         timestamp: new Date(),
       },
     });
