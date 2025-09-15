@@ -68,7 +68,8 @@ export function parseAndValidateEmploymentAgreementForm(
   function validateInlinePair(
     valueKey: keyof EmploymentAgreementFormData,
     unitKey: keyof EmploymentAgreementFormData,
-    label: string
+    label: string,
+    required: boolean
   ) {
     const valueCfg = schema[valueKey];
     const unitCfg = schema[unitKey];
@@ -85,27 +86,50 @@ export function parseAndValidateEmploymentAgreementForm(
     if (valueVisible && unitVisible) {
       const value = formSnapshot[valueKey];
       const unit = formSnapshot[unitKey];
-      if (isEmptyValue(value) || isEmptyValue(unit)) {
-        errors[`${String(valueKey)}__${String(unitKey)}` as keyof EmploymentAgreementFormData] =
-          `Please enter both a value and a unit for ${label}`;
-        console.warn(`⚠️ Missing required inline pair: ${label}`);
+
+      const numericValue =
+        typeof value === 'string' && value.trim() !== ''
+          ? Number(value)
+          : typeof value === 'number'
+            ? value
+            : undefined;
+
+      const hasPositiveValue = numericValue !== undefined && numericValue > 0;
+
+      // For optional pairs, treat default units as empty
+      const isDefaultUnit =
+        typeof unit === 'string' &&
+        ['none', 'months', '%', 'usd'].includes(unit.trim().toLowerCase());
+
+      const hasUnit = !isEmptyValue(unit) && !(!required && isDefaultUnit);
+
+      if (required) {
+        if (!hasPositiveValue || !hasUnit) {
+          errors[`${String(valueKey)}__${String(unitKey)}` as keyof EmploymentAgreementFormData] =
+            `${label} must include a value greater than 0 and a unit.`;
+        }
+      } else {
+        if ((hasPositiveValue && !hasUnit) || (!hasPositiveValue && hasUnit)) {
+          errors[`${String(valueKey)}__${String(unitKey)}` as keyof EmploymentAgreementFormData] =
+            `Please enter both a value and a unit for ${label}`;
+        }
       }
     }
   }
 
-  // --- Always/conditionally required value+unit pairs in Employment Agreement ---
-  validateInlinePair('contractDurationValue', 'contractDurationUnit', 'Contract Duration');
-  validateInlinePair('nonCompeteDurationValue', 'nonCompeteDurationUnit', 'Non-Compete Duration');
-  validateInlinePair('bonusAmount', 'bonusUnit', 'Bonus');
-  validateInlinePair('noticePeriodEmployer', 'noticePeriodEmployerUnit', 'Employer Notice Period');
-  validateInlinePair('noticePeriodEmployee', 'noticePeriodEmployeeUnit', 'Employee Notice Period');
-  validateInlinePair('probationPeriod', 'probationPeriodUnit', 'Probation Period');
+  // Required pairs
+  validateInlinePair('baseSalary', 'payFrequency', 'Base Salary', true);
+  validateInlinePair('contractDurationValue', 'contractDurationUnit', 'Contract Duration', true);
+  validateInlinePair('nonCompeteDurationValue', 'nonCompeteDurationUnit', 'Non-Compete Duration', true);
 
-  // No percent-only pairs in this schema, so we skip validateInlinePairPercentOnly
+  // Optional pairs
+  validateInlinePair('bonusAmount', 'bonusUnit', 'Bonus', false);
+  validateInlinePair('noticePeriodEmployer', 'noticePeriodEmployerUnit', 'Employer Notice Period', false);
+  validateInlinePair('noticePeriodEmployee', 'noticePeriodEmployeeUnit', 'Employee Notice Period', false);
+  validateInlinePair('probationPeriod', 'probationPeriodUnit', 'Probation Period', false);
 
   return {
     parsed: parsedRaw as EmploymentAgreementFormData,
     errors,
   };
 }
-

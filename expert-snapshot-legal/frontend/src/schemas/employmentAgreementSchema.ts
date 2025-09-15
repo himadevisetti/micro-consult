@@ -109,12 +109,13 @@ export const employmentAgreementSchema: Record<string, EmploymentAgreementFieldC
   baseSalary: {
     label: 'Base Salary',
     type: 'number',
-    required: true,
+    required: false,
     placeholder: 'e.g. 60000',
     clauseTemplate: 'The Employee will receive a base salary of {{baseSalary}}.',
     showIf: (form: EmploymentAgreementFormData) =>
       ['Permanent', 'Fixed-Term', 'Probationary'].includes(form.contractType),
     validate: (val: string, form?: EmploymentAgreementFormData) => {
+      if (val === '' || val == null) return true;
       if (['Permanent', 'Fixed-Term', 'Probationary'].includes(form?.contractType || '')) {
         const num = parseFloat(val);
         return !isNaN(num) && num > 0;
@@ -127,13 +128,17 @@ export const employmentAgreementSchema: Record<string, EmploymentAgreementFieldC
   payFrequency: {
     label: 'Pay Frequency',
     type: 'dropdown',
-    required: true,
+    required: false,
     options: ['Weekly', 'Biweekly', 'Monthly'],
     placeholder: 'Select pay frequency',
     clauseTemplate: 'Salary will be paid {{payFrequency}}.',
     showIf: (form: EmploymentAgreementFormData) =>
       ['Permanent', 'Fixed-Term', 'Probationary'].includes(form.contractType),
-    group: 'main'
+    group: 'main',
+    validate: (val: string) => {
+      if (val === '' || val == null) return true;
+      return ['Weekly', 'Biweekly', 'Monthly'].includes(val);
+    }
   },
   bonusAmount: {
     label: 'Bonus Amount',
@@ -221,7 +226,7 @@ export const employmentAgreementSchema: Record<string, EmploymentAgreementFieldC
     label: 'Unit',
     type: 'dropdown',
     required: false,
-    options: ['Months'],
+    options: ['Months'], // Title Case
     default: 'Months',
     disabled: true,
     group: 'main',
@@ -246,8 +251,8 @@ export const employmentAgreementSchema: Record<string, EmploymentAgreementFieldC
     label: 'Unit',
     type: 'dropdown',
     required: false,
-    options: ['weeks', 'months'],
-    default: 'weeks',
+    options: ['Weeks', 'Months'],
+    default: 'Weeks',
     group: 'main'
   },
   noticePeriodEmployee: {
@@ -268,8 +273,8 @@ export const employmentAgreementSchema: Record<string, EmploymentAgreementFieldC
     label: 'Unit',
     type: 'dropdown',
     required: false,
-    options: ['weeks', 'months'],
-    default: 'weeks',
+    options: ['Weeks', 'Months'],
+    default: 'Weeks',
     group: 'main'
   },
 
@@ -331,7 +336,8 @@ export const employmentAgreementSchema: Record<string, EmploymentAgreementFieldC
     label: 'Unit',
     type: 'dropdown',
     required: false,
-    options: ['weeks', 'months', 'years'],
+    options: ['Weeks', 'Months', 'Years'],
+    default: 'Months',
     placeholder: 'Select unit',
     clauseTemplate: 'The contract duration is {{contractDurationValue}} {{contractDurationUnit}}.',
     group: 'main',
@@ -366,20 +372,14 @@ export const employmentAgreementSchema: Record<string, EmploymentAgreementFieldC
     clauseTemplate: '',
     group: 'clauses',
     inlineWith: 'nonCompeteDurationUnit',
-    showIf: (form: EmploymentAgreementFormData) => form.nonCompete,
-    validate: (val: string, form?: EmploymentAgreementFormData) => {
-      if (form?.nonCompete) {
-        const num = parseInt(val, 10);
-        return !isNaN(num) && num > 0;
-      }
-      return true;
-    }
+    showIf: (form: EmploymentAgreementFormData) => form.nonCompete
   },
   nonCompeteDurationUnit: {
     label: 'Unit',
     type: 'dropdown',
     required: false,
-    options: ['days', 'weeks', 'months', 'years'],
+    options: ['Days', 'Weeks', 'Months', 'Years'], // Title Case
+    default: 'Months',
     placeholder: 'Select unit',
     clauseTemplate: 'The non-compete period is {{nonCompeteDurationValue}} {{nonCompeteDurationUnit}}.',
     group: 'clauses',

@@ -8,7 +8,8 @@ import type {
   BandOrGroup,
   BonusUnit,
   NoticePeriodUnit,
-  ProbationPeriodUnit
+  ProbationPeriodUnit,
+  DurationUnit
 } from '../types/EmploymentAgreementFormData';
 
 /**
@@ -35,53 +36,77 @@ export function normalizeEmploymentAgreementFormData(
 
     // Salary-based fields
     baseSalary:
-      raw.baseSalary !== undefined ? Number(raw.baseSalary) : undefined,
-    payFrequency: raw.payFrequency as PaymentFrequency,
+      raw.baseSalary !== undefined && raw.baseSalary !== ''
+        ? Number(raw.baseSalary)
+        : undefined,
+    payFrequency:
+      raw.baseSalary !== undefined && raw.baseSalary !== ''
+        ? (raw.payFrequency as PaymentFrequency) ?? 'Biweekly'
+        : undefined,
+
     bonusAmount:
       raw.bonusAmount !== undefined && raw.bonusAmount !== ''
         ? Number(raw.bonusAmount)
         : undefined,
+    bonusUnit:
+      raw.bonusAmount !== undefined && raw.bonusAmount !== ''
+        ? (raw.bonusUnit as BonusUnit) ?? 'None'
+        : undefined,
 
-    bonusUnit: (raw.bonusUnit as BonusUnit) ?? 'None',
     benefitsList: Array.isArray(raw.benefitsList)
       ? raw.benefitsList.map(String)
       : raw.benefitsList
         ? [String(raw.benefitsList)]
         : undefined,
+
     annualLeaveDays:
       raw.annualLeaveDays !== undefined ? Number(raw.annualLeaveDays) : undefined,
     sickLeaveDays:
       raw.sickLeaveDays !== undefined ? Number(raw.sickLeaveDays) : undefined,
+
     probationPeriod:
       raw.probationPeriod !== undefined && raw.probationPeriod !== ''
         ? Number(raw.probationPeriod)
         : undefined,
-
     probationPeriodUnit:
-      (raw.probationPeriodUnit as ProbationPeriodUnit) ?? 'Months',
+      raw.probationPeriod !== undefined && raw.probationPeriod !== ''
+        ? (raw.probationPeriodUnit as ProbationPeriodUnit) ?? 'Months'
+        : undefined,
+
     noticePeriodEmployer:
       raw.noticePeriodEmployer !== undefined && raw.noticePeriodEmployer !== ''
         ? Number(raw.noticePeriodEmployer)
         : undefined,
-
     noticePeriodEmployerUnit:
-      (raw.noticePeriodEmployerUnit as NoticePeriodUnit) ?? 'Weeks',
+      raw.noticePeriodEmployer !== undefined && raw.noticePeriodEmployer !== ''
+        ? (raw.noticePeriodEmployerUnit as NoticePeriodUnit) ?? 'Weeks'
+        : undefined,
 
     noticePeriodEmployee:
       raw.noticePeriodEmployee !== undefined && raw.noticePeriodEmployee !== ''
         ? Number(raw.noticePeriodEmployee)
         : undefined,
-
     noticePeriodEmployeeUnit:
-      (raw.noticePeriodEmployeeUnit as NoticePeriodUnit) ?? 'Weeks',
+      raw.noticePeriodEmployee !== undefined && raw.noticePeriodEmployee !== ''
+        ? (raw.noticePeriodEmployeeUnit as NoticePeriodUnit) ?? 'Weeks'
+        : undefined,
 
     // Hourly-based fields
     hourlyRate:
       raw.hourlyRate !== undefined ? Number(raw.hourlyRate) : undefined,
     hoursPerWeek:
       raw.hoursPerWeek !== undefined ? Number(raw.hoursPerWeek) : undefined,
-    contractDurationValue: String(raw.contractDurationValue ?? ''),
-    contractDurationUnit: String(raw.contractDurationUnit ?? ''),
+
+    // Contract duration (numeric now)
+    contractDurationValue:
+      raw.contractDurationValue !== undefined && raw.contractDurationValue !== ''
+        ? Number(raw.contractDurationValue)
+        : undefined,
+    contractDurationUnit:
+      raw.contractDurationValue !== undefined && raw.contractDurationValue !== ''
+        ? (raw.contractDurationUnit as DurationUnit) ?? 'Months'
+        : undefined,
+
     overtimePolicy: String(raw.overtimePolicy ?? ''),
 
     workLocation: raw.workLocation as WorkLocation,
@@ -89,8 +114,17 @@ export function normalizeEmploymentAgreementFormData(
 
     // Clause toggles
     nonCompete: toBool(raw.nonCompete),
-    nonCompeteDurationValue: String(raw.nonCompeteDurationValue ?? ''),
-    nonCompeteDurationUnit: String(raw.nonCompeteDurationUnit ?? ''),
+
+    // Non-compete duration (numeric now)
+    nonCompeteDurationValue:
+      raw.nonCompeteDurationValue !== undefined && raw.nonCompeteDurationValue !== ''
+        ? Number(raw.nonCompeteDurationValue)
+        : undefined,
+    nonCompeteDurationUnit:
+      raw.nonCompeteDurationValue !== undefined && raw.nonCompeteDurationValue !== ''
+        ? (raw.nonCompeteDurationUnit as DurationUnit) ?? 'Months'
+        : undefined,
+
     nonCompeteScope: String(raw.nonCompeteScope ?? ''),
     nonSolicitation: toBool(raw.nonSolicitation),
     includeConfidentiality: toBool(raw.includeConfidentiality),
@@ -155,4 +189,3 @@ function normalizeDate(input: unknown): string {
 
   return '';
 }
-

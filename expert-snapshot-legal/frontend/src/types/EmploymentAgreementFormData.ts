@@ -9,16 +9,17 @@ export type ContractType =
   | 'Hourly';
 
 export type WorkLocation = 'On-site' | 'Remote' | 'Hybrid';
-export type PaymentFrequency = 'Weekly' | 'Biweekly' | 'Monthly';
 export type BandOrGroup =
   | 'Band 1 - Entry'
   | 'Band 2 - Mid'
   | 'Band 3 - Senior'
   | 'Executive';
 
+export type PaymentFrequency = 'Weekly' | 'Biweekly' | 'Monthly';
 export type BonusUnit = 'None' | 'Quarterly' | 'Annual';
+export type ProbationPeriodUnit = 'Months';
 export type NoticePeriodUnit = 'Weeks' | 'Months';
-export type ProbationPeriodUnit = 'Weeks' | 'Months';
+export type DurationUnit = 'Days' | 'Weeks' | 'Months' | 'Years';
 
 export interface EmploymentAgreementFormData {
   // Parties & Dates
@@ -51,8 +52,8 @@ export interface EmploymentAgreementFormData {
 
   hourlyRate?: number; // Temporary/Hourly
   hoursPerWeek?: number;
-  contractDurationValue?: string;
-  contractDurationUnit?: string;
+  contractDurationValue?: number;
+  contractDurationUnit?: DurationUnit;
   overtimePolicy?: string;
 
   workLocation?: WorkLocation;
@@ -60,8 +61,8 @@ export interface EmploymentAgreementFormData {
 
   // Optional clauses (checkbox toggles)
   nonCompete: boolean;
-  nonCompeteDurationValue?: string;
-  nonCompeteDurationUnit?: string;
+  nonCompeteDurationValue?: number;
+  nonCompeteDurationUnit?: DurationUnit;
   nonCompeteScope?: string;
   nonSolicitation: boolean;
   includeConfidentiality: boolean;
@@ -106,16 +107,16 @@ export const defaultEmploymentAgreementFormData: EmploymentAgreementFormData = {
 
   hourlyRate: undefined,
   hoursPerWeek: undefined,
-  contractDurationValue: '',
-  contractDurationUnit: '',
+  contractDurationValue: undefined,
+  contractDurationUnit: 'Months',
   overtimePolicy: '',
 
   workLocation: 'On-site',
   workSchedule: '',
 
   nonCompete: false,
-  nonCompeteDurationValue: '',
-  nonCompeteDurationUnit: '',
+  nonCompeteDurationValue: undefined,
+  nonCompeteDurationUnit: 'Months',
   nonCompeteScope: '',
   nonSolicitation: false,
   includeConfidentiality: true,

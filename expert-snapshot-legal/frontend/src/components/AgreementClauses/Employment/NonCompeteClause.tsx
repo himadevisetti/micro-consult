@@ -1,5 +1,5 @@
 type NonCompeteClauseProps = {
-  durationValue?: string;
+  durationValue?: number;
   durationUnit?: string;
   employeeName?: string;
   employerName?: string;
@@ -11,7 +11,10 @@ export default function NonCompeteClause({
   employeeName,
   employerName,
 }: NonCompeteClauseProps) {
-  const resolvedDurationValue = durationValue?.trim() || 'the agreed';
+  const resolvedDurationValue =
+    durationValue !== undefined && durationValue > 0
+      ? String(durationValue)
+      : 'the agreed';
   const resolvedDurationUnit = durationUnit?.trim() || 'period';
   const resolvedEmployee = employeeName?.trim() || 'the Employee';
   const resolvedEmployer = employerName?.trim() || 'the Employer';
@@ -20,9 +23,10 @@ export default function NonCompeteClause({
     <section>
       <h3 style={{ fontWeight: 'bold' }}>Non-Compete</h3>
       <p>
-        <strong>{resolvedEmployee}</strong> agrees not to engage in any business that competes with <strong>{resolvedEmployer}</strong> for a period of <strong>{resolvedDurationValue} {resolvedDurationUnit}</strong> following termination of employment.
+        <strong>{resolvedEmployee}</strong> agrees not to engage in any business that competes with{' '}
+        <strong>{resolvedEmployer}</strong> for a period of{' '}
+        <strong>{resolvedDurationValue} {resolvedDurationUnit}</strong> following termination of employment.
       </p>
     </section>
   );
 }
-
