@@ -5,6 +5,7 @@ import styles from '../../styles/StandardRetainerForm.module.css';
 
 interface CustomDatePickerProps {
   id: string;
+  name?: string;
   value?: string; // ISO string: "2025-08-20"
   onChange: (newIso: string) => void;
   onBlur?: () => void;
@@ -15,6 +16,7 @@ interface CustomDatePickerProps {
 
 export default function CustomDatePicker({
   id,
+  name,
   value,
   onChange,
   onBlur,
@@ -59,6 +61,7 @@ export default function CustomDatePicker({
       <input
         ref={inputRef}
         id={id}
+        name={name}
         type="date"
         value={internalValue}
         onChange={handleChange}

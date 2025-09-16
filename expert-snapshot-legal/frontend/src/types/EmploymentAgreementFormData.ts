@@ -92,7 +92,7 @@ export const defaultEmploymentAgreementFormData: EmploymentAgreementFormData = {
   contractType: 'Permanent',
 
   baseSalary: undefined,
-  payFrequency: 'Monthly',
+  payFrequency: 'Biweekly',
   bonusAmount: undefined,
   bonusUnit: 'None',
   benefitsList: [],

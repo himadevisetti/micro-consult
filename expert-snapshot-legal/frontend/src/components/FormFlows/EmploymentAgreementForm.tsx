@@ -88,21 +88,51 @@ export default function EmploymentAgreementForm({
   };
 
   useEffect(() => {
+    if (!errors || Object.keys(errors).length === 0) return;
+
     const formEl = document.getElementById('employment-agreement-form');
     if (!formEl) return;
-    const editable = formEl.querySelector(
-      'input:not([type="hidden"]):not([disabled]):not([tabindex="-1"]), textarea:not([disabled]), select:not([disabled])'
-    ) as HTMLElement | null;
-    editable?.focus();
-  }, []);
 
-  useEffect(() => {
-    if (!submitted || !errors || Object.keys(errors).length === 0) return;
-    const firstErrorField = Object.keys(errors)[0];
-    const el = document.getElementById(firstErrorField);
-    el?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    setSubmitted(false);
-  }, [submitted, errors]);
+    /**
+     * Expand combined keys like "baseSalary__payFrequency" into individual keys
+     * purely for DOM matching.
+     *
+     * ⚠️ This does NOT change validation behaviour:
+     * - Validation still produces a single combined key for inline pairs.
+     * - UI still shows one combined error message under the pair.
+     * - This split is ONLY so we can match either member of the pair in the DOM
+     *   and decide which actual input to focus (usually the first in the pair).
+     */
+    const errorFieldNames = new Set<string>();
+    for (const key of Object.keys(errors)) {
+      if (key.includes('__')) {
+        const [a, b] = key.split('__');
+        errorFieldNames.add(a);
+        errorFieldNames.add(b);
+      } else {
+        errorFieldNames.add(key);
+      }
+    }
+
+    // Get all focusable fields in DOM order
+    const focusables = Array.from(
+      formEl.querySelectorAll<HTMLElement>(
+        'input:not([type="hidden"]):not([disabled]), textarea:not([disabled]), select:not([disabled])'
+      )
+    );
+
+    // Find the first focusable whose name matches an error field
+    const target = focusables.find(el =>
+      errorFieldNames.has(el.getAttribute('name') || '')
+    );
+
+    if (target) {
+      requestAnimationFrame(() => {
+        target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        target.focus();
+      });
+    }
+  }, [errors]);
 
   function getDefault<K extends keyof EmploymentAgreementFormData>(
     key: K,
@@ -209,6 +239,7 @@ export default function EmploymentAgreementForm({
         <label className={styles.clauseToggle}>
           <input
             id={field}
+            name={field}
             type="checkbox"
             checked={value === true || value === 'true'}
             onChange={handleChange(field)}
@@ -247,6 +278,7 @@ export default function EmploymentAgreementForm({
         {config.type === 'number' ? (
           <input
             id={field}
+            name={field}
             type="number"
             step="0.01"
             value={typeof value === 'number' ? value : ''}
@@ -261,6 +293,7 @@ export default function EmploymentAgreementForm({
             return (
               <CustomDatePicker
                 id={field}
+                name={field}
                 value={typeof rawValue === 'string' ? rawValue : ''}
                 onChange={(newIso: string) => {
                   onRawChange(field, newIso);
@@ -281,6 +314,7 @@ export default function EmploymentAgreementForm({
         ) : config.type === 'textarea' ? (
           <textarea
             id={field}
+            name={field}
             value={value as string}
             onChange={handleChange(field)}
             onBlur={handleBlur(field)}
@@ -290,6 +324,7 @@ export default function EmploymentAgreementForm({
         ) : config.type === 'dropdown' && config.options ? (
           <select
             id={field}
+            name={field}
             value={value as string}
             onChange={handleChange(field)}
             onBlur={handleBlur(field)}
@@ -305,6 +340,7 @@ export default function EmploymentAgreementForm({
         ) : (
           <input
             id={field}
+            name={field}
             type={config.type}
             value={value as string}
             onChange={handleChange(field)}

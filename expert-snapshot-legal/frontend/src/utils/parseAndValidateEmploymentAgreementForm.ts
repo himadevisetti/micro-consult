@@ -8,6 +8,24 @@ export type EmploymentAgreementValidationErrors = Partial<
   Record<keyof EmploymentAgreementFormData, string>
 >;
 
+// Helper: detect if a unit value is the default for its field
+function isDefaultUnitValue(
+  unitKey: keyof EmploymentAgreementFormData,
+  unit: unknown
+): boolean {
+  if (typeof unit !== 'string') return false;
+  const u = unit.trim().toLowerCase();
+
+  const defaultUnits: Record<string, string[]> = {
+    bonusUnit: ['none', '%', 'usd'],
+    noticePeriodEmployerUnit: ['weeks', 'days'],
+    noticePeriodEmployeeUnit: ['weeks', 'days'],
+    probationPeriodUnit: ['months', 'days'],
+  };
+
+  return defaultUnits[unitKey as string]?.includes(u) ?? false;
+}
+
 export function parseAndValidateEmploymentAgreementForm(
   rawFormData: EmploymentAgreementFormData,
   schema: Record<string, EmploymentAgreementFieldConfig>
@@ -96,22 +114,21 @@ export function parseAndValidateEmploymentAgreementForm(
 
       const hasPositiveValue = numericValue !== undefined && numericValue > 0;
 
-      // For optional pairs, treat default units as empty
-      const isDefaultUnit =
-        typeof unit === 'string' &&
-        ['none', 'months', '%', 'usd'].includes(unit.trim().toLowerCase());
+      // For optional pairs, treat default units as empty only if number is empty
+      const unitLooksDefault = isDefaultUnitValue(unitKey, unit);
+      const hasUnit =
+        !isEmptyValue(unit) &&
+        !(!required && numericValue === undefined && unitLooksDefault);
 
-      const hasUnit = !isEmptyValue(unit) && !(!required && isDefaultUnit);
+      const combinedKey = `${String(valueKey)}__${String(unitKey)}` as keyof EmploymentAgreementFormData;
 
       if (required) {
         if (!hasPositiveValue || !hasUnit) {
-          errors[`${String(valueKey)}__${String(unitKey)}` as keyof EmploymentAgreementFormData] =
-            `${label} must include a value greater than 0 and a unit.`;
+          errors[combinedKey] = `${label} must include a value greater than 0 and a unit.`;
         }
       } else {
         if ((hasPositiveValue && !hasUnit) || (!hasPositiveValue && hasUnit)) {
-          errors[`${String(valueKey)}__${String(unitKey)}` as keyof EmploymentAgreementFormData] =
-            `Please enter both a value and a unit for ${label}`;
+          errors[combinedKey] = `Please enter both a value and a unit for ${label}`;
         }
       }
     }
