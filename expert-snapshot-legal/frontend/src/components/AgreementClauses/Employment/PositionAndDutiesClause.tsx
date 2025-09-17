@@ -25,15 +25,11 @@ export default function PositionAndDutiesClause({
       <p>
         The Employee shall serve as <strong>{resolvedJobTitle}</strong>
         {resolvedDepartment && <> in the <strong>{resolvedDepartment}</strong> department</>}
-        {resolvedBandOrGroup && <> within <strong>{resolvedBandOrGroup}</strong></>}
+        {resolvedBandOrGroup && <> within <strong>{resolvedBandOrGroup}</strong> level</>}
         {resolvedContractType && <> under a <strong>{resolvedContractType}</strong> arrangement</>}
-        {resolvedReportsTo && <> and will report to <strong>{resolvedReportsTo}</strong></>}
-        .
-      </p>
-      <p>
+        {resolvedReportsTo && <> and will report to <strong>{resolvedReportsTo}</strong></>}.{' '}
         The Employee agrees to perform all duties reasonably assigned and to act in the best interests of the Employer.
       </p>
     </section>
   );
 }
-

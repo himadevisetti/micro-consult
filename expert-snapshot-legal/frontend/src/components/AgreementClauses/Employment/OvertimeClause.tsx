@@ -3,7 +3,7 @@ type OvertimeClauseProps = {
 };
 
 export default function OvertimeClause({ overtimePolicy }: OvertimeClauseProps) {
-  const resolvedPolicy = overtimePolicy?.trim() || 'as per applicable law and company policy';
+  const resolvedPolicy = overtimePolicy?.trim() || 'applicable law and company policy';
 
   return (
     <section>

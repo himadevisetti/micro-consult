@@ -312,15 +312,70 @@ export default function EmploymentAgreementForm({
             );
           })()
         ) : config.type === 'textarea' ? (
-          <textarea
-            id={field}
-            name={field}
-            value={value as string}
-            onChange={handleChange(field)}
-            onBlur={handleBlur(field)}
-            placeholder={config.placeholder}
-            className={`${styles.input} ${styles.textarea}`}
-          />
+          Array.isArray(config.suggestions) && config.suggestions.length > 0 ? (
+            // Branch 1: textarea WITH suggestions (e.g., Benefits)
+            <div className={styles.textareaWrapper}>
+              <div className={styles.suggestions}>
+                {config.suggestions.map(s => (
+                  <button
+                    type="button"
+                    key={s}
+                    className={styles.suggestionButton}
+                    onClick={() => {
+                      // Ensure we have an array in state
+                      const lines = Array.isArray(value)
+                        ? value.map(l => String(l).trim())
+                        : String(value || '').split('\n').map(l => l.trim()).filter(Boolean);
+
+                      if (!lines.includes(s)) {
+                        const updatedLines = [...lines, s];
+                        // Pass updated array back to form state
+                        handleChange(field)({
+                          target: { value: updatedLines }
+                        } as unknown as React.ChangeEvent<
+                          HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
+                        >);
+                      }
+                    }}
+                  >
+                    {s}
+                  </button>
+                ))}
+              </div>
+
+              <textarea
+                id={field}
+                name={field}
+                value={Array.isArray(value) ? value.join('\n') : String(value || '')}
+                onChange={e => {
+                  const lines = e.target.value
+                    .split('\n')
+                    .map(l => l.trim())
+                    .filter(Boolean);
+                  // Store as array in state
+                  handleChange(field)({
+                    target: { value: lines }
+                  } as unknown as React.ChangeEvent<
+                    HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
+                  >);
+                }}
+                onBlur={handleBlur(field)}
+                placeholder={config.placeholder}
+                className={`${styles.input} ${styles.textarea}`}
+              />
+            </div>
+          ) : (
+            // Branch 2: DEFAULT textarea (unchanged)
+            <textarea
+              id={field}
+              name={field}
+              value={value as string}
+              onChange={handleChange(field)}
+              onBlur={handleBlur(field)}
+              placeholder={config.placeholder}
+              className={`${styles.input} ${styles.textarea}`}
+            />
+          )
         ) : config.type === 'dropdown' && config.options ? (
           <select
             id={field}

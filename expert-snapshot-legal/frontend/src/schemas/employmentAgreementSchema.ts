@@ -102,6 +102,8 @@ export const employmentAgreementSchema: Record<string, EmploymentAgreementFieldC
     required: false,
     placeholder: 'e.g. Mon–Fri, 9am–5pm',
     clauseTemplate: 'The Employee\'s work schedule will be {{workSchedule}}.',
+    showIf: (form: EmploymentAgreementFormData) =>
+      ['Fixed-Term', 'Probationary', 'Part-Time', 'Temporary', 'Hourly'].includes(form.contractType),
     group: 'main'
   },
 
@@ -170,7 +172,14 @@ export const employmentAgreementSchema: Record<string, EmploymentAgreementFieldC
     label: 'Benefits',
     type: 'textarea',
     required: false,
-    placeholder: 'List benefits provided',
+    placeholder: 'Click one or more benefits above to select',
+    suggestions: [
+      'Health Insurance',
+      'Retirement Plan',
+      'Paid Time Off',
+      'Gym Membership',
+      'Professional Development Allowance'
+    ],
     clauseTemplate: 'The Employee will receive the following benefits: {{benefitsList}}.',
     showIf: (form: EmploymentAgreementFormData) =>
       ['Permanent', 'Fixed-Term', 'Probationary'].includes(form.contractType),
@@ -179,30 +188,29 @@ export const employmentAgreementSchema: Record<string, EmploymentAgreementFieldC
   annualLeaveDays: {
     label: 'Annual Leave Days',
     type: 'number',
-    required: false,
+    required: true,
     placeholder: 'e.g. 20',
     clauseTemplate: 'The Employee is entitled to {{annualLeaveDays}} days of annual leave.',
     showIf: (form: EmploymentAgreementFormData) =>
       ['Permanent', 'Fixed-Term', 'Probationary'].includes(form.contractType),
     validate: (val: string) => {
-      if (val === '' || val == null) return true;
       const num = parseInt(val, 10);
-      return !isNaN(num) && num >= 0;
+      return !isNaN(num) && num >= 0; // must be a number >= 0
     },
     group: 'main'
   },
+
   sickLeaveDays: {
     label: 'Sick Leave Days',
     type: 'number',
-    required: false,
+    required: true,
     placeholder: 'e.g. 10',
     clauseTemplate: 'The Employee is entitled to {{sickLeaveDays}} days of sick leave.',
     showIf: (form: EmploymentAgreementFormData) =>
       ['Permanent', 'Fixed-Term', 'Probationary'].includes(form.contractType),
     validate: (val: string) => {
-      if (val === '' || val == null) return true;
       const num = parseInt(val, 10);
-      return !isNaN(num) && num >= 0;
+      return !isNaN(num) && num >= 0; // must be a number >= 0
     },
     group: 'main'
   },
@@ -210,7 +218,7 @@ export const employmentAgreementSchema: Record<string, EmploymentAgreementFieldC
     label: 'Probation Period',
     type: 'number',
     required: false,
-    placeholder: 'e.g. 3',
+    placeholder: 'e.g. 3 (0 indicates no probation)',
     clauseTemplate: 'The probation period will be {{probationPeriod}} months.',
     showIf: (form: EmploymentAgreementFormData) =>
       ['Permanent', 'Fixed-Term', 'Probationary'].includes(form.contractType),

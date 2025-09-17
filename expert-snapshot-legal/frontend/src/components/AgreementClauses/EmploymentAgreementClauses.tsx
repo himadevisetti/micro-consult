@@ -40,6 +40,7 @@ export function getEmploymentAgreementClauses(
           reportsTo={fd.reportsTo}
           workLocation={fd.workLocation}
           workSchedule={fd.workSchedule}
+          contractType={fd.contractType}
         />
       ),
     },
@@ -86,15 +87,20 @@ export function getEmploymentAgreementClauses(
         />
       ),
     },
-    {
-      id: 'probationClause',
-      render: (fd) => (
-        <ProbationClause
-          probationPeriod={fd.formattedProbationPeriod}
-          probationPeriodUnit={fd.probationPeriodUnit}
-        />
-      ),
-    },
+    ...(formData.formattedProbationPeriod &&
+      Number(formData.formattedProbationPeriod) > 0
+      ? ([
+        {
+          id: 'probationClause',
+          render: (fd) => (
+            <ProbationClause
+              probationPeriod={fd.formattedProbationPeriod}
+              probationPeriodUnit={fd.probationPeriodUnit}
+            />
+          ),
+        },
+      ] satisfies EmploymentAgreementClauseTemplate[])
+      : []),
     {
       id: 'noticeClause',
       render: (fd) => (
@@ -106,14 +112,16 @@ export function getEmploymentAgreementClauses(
         />
       ),
     },
-    {
-      id: 'overtimeClause',
-      render: (fd) => (
-        <OvertimeClause
-          overtimePolicy={fd.overtimePolicy}
-        />
-      ),
-    },
+    ...(formData.overtimePolicy?.trim()
+      ? ([
+        {
+          id: 'overtimeClause',
+          render: (fd) => (
+            <OvertimeClause overtimePolicy={fd.overtimePolicy} />
+          ),
+        },
+      ] satisfies EmploymentAgreementClauseTemplate[])
+      : []),
     ...(asBool(formData.includeConfidentiality)
       ? ([
         {

@@ -9,6 +9,7 @@ type PartiesClauseProps = {
   workLocation?: string;
   workSchedule?: string;
   effectiveDate?: string;
+  contractType?: string;
 };
 
 export default function PartiesClause({
@@ -22,6 +23,7 @@ export default function PartiesClause({
   workLocation,
   workSchedule,
   effectiveDate,
+  contractType,
 }: PartiesClauseProps) {
   const resolvedEmployer = employerName?.trim() || 'the Employer';
   const resolvedEmployerAddress = employerAddress?.trim() || 'the Employer’s address';
@@ -34,23 +36,24 @@ export default function PartiesClause({
   const resolvedWorkSchedule = workSchedule?.trim();
   const resolvedDate = effectiveDate?.trim() || 'the effective date of this Agreement';
 
+  const shouldShowWorkSchedule =
+    resolvedWorkSchedule &&
+    ['Fixed-Term', 'Probationary', 'Part-Time', 'Temporary', 'Hourly'].includes(contractType || '');
+
   return (
     <section>
       <h3 style={{ fontWeight: 'bold' }}>Parties</h3>
       <p>
         This Employment Agreement (“Agreement”) is entered into between <strong>{resolvedEmployer}</strong>, located at{' '}
         <strong>{resolvedEmployerAddress}</strong>, and <strong>{resolvedEmployee}</strong>, whose address is{' '}
-        <strong>{resolvedEmployeeAddress}</strong>, effective as of <strong>{resolvedDate}</strong>.
-      </p>
-      <p>
-        The Employee is engaged as <strong>{resolvedJobTitle}</strong>
+        <strong>{resolvedEmployeeAddress}</strong>, effective as of <strong>{resolvedDate}</strong>.{' '}
+        The Employee is appointed as <strong>{resolvedJobTitle}</strong>
         {resolvedDepartment && <> in the <strong>{resolvedDepartment}</strong> department</>}
         {resolvedReportsTo && <> and will report to <strong>{resolvedReportsTo}</strong></>}
         {resolvedWorkLocation && <>. Primary work location: <strong>{resolvedWorkLocation}</strong></>}
-        {resolvedWorkSchedule && <>. Regular schedule: <strong>{resolvedWorkSchedule}</strong></>}
+        {shouldShowWorkSchedule && <>. Regular schedule: <strong>{resolvedWorkSchedule}</strong></>}
         .
       </p>
     </section>
   );
 }
-
