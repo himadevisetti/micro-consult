@@ -21,6 +21,26 @@ export type ProbationPeriodUnit = 'Months';
 export type NoticePeriodUnit = 'Weeks' | 'Months';
 export type DurationUnit = 'Days' | 'Weeks' | 'Months' | 'Years';
 
+/* === Work Schedule types === */
+export type DayOfWeek =
+  | 'Monday'
+  | 'Tuesday'
+  | 'Wednesday'
+  | 'Thursday'
+  | 'Friday'
+  | 'Saturday'
+  | 'Sunday';
+
+export type TimeRange = {
+  start: string; // "HH:MM"
+  end: string;   // "HH:MM"
+};
+
+export type WorkScheduleEntry = {
+  days: DayOfWeek[];
+  hours: TimeRange;
+};
+
 export interface EmploymentAgreementFormData {
   // Parties & Dates
   employerName: string;
@@ -57,7 +77,9 @@ export interface EmploymentAgreementFormData {
   overtimePolicy?: string;
 
   workLocation?: WorkLocation;
-  workSchedule?: string;
+
+  // Updated: array of structured schedule entries
+  workSchedule?: WorkScheduleEntry[];
 
   // Optional clauses (checkbox toggles)
   nonCompete: boolean;
@@ -112,7 +134,9 @@ export const defaultEmploymentAgreementFormData: EmploymentAgreementFormData = {
   overtimePolicy: '',
 
   workLocation: 'On-site',
-  workSchedule: '',
+
+  // Updated: empty array instead of empty string
+  workSchedule: [],
 
   nonCompete: false,
   nonCompeteDurationValue: undefined,
@@ -129,4 +153,3 @@ export const defaultEmploymentAgreementFormData: EmploymentAgreementFormData = {
   employerSignatoryName: '',
   employerSignatoryTitle: ''
 };
-

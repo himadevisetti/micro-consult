@@ -1,6 +1,6 @@
 // src/schemas/employmentAgreementSchema.ts
 
-import type { EmploymentAgreementFormData } from '../types/EmploymentAgreementFormData';
+import type { EmploymentAgreementFormData, WorkScheduleEntry } from '../types/EmploymentAgreementFormData';
 import { EmploymentAgreementFieldConfig } from '../types/EmploymentAgreementFieldConfig';
 
 export const employmentAgreementSchema: Record<string, EmploymentAgreementFieldConfig> = {
@@ -98,13 +98,41 @@ export const employmentAgreementSchema: Record<string, EmploymentAgreementFieldC
   },
   workSchedule: {
     label: 'Work Schedule',
-    type: 'text',
+    type: 'inline-pair',
     required: false,
-    placeholder: 'e.g. Mon–Fri, 9am–5pm',
-    clauseTemplate: 'The Employee\'s work schedule will be {{workSchedule}}.',
-    showIf: (form: EmploymentAgreementFormData) =>
+    pair: [
+      {
+        key: 'days',
+        label: 'Days',
+        type: 'multiselect',
+        options: [
+          { value: 'Mon', label: 'Monday' },
+          { value: 'Tue', label: 'Tuesday' },
+          { value: 'Wed', label: 'Wednesday' },
+          { value: 'Thu', label: 'Thursday' },
+          { value: 'Fri', label: 'Friday' },
+          { value: 'Sat', label: 'Saturday' },
+          { value: 'Sun', label: 'Sunday' },
+        ],
+      },
+      {
+        key: 'hours',
+        label: 'Hours',
+        type: 'time-range',
+        step: 30, // minutes
+        startLabel: 'Start time',
+        endLabel: 'End time',
+      },
+    ],
+    join: (entries: WorkScheduleEntry[]) =>
+      entries
+        .map(({ days, hours }) => `${days.join(', ')}: ${hours.start || ''}–${hours.end || ''}`)
+        .filter(Boolean)
+        .join('; '),
+    clauseTemplate: 'The Employee\'s regular schedule will be {{workSchedule}}.',
+    showIf: (form) =>
       ['Fixed-Term', 'Probationary', 'Part-Time', 'Temporary', 'Hourly'].includes(form.contractType),
-    group: 'main'
+    group: 'main',
   },
 
   // Salary-based fields

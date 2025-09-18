@@ -47,7 +47,11 @@ export function parseAndValidateEmploymentAgreementForm(
     if (config.type === 'number') {
       parsedValue = rawValue !== undefined ? Number(rawValue) : undefined;
     }
-    if (config.type === 'string' || config.type === 'date') {
+    if (
+      config.type === 'text' ||
+      config.type === 'textarea' ||
+      config.type === 'date'
+    ) {
       parsedValue = typeof rawValue === 'string' ? rawValue.trim() : rawValue;
     }
 

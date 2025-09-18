@@ -1,3 +1,6 @@
+import type { WorkScheduleEntry } from '../../../types/EmploymentAgreementFormData';
+import { formatWorkSchedule } from '../../../utils/formatWorkSchedule';
+
 type PartiesClauseProps = {
   employerName?: string;
   employerAddress?: string;
@@ -7,7 +10,7 @@ type PartiesClauseProps = {
   department?: string;
   reportsTo?: string;
   workLocation?: string;
-  workSchedule?: string;
+  workSchedule?: WorkScheduleEntry[];
   effectiveDate?: string;
   contractType?: string;
 };
@@ -33,7 +36,10 @@ export default function PartiesClause({
   const resolvedDepartment = department?.trim();
   const resolvedReportsTo = reportsTo?.trim();
   const resolvedWorkLocation = workLocation?.trim();
-  const resolvedWorkSchedule = workSchedule?.trim();
+
+  // Format WorkScheduleEntry[] into a readable string
+  const resolvedWorkSchedule = formatWorkSchedule(workSchedule);
+
   const resolvedDate = effectiveDate?.trim() || 'the effective date of this Agreement';
 
   const shouldShowWorkSchedule =
@@ -50,8 +56,8 @@ export default function PartiesClause({
         The Employee is appointed as <strong>{resolvedJobTitle}</strong>
         {resolvedDepartment && <> in the <strong>{resolvedDepartment}</strong> department</>}
         {resolvedReportsTo && <> and will report to <strong>{resolvedReportsTo}</strong></>}
-        {resolvedWorkLocation && <>. Primary work location: <strong>{resolvedWorkLocation}</strong></>}
-        {shouldShowWorkSchedule && <>. Regular schedule: <strong>{resolvedWorkSchedule}</strong></>}
+        {resolvedWorkLocation && <>. Primary work location is <strong>{resolvedWorkLocation}</strong></>}
+        {shouldShowWorkSchedule && <>. Regular schedule is <strong>{resolvedWorkSchedule}</strong></>}
         .
       </p>
     </section>

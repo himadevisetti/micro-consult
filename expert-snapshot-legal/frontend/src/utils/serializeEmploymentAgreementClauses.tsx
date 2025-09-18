@@ -96,6 +96,7 @@ export function getSerializedEmploymentAgreementClauses(
 
   const enrichedFormData: EnrichedEmploymentAgreementFormData = {
     ...formData,
+    workSchedule: normalized.workSchedule,
     formattedEffectiveDateLong,
     formattedBaseSalary,
     formattedHourlyRate,

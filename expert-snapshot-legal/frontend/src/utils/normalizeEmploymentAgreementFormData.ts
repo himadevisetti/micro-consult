@@ -9,7 +9,8 @@ import type {
   BonusUnit,
   NoticePeriodUnit,
   ProbationPeriodUnit,
-  DurationUnit
+  DurationUnit,
+  WorkScheduleEntry
 } from '../types/EmploymentAgreementFormData';
 
 /**
@@ -110,7 +111,14 @@ export function normalizeEmploymentAgreementFormData(
     overtimePolicy: String(raw.overtimePolicy ?? ''),
 
     workLocation: raw.workLocation as WorkLocation,
-    workSchedule: String(raw.workSchedule ?? ''),
+    workSchedule: Array.isArray(raw.workSchedule)
+      ? (raw.workSchedule as WorkScheduleEntry[])
+      : [
+        {
+          days: [],
+          hours: { start: '', end: '' },
+        },
+      ],
 
     // Clause toggles
     nonCompete: toBool(raw.nonCompete),

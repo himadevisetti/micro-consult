@@ -233,7 +233,7 @@ export default function EmploymentAgreementForm({
   ) => {
     const value = formData[field];
 
-    // Early return for checkboxes – matches StartupAdvisoryForm
+    // Early return for checkboxes – matches EmploymentAgreementForm
     if (config.type === 'checkbox') {
       return (
         <label className={styles.clauseToggle}>
@@ -392,6 +392,109 @@ export default function EmploymentAgreementForm({
               </option>
             ))}
           </select>
+        ) : (config.type === 'inline-pair') ? (
+          <div className={styles.workScheduleBlock}>
+            {(Array.isArray(value) && value.length > 0 ? value : [{}]).map((entryRaw, idx) => {
+
+              const entry = entryRaw as Record<string, any>;
+
+              const pair = Array.isArray(config.pair) ? config.pair : [];
+              const daysField = pair.find(sf => sf.type === 'multiselect');
+              const timeRangeField = pair.find(sf => sf.type === 'time-range');
+
+              return (
+                <div key={idx} className={styles.workScheduleEntry}>
+                  {/* Row 1: Days (full width) */}
+                  {daysField && daysField.options && (
+                    <select
+                      className={styles.select}
+                      multiple
+                      value={entry[daysField.key] || []}
+                      onChange={(e) => {
+                        const selected = Array.from(e.target.selectedOptions, o => o.value);
+                        const updated = [...(Array.isArray(value) ? value : [{}])] as Record<string, any>[];
+                        updated[idx] = { ...updated[idx], [daysField.key]: selected };
+                        handleChange(field)({ target: { value: updated } } as any);
+                      }}
+                    >
+                      {daysField.options.map(opt => (
+                        <option key={opt.value} value={opt.value}>{opt.label}</option>
+                      ))}
+                    </select>
+                  )}
+
+                  {/* Row 2: Time Range (Start | End inline-pair) */}
+                  {timeRangeField && (
+                    <div className={styles.timeRange}>
+                      {(() => {
+                        const subValue = entry[timeRangeField.key] || {};
+                        const start = subValue.start || '';
+                        const end = subValue.end || '';
+                        const step = timeRangeField.step || 30;
+                        const times = Array.from({ length: (60 / step) * 24 }, (_, i) => {
+                          const h = Math.floor((i * step) / 60);
+                          const m = (i * step) % 60;
+                          return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+                        });
+
+                        return (
+                          <>
+                            <select
+                              className={styles.select}
+                              value={start}
+                              onChange={(e) => {
+                                const updated = [...(Array.isArray(value) ? value : [{}])] as Record<string, any>[];
+                                updated[idx] = {
+                                  ...updated[idx],
+                                  [timeRangeField.key]: {
+                                    ...((updated[idx][timeRangeField.key] as Record<string, any>) || {}),
+                                    start: e.target.value
+                                  }
+                                };
+                                handleChange(field)({ target: { value: updated } } as any);
+                              }}
+                            >
+                              <option value="">Start</option>
+                              {times.map(t => <option key={t} value={t}>{t}</option>)}
+                            </select>
+                            <select
+                              className={styles.select}
+                              value={end}
+                              onChange={(e) => {
+                                const updated = [...(Array.isArray(value) ? value : [{}])] as Record<string, any>[];
+                                updated[idx] = {
+                                  ...updated[idx],
+                                  [timeRangeField.key]: {
+                                    ...((updated[idx][timeRangeField.key] as Record<string, any>) || {}),
+                                    end: e.target.value
+                                  }
+                                };
+                                handleChange(field)({ target: { value: updated } } as any);
+                              }}
+                            >
+                              <option value="">End</option>
+                              {times.map(t => <option key={t} value={t}>{t}</option>)}
+                            </select>
+                          </>
+                        );
+                      })()}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+
+            {/* Row 3: Add Row button */}
+            <button
+              type="button"
+              onClick={() => {
+                const updated = Array.isArray(value) ? [...value, {}] : [{}];
+                handleChange(field)({ target: { value: updated } } as any);
+              }}
+            >
+              + Add Row
+            </button>
+          </div>
         ) : (
           <input
             id={field}

@@ -32,9 +32,16 @@ export default function CompensationClause({
 
   const bonusText =
     hasBonusField && parsedBonus !== null
-      ? parsedBonus > 0
-        ? `The Employee will receive a bonus of $${bonusAmount} ${bonusUnit?.toLowerCase()}.`
-        : 'The Employee will not be entitled to a bonus for this year.'
+      ? parsedBonus > 0 ? (
+        <>
+          The Employee will receive a bonus of{' '}
+          <strong>
+            ${bonusAmount} {bonusUnit?.toLowerCase()}
+          </strong>.
+        </>
+      ) : (
+        'The Employee will not be entitled to a bonus for this year.'
+      )
       : '';
 
   return (
@@ -44,13 +51,15 @@ export default function CompensationClause({
         <p>
           The Employee will be compensated at <strong>${resolvedHourlyRate}</strong> per hour for{' '}
           <strong>{resolvedHoursPerWeek}</strong> hours per week.
-          {bonusText && ' '}{bonusText}
+          {bonusText && ' '}
+          {bonusText}
         </p>
       ) : (
         <p>
           The Employee will receive a base salary of <strong>${resolvedBaseSalary}</strong>, payable{' '}
           <strong>{resolvedPayFrequency}</strong>.
-          {bonusText && ' '}{bonusText}
+          {bonusText && ' '}
+          {bonusText}
         </p>
       )}
     </section>

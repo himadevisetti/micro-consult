@@ -328,3 +328,72 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   background-color: #e5e7eb;
   border-color: #cbd5e1;
 }
+
+/* === Work Schedule – final layout === */
+
+/* Flex/cap the actual flex child of .formRow (sibling to label) */
+.workScheduleBlock {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-width: 0;
+  max-width: 480px;
+  /* match other inputs */
+}
+
+/* Stack Days + TimeRange inside the block */
+.workScheduleEntry {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  width: 100%;
+}
+
+/* Split Start/End evenly */
+.workScheduleEntry .timeRange {
+  display: flex;
+  gap: 8px;
+  width: 100%;
+}
+
+.workScheduleEntry .timeRange>*:first-child {
+  flex: 0 0 calc(40% - 4px);
+  max-width: calc(40% - 4px);
+}
+
+.workScheduleEntry .timeRange>*:last-child {
+  flex: 0 0 calc(60% - 4px);
+  max-width: calc(60% - 4px);
+}
+
+/* Optional: align the + Add Row button */
+.workScheduleBlock>button {
+  align-self: flex-start;
+  margin-top: 0.5rem;
+  padding: 0.4rem 0.9rem;
+  font-size: 0.9rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid #ccc;
+  background-color: #f9f9f9;
+  cursor: pointer;
+  font-family: var(--font-sans);
+  transition: background-color 0.2s ease, border-color 0.2s ease;
+}
+
+.workScheduleBlock>button:hover {
+  background-color: #f0f0f0;
+  border-color: #bbb;
+}
+
+/* Remove native dropdown arrow for multi-select (Days) */
+select[multiple] {
+  appearance: none;
+  -webkit-appearance: none;
+  /* Safari/Chrome */
+  -moz-appearance: none;
+  /* Firefox */
+  background-image: none;
+  /* Remove arrow graphic */
+  padding-right: 0.5rem;
+  /* Space so text doesn't hit scrollbar */
+}
