@@ -347,6 +347,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   flex-direction: column;
   gap: 0.75rem;
   width: 100%;
+  margin-bottom: 0.75rem;
 }
 
 /* Split Start/End evenly */
@@ -396,4 +397,51 @@ select[multiple] {
   /* Remove arrow graphic */
   padding-right: 0.5rem;
   /* Space so text doesn't hit scrollbar */
+}
+
+.daysFieldWrapper {
+  position: relative;
+  width: 100%;
+}
+
+.daysFieldWrapper select[multiple] {
+  width: 100%;
+  /* force full stretch */
+  box-sizing: border-box;
+  /* include padding in width calc */
+  padding-right: 2rem;
+  /* space for the minus button */
+}
+
+.removeRowButton {
+  position: absolute;
+  top: -1px;
+  /* nudge up slightly */
+  right: -1px;
+  /* nudge right slightly */
+  width: 14px;
+  /* snugger circle */
+  height: 14px;
+  border-radius: 50%;
+  border: none;
+  background-color: #fdecea;
+  /* pale red fill */
+  color: #c00;
+  font-size: 0.85rem;
+  /* slightly larger minus */
+  font-weight: 600;
+  /* thicker minus stroke */
+  line-height: 1;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 0 0 1px #ccc;
+  z-index: 1;
+  padding: 0;
+}
+
+.removeRowButton:hover {
+  background-color: #f8d7da;
+  color: #900;
 }

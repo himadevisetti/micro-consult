@@ -404,24 +404,42 @@ export default function EmploymentAgreementForm({
 
               return (
                 <div key={idx} className={styles.workScheduleEntry}>
-                  {/* Row 1: Days (full width) */}
-                  {daysField && daysField.options && (
-                    <select
-                      className={styles.select}
-                      multiple
-                      value={entry[daysField.key] || []}
-                      onChange={(e) => {
-                        const selected = Array.from(e.target.selectedOptions, o => o.value);
-                        const updated = [...(Array.isArray(value) ? value : [{}])] as Record<string, any>[];
-                        updated[idx] = { ...updated[idx], [daysField.key]: selected };
-                        handleChange(field)({ target: { value: updated } } as any);
-                      }}
-                    >
-                      {daysField.options.map(opt => (
-                        <option key={opt.value} value={opt.value}>{opt.label}</option>
-                      ))}
-                    </select>
-                  )}
+                  {/* Row 1: Days (full width) with minus at top-right corner */}
+                  <div className={styles.daysFieldWrapper}>
+                    {daysField && daysField.options && (
+                      <select
+                        className={styles.select}
+                        multiple
+                        value={entry[daysField.key] || []}
+                        onChange={(e) => {
+                          const selected = Array.from(e.target.selectedOptions, o => o.value);
+                          // IMPORTANT: coalesce to [] so we don't inject {} into state
+                          const updated = [...(Array.isArray(value) ? value : [])] as Record<string, any>[];
+                          updated[idx] = { ...updated[idx], [daysField.key]: selected };
+                          handleChange(field)({ target: { value: updated } } as any);
+                        }}
+                      >
+                        {daysField.options.map(opt => (
+                          <option key={opt.value} value={opt.value}>{opt.label}</option>
+                        ))}
+                      </select>
+                    )}
+
+                    {(Array.isArray(value) && value.length > 1) && (
+                      <button
+                        type="button"
+                        className={styles.removeRowButton}
+                        onClick={() => {
+                          const current = Array.isArray(value) ? value : [];
+                          const updated = current.filter((_, i) => i !== idx);
+                          handleChange(field)({ target: { value: updated } } as any);
+                        }}
+                        aria-label={`Remove row ${idx + 1}`}
+                      >
+                        &minus;
+                      </button>
+                    )}
+                  </div>
 
                   {/* Row 2: Time Range (Start | End inline-pair) */}
                   {timeRangeField && (
@@ -443,7 +461,7 @@ export default function EmploymentAgreementForm({
                               className={styles.select}
                               value={start}
                               onChange={(e) => {
-                                const updated = [...(Array.isArray(value) ? value : [{}])] as Record<string, any>[];
+                                const updated = [...(Array.isArray(value) ? value : [])] as Record<string, any>[];
                                 updated[idx] = {
                                   ...updated[idx],
                                   [timeRangeField.key]: {
@@ -461,7 +479,7 @@ export default function EmploymentAgreementForm({
                               className={styles.select}
                               value={end}
                               onChange={(e) => {
-                                const updated = [...(Array.isArray(value) ? value : [{}])] as Record<string, any>[];
+                                const updated = [...(Array.isArray(value) ? value : [])] as Record<string, any>[];
                                 updated[idx] = {
                                   ...updated[idx],
                                   [timeRangeField.key]: {
@@ -488,7 +506,12 @@ export default function EmploymentAgreementForm({
             <button
               type="button"
               onClick={() => {
-                const updated = Array.isArray(value) ? [...value, {}] : [{}];
+                const defaultEntry = { days: [], hours: { start: '', end: '' } };
+                const current = Array.isArray(value) ? value : [];
+                // If value is empty/undefined, first click produces TWO rows to overcome the render fallback [{}]
+                const updated = current.length === 0
+                  ? [defaultEntry, defaultEntry]
+                  : [...current, defaultEntry];
                 handleChange(field)({ target: { value: updated } } as any);
               }}
             >
