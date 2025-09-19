@@ -223,16 +223,16 @@ export function parseAndValidateEmploymentAgreementForm(
             return;
           }
           if (!startStr) {
-            // Only start missing → focus Start
+            // Only start missing → focus Start, but show combined message
             (errors as any)[`workSchedule_row_${idx}_start`] =
-              `Row ${idx + 1}: Please select a start time.`;
+              `Row ${idx + 1}: Please select both start and end times for the chosen days.`;
             hasPerRowErrors = true;
             return;
           }
           if (!endStr) {
-            // Only end missing → focus End
+            // Only end missing → focus End, but show combined message
             (errors as any)[`workSchedule_row_${idx}_end`] =
-              `Row ${idx + 1}: Please select an end time.`;
+              `Row ${idx + 1}: Please select both start and end times for the chosen days.`;
             hasPerRowErrors = true;
             return;
           }
