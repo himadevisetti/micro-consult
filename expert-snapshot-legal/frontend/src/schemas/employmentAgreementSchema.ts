@@ -318,36 +318,26 @@ export const employmentAgreementSchema: Record<string, EmploymentAgreementFieldC
   hourlyRate: {
     label: 'Hourly Rate',
     type: 'number',
-    required: true,
+    required: false,
     placeholder: 'e.g. 40',
     clauseTemplate: 'The Employee will be paid {{hourlyRate}} per hour.',
     showIf: (form: EmploymentAgreementFormData) =>
       ['Temporary', 'Hourly'].includes(form.contractType),
-    validate: (val: string, form?: EmploymentAgreementFormData) => {
-      if (['Temporary', 'Hourly'].includes(form?.contractType || '')) {
-        const num = parseFloat(val);
-        return !isNaN(num) && num > 0;
-      }
-      return true;
-    },
+    // disable schema-level validation; backend will validate both fields together
+    validate: () => true,
     group: 'main',
     inlineWith: 'hoursPerWeek'
   },
   hoursPerWeek: {
     label: 'Hours per Week',
     type: 'number',
-    required: true,
+    required: false,
     placeholder: 'e.g. 20',
     clauseTemplate: 'The Employee will work {{hoursPerWeek}} hours per week.',
     showIf: (form: EmploymentAgreementFormData) =>
       ['Temporary', 'Hourly', 'Part-Time'].includes(form.contractType),
-    validate: (val: string, form?: EmploymentAgreementFormData) => {
-      if (['Temporary', 'Hourly', 'Part-Time'].includes(form?.contractType || '')) {
-        const num = parseInt(val, 10);
-        return !isNaN(num) && num > 0 && num <= 168;
-      }
-      return true;
-    },
+    // disable schema-level validation; backend will validate both fields together
+    validate: () => true,
     group: 'main'
   },
   contractDurationValue: {
@@ -360,13 +350,8 @@ export const employmentAgreementSchema: Record<string, EmploymentAgreementFieldC
     inlineWith: 'contractDurationUnit',
     showIf: (form: EmploymentAgreementFormData) =>
       ['Temporary', 'Hourly'].includes(form.contractType),
-    validate: (val: string, form?: EmploymentAgreementFormData) => {
-      if (['Temporary', 'Hourly'].includes(form?.contractType || '')) {
-        const num = parseInt(val, 10);
-        return !isNaN(num) && num > 0;
-      }
-      return true;
-    }
+    // Disable schema-level validation; handled in parseAndValidateEmploymentAgreementForm.ts
+    validate: () => true
   },
   contractDurationUnit: {
     label: 'Unit',
