@@ -22,5 +22,6 @@ export const RetainerTypeLabel: Record<FormType, string> = {
   [FormType.CustomTemplate]: 'Custom Template',
 };
 
-
-
+export function getFormTypeLabel(type: FormType): string {
+  return RetainerTypeLabel[type];
+}
