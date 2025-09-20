@@ -322,7 +322,7 @@ export const employmentAgreementSchema: Record<string, EmploymentAgreementFieldC
     placeholder: 'e.g. 40',
     clauseTemplate: 'The Employee will be paid {{hourlyRate}} per hour.',
     showIf: (form: EmploymentAgreementFormData) =>
-      ['Temporary', 'Hourly'].includes(form.contractType),
+      ['Temporary', 'Hourly', 'Part-Time'].includes(form.contractType),
     // disable schema-level validation; backend will validate both fields together
     validate: () => true,
     group: 'main',
@@ -332,7 +332,7 @@ export const employmentAgreementSchema: Record<string, EmploymentAgreementFieldC
     label: 'Hours per Week',
     type: 'number',
     required: false,
-    placeholder: 'e.g. 20',
+    placeholder: 'Hours per week (e.g. 20)',
     clauseTemplate: 'The Employee will work {{hoursPerWeek}} hours per week.',
     showIf: (form: EmploymentAgreementFormData) =>
       ['Temporary', 'Hourly', 'Part-Time'].includes(form.contractType),
