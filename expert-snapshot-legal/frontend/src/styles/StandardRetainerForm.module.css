@@ -75,9 +75,10 @@
 
 .input[type="date"] {
   padding: 0.4rem 2rem 0.4rem 0.5rem;
-  appearance: auto;
-  -webkit-appearance: auto;
-  background-color: transparent;
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  background-color: white;
 }
 
 input[type="date"]::-webkit-calendar-picker-indicator {

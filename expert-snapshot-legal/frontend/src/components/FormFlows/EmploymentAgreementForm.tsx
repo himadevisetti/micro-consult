@@ -404,6 +404,12 @@ export default function EmploymentAgreementForm({
                 const daysField = pair.find(sf => sf.type === 'multiselect');
                 const timeRangeField = pair.find(sf => sf.type === 'time-range');
 
+                // ✅ Default row shape
+                const defaultRow: Record<string, any> = {
+                  [daysField?.key || 'days']: [],
+                  [timeRangeField?.key || 'hours']: { start: '', end: '' },
+                };
+
                 return (
                   <div key={idx} className={styles.workScheduleEntry}>
                     {/* Row 1: Days */}
@@ -418,7 +424,7 @@ export default function EmploymentAgreementForm({
                             onChange={(e) => {
                               const selected = Array.from(e.target.selectedOptions, o => o.value);
                               const updated = [...(Array.isArray(value) ? value : [])] as Record<string, any>[];
-                              updated[idx] = { ...updated[idx], [daysField.key]: selected };
+                              updated[idx] = { ...defaultRow, ...updated[idx], [daysField.key]: selected };
                               handleChange(field)({ target: { value: updated } } as any);
                             }}
                           >
@@ -459,11 +465,13 @@ export default function EmploymentAgreementForm({
                             onChange={(e) => {
                               const updated = [...(Array.isArray(value) ? value : [])] as Record<string, any>[];
                               updated[idx] = {
+                                ...defaultRow,
                                 ...updated[idx],
                                 [timeRangeField.key]: {
-                                  ...((updated[idx][timeRangeField.key] as Record<string, any>) || {}),
-                                  start: e.target.value
-                                }
+                                  ...defaultRow[timeRangeField.key],
+                                  ...(updated[idx]?.[timeRangeField.key] || {}),
+                                  start: e.target.value,
+                                },
                               };
                               handleChange(field)({ target: { value: updated } } as any);
                             }}
@@ -484,11 +492,13 @@ export default function EmploymentAgreementForm({
                             onChange={(e) => {
                               const updated = [...(Array.isArray(value) ? value : [])] as Record<string, any>[];
                               updated[idx] = {
+                                ...defaultRow,
                                 ...updated[idx],
                                 [timeRangeField.key]: {
-                                  ...((updated[idx][timeRangeField.key] as Record<string, any>) || {}),
-                                  end: e.target.value
-                                }
+                                  ...defaultRow[timeRangeField.key],
+                                  ...(updated[idx]?.[timeRangeField.key] || {}),
+                                  end: e.target.value,
+                                },
                               };
                               handleChange(field)({ target: { value: updated } } as any);
                             }}

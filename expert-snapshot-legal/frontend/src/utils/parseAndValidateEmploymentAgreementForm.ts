@@ -245,7 +245,7 @@ export function parseAndValidateEmploymentAgreementForm(
           const startMins = sh * 60 + sm;
           const endMins = eh * 60 + em;
           if (!(startMins < endMins)) {
-            (errors as any)[`workSchedule_row_${idx}_start`] =
+            (errors as any)[`workSchedule_row_${idx}_end`] =
               `Row ${idx + 1}: End time must be after start time.`;
             hasPerRowErrors = true;
             return;
