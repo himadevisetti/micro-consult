@@ -1,3 +1,5 @@
+// NOTE: Using Bundler mode here to avoid .js extension churn.
+// See CONTRIBUTING.md for details before changing.
 {
   "name": "frontend",
   "type": "module",
