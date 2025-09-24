@@ -143,11 +143,49 @@ export function parseAndValidateEmploymentAgreementForm(
   }
 
   // Required pairs
-  validateInlinePair('baseSalary', 'payFrequency', 'Base Salary', true, false);
-  validateInlinePair('contractDurationValue', 'contractDurationUnit', 'Contract Duration', true, false);
-  validateInlinePair('nonCompeteDurationValue', 'nonCompeteDurationUnit', 'Non-Compete Duration', true, false);
-  validateInlinePair('noticePeriodEmployer', 'noticePeriodEmployerUnit', 'Employer Notice Period', true, false);
-  validateInlinePair('noticePeriodEmployee', 'noticePeriodEmployeeUnit', 'Employee Notice Period', true, false);
+  validateInlinePair(
+    'baseSalary',
+    'payFrequency',
+    'Base Salary',
+    formSnapshot.contractType === 'Permanent' ||
+    formSnapshot.contractType === 'Probationary' ||
+    (formSnapshot.contractType === 'Fixed-Term' && formSnapshot.compensationType === 'Salary'),
+    false
+  );
+
+  validateInlinePair(
+    'contractDurationValue',
+    'contractDurationUnit',
+    'Contract Duration',
+    formSnapshot.contractType === 'Temporary' ||
+    formSnapshot.contractType === 'Hourly' ||
+    formSnapshot.contractType === 'Fixed-Term',
+    false
+  );
+
+  validateInlinePair(
+    'nonCompeteDurationValue',
+    'nonCompeteDurationUnit',
+    'Non-Compete Duration',
+    true,
+    false
+  );
+
+  validateInlinePair(
+    'noticePeriodEmployer',
+    'noticePeriodEmployerUnit',
+    'Employer Notice Period',
+    true,
+    false
+  );
+
+  validateInlinePair(
+    'noticePeriodEmployee',
+    'noticePeriodEmployeeUnit',
+    'Employee Notice Period',
+    true,
+    false
+  );
 
   // Optional pairs
   validateInlinePair('bonusAmount', 'bonusUnit', 'Bonus', false, false);
@@ -157,16 +195,19 @@ export function parseAndValidateEmploymentAgreementForm(
     'probationPeriod',
     'probationPeriodUnit',
     'Probation Period',
-    formSnapshot.contractType === 'Probationary',
-    true // allow zero
+    formSnapshot.contractType === 'Probationary' ||
+    (formSnapshot.contractType === 'Fixed-Term' && formSnapshot.compensationType === 'Salary'),
+    true
   );
 
   validateInlinePair(
     'hourlyRate',
     'hoursPerWeek',
     'Hourly Rate and Hours per Week',
-    ['Hourly', 'Temporary'].includes(formSnapshot.contractType),
-    false // allowZero = false
+    formSnapshot.contractType === 'Hourly' ||
+    formSnapshot.contractType === 'Temporary' ||
+    (formSnapshot.contractType === 'Fixed-Term' && formSnapshot.compensationType === 'Hourly'),
+    false
   );
 
   if (formSnapshot.contractType === 'Part-Time') {
@@ -185,8 +226,10 @@ export function parseAndValidateEmploymentAgreementForm(
 
     // Required only for Hourly, Part-Time, Temporary
     const isScheduleRequired = (() => {
-      const ct = (formSnapshot as any).contractType;
-      return ct === 'Hourly' || ct === 'Part-Time' || ct === 'Temporary';
+      const ct = formSnapshot.contractType;
+      if (ct === 'Hourly' || ct === 'Part-Time' || ct === 'Temporary') return true;
+      if (ct === 'Fixed-Term' && formSnapshot.compensationType === 'Hourly') return true;
+      return false;
     })();
 
     if (wsVisible) {

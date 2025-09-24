@@ -1,29 +1,39 @@
 type LeaveClauseProps = {
-  annualLeaveDays: string; // now always provided
-  sickLeaveDays: string;   // now always provided
+  annualLeaveDays: string; // always provided
+  sickLeaveDays: string;   // always provided
 };
 
 export default function LeaveClause({ annualLeaveDays, sickLeaveDays }: LeaveClauseProps) {
   const numAnnual = Number(annualLeaveDays);
   const numSick = Number(sickLeaveDays);
 
-  const resolvedAnnualLeave =
-    numAnnual === 0
-      ? 'no paid annual leave'
-      : `${numAnnual} days of paid annual leave`;
-
-  const resolvedSickLeave =
-    numSick === 0
-      ? 'no paid sick leave'
-      : `${numSick} days of paid sick leave`;
+  const hasAnnual = numAnnual > 0;
+  const hasSick = numSick > 0;
 
   return (
     <section>
       <h3 style={{ fontWeight: 'bold' }}>Leave</h3>
-      <p>
-        The Employee is entitled to <strong>{resolvedAnnualLeave}</strong> per year and{' '}
-        <strong>{resolvedSickLeave}</strong>, in accordance with company policy and applicable law.
-      </p>
+      {hasAnnual || hasSick ? (
+        <p>
+          The Employee is entitled to{' '}
+          {hasAnnual ? (
+            <strong>{numAnnual} days of paid annual leave</strong>
+          ) : (
+            <strong>no paid annual leave</strong>
+          )}{' '}
+          per year and{' '}
+          {hasSick ? (
+            <strong>{numSick} days of paid sick leave</strong>
+          ) : (
+            <strong>no paid sick leave</strong>
+          )}
+          , in accordance with company policy and applicable law.
+        </p>
+      ) : (
+        <p>
+          The Employee is not entitled to any paid annual or sick leave under this Agreement.
+        </p>
+      )}
     </section>
   );
 }

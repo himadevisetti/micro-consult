@@ -19,13 +19,18 @@ export default function PositionAndDutiesClause({
   const resolvedBandOrGroup = bandOrGroup?.trim();
   const resolvedContractType = contractType?.trim();
 
+  // Guard against "Not Applicable"
+  const showBandOrGroup =
+    resolvedBandOrGroup &&
+    resolvedBandOrGroup.toLowerCase() !== 'not applicable';
+
   return (
     <section>
       <h3 style={{ fontWeight: 'bold' }}>Position and Duties</h3>
       <p>
         The Employee shall serve as <strong>{resolvedJobTitle}</strong>
         {resolvedDepartment && <> in the <strong>{resolvedDepartment}</strong> department</>}
-        {resolvedBandOrGroup && <> within <strong>{resolvedBandOrGroup}</strong> level</>}
+        {showBandOrGroup && <> within <strong>{resolvedBandOrGroup}</strong> level</>}
         {resolvedContractType && <> under a <strong>{resolvedContractType}</strong> arrangement</>}
         {resolvedReportsTo && <> and will report to <strong>{resolvedReportsTo}</strong></>}.{' '}
         The Employee agrees to perform all duties reasonably assigned and to act in the best interests of the Employer.

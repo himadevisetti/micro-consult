@@ -1,9 +1,9 @@
 /* src/styles/StandardRetainerForm.module.css */
 
 .pageContainer {
-  min-height: 100vh;
-  display: block;
-  overflow-y: auto;
+  min-height: auto;
+  overflow: visible;
+  position: static;
 }
 
 .formWrapper {

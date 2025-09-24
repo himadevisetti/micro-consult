@@ -49,7 +49,7 @@ export const employmentAgreementSchema: Record<string, EmploymentAgreementFieldC
     label: 'Band / Group',
     type: 'dropdown',
     required: true,
-    options: ['Band 1 - Entry', 'Band 2 - Mid', 'Band 3 - Senior', 'Executive'],
+    options: ['Not Applicable', 'Band 1 - Entry', 'Band 2 - Mid', 'Band 3 - Senior', 'Executive'],
     placeholder: 'Select band or group',
     clauseTemplate: 'The Employee is classified as {{bandOrGroup}}.',
     group: 'main'
@@ -61,6 +61,16 @@ export const employmentAgreementSchema: Record<string, EmploymentAgreementFieldC
     options: ['Permanent', 'Fixed-Term', 'Probationary', 'Part-Time', 'Temporary', 'Hourly'],
     placeholder: 'Select contract type',
     clauseTemplate: 'The Employee is engaged on a {{contractType}} basis.',
+    group: 'main'
+  },
+  compensationType: {
+    label: 'Compensation Type',
+    type: 'dropdown',
+    required: true,
+    options: ['Salary', 'Hourly'],
+    default: 'Salary',
+    showIf: (form: EmploymentAgreementFormData) =>
+      form.contractType === 'Fixed-Term',
     group: 'main'
   },
   jobTitle: {
@@ -130,8 +140,9 @@ export const employmentAgreementSchema: Record<string, EmploymentAgreementFieldC
         .filter(Boolean)
         .join('; '),
     clauseTemplate: 'The Employee\'s regular schedule will be {{workSchedule}}.',
-    showIf: (form) =>
-      ['Fixed-Term', 'Probationary', 'Part-Time', 'Temporary', 'Hourly'].includes(form.contractType),
+    showIf: (form: EmploymentAgreementFormData) =>
+      ['Probationary', 'Part-Time', 'Temporary', 'Hourly'].includes(form.contractType) ||
+      (form.contractType === 'Fixed-Term' && form.compensationType === 'Hourly'),
     group: 'main',
   },
 
@@ -143,7 +154,9 @@ export const employmentAgreementSchema: Record<string, EmploymentAgreementFieldC
     placeholder: 'e.g. 60000',
     clauseTemplate: 'The Employee will receive a base salary of {{baseSalary}}.',
     showIf: (form: EmploymentAgreementFormData) =>
-      ['Permanent', 'Fixed-Term', 'Probationary'].includes(form.contractType),
+      form.contractType === 'Permanent' ||
+      form.contractType === 'Probationary' ||
+      (form.contractType === 'Fixed-Term' && form.compensationType === 'Salary'),
     validate: (val: string, form?: EmploymentAgreementFormData) => {
       if (val === '' || val == null) return true;
       if (['Permanent', 'Fixed-Term', 'Probationary'].includes(form?.contractType || '')) {
@@ -163,7 +176,9 @@ export const employmentAgreementSchema: Record<string, EmploymentAgreementFieldC
     placeholder: 'Select pay frequency',
     clauseTemplate: 'Salary will be paid {{payFrequency}}.',
     showIf: (form: EmploymentAgreementFormData) =>
-      ['Permanent', 'Fixed-Term', 'Probationary'].includes(form.contractType),
+      form.contractType === 'Permanent' ||
+      form.contractType === 'Probationary' ||
+      (form.contractType === 'Fixed-Term' && form.compensationType === 'Salary'),
     group: 'main',
     validate: (val: string) => {
       if (val === '' || val == null) return true;
@@ -176,8 +191,10 @@ export const employmentAgreementSchema: Record<string, EmploymentAgreementFieldC
     required: false,
     placeholder: 'e.g. 5000',
     clauseTemplate: 'The Employee will receive a bonus of {{bonusAmount}} {{bonusUnit}}.',
-    showIf: (form) =>
-      ['Permanent', 'Fixed-Term', 'Probationary'].includes(form.contractType),
+    showIf: (form: EmploymentAgreementFormData) =>
+      form.contractType === 'Permanent' ||
+      form.contractType === 'Probationary' ||
+      (form.contractType === 'Fixed-Term' && form.compensationType === 'Salary'),
     group: 'main',
     inlineWith: 'bonusUnit',
     validate: (val: string) => {
@@ -190,11 +207,13 @@ export const employmentAgreementSchema: Record<string, EmploymentAgreementFieldC
     label: 'Unit',
     type: 'dropdown',
     required: false,
-    options: ['None', 'Quarterly', 'Annual'],
+    options: ['None', 'Quarterly', 'Annually'],
     default: 'None',
     group: 'main',
-    showIf: (form) =>
-      ['Permanent', 'Fixed-Term', 'Probationary'].includes(form.contractType)
+    showIf: (form: EmploymentAgreementFormData) =>
+      form.contractType === 'Permanent' ||
+      form.contractType === 'Probationary' ||
+      (form.contractType === 'Fixed-Term' && form.compensationType === 'Salary'),
   },
   benefitsList: {
     label: 'Benefits',
@@ -210,7 +229,9 @@ export const employmentAgreementSchema: Record<string, EmploymentAgreementFieldC
     ],
     clauseTemplate: 'The Employee will receive the following benefits: {{benefitsList}}.',
     showIf: (form: EmploymentAgreementFormData) =>
-      ['Permanent', 'Fixed-Term', 'Probationary'].includes(form.contractType),
+      form.contractType === 'Permanent' ||
+      form.contractType === 'Probationary' ||
+      (form.contractType === 'Fixed-Term' && form.compensationType === 'Salary'),
     group: 'main'
   },
   annualLeaveDays: {
@@ -220,7 +241,9 @@ export const employmentAgreementSchema: Record<string, EmploymentAgreementFieldC
     placeholder: 'e.g. 20',
     clauseTemplate: 'The Employee is entitled to {{annualLeaveDays}} days of annual leave.',
     showIf: (form: EmploymentAgreementFormData) =>
-      ['Permanent', 'Fixed-Term', 'Probationary'].includes(form.contractType),
+      form.contractType === 'Permanent' ||
+      form.contractType === 'Probationary' ||
+      (form.contractType === 'Fixed-Term' && form.compensationType === 'Salary'),
     validate: (val: string) => {
       const num = parseInt(val, 10);
       return !isNaN(num) && num >= 0; // must be a number >= 0
@@ -235,7 +258,9 @@ export const employmentAgreementSchema: Record<string, EmploymentAgreementFieldC
     placeholder: 'e.g. 10',
     clauseTemplate: 'The Employee is entitled to {{sickLeaveDays}} days of sick leave.',
     showIf: (form: EmploymentAgreementFormData) =>
-      ['Permanent', 'Fixed-Term', 'Probationary'].includes(form.contractType),
+      form.contractType === 'Permanent' ||
+      form.contractType === 'Probationary' ||
+      (form.contractType === 'Fixed-Term' && form.compensationType === 'Salary'),
     validate: (val: string) => {
       const num = parseInt(val, 10);
       return !isNaN(num) && num >= 0; // must be a number >= 0
@@ -249,7 +274,9 @@ export const employmentAgreementSchema: Record<string, EmploymentAgreementFieldC
     placeholder: 'e.g. 3 (0 indicates no probation)',
     clauseTemplate: 'The probation period will be {{probationPeriod}} months.',
     showIf: (form: EmploymentAgreementFormData) =>
-      ['Permanent', 'Fixed-Term', 'Probationary'].includes(form.contractType),
+      form.contractType === 'Permanent' ||
+      form.contractType === 'Probationary' ||
+      (form.contractType === 'Fixed-Term' && form.compensationType === 'Salary'),
     validate: (val: string) => {
       if (val === '' || val == null) return true;
       const num = parseInt(val, 10);
@@ -267,7 +294,9 @@ export const employmentAgreementSchema: Record<string, EmploymentAgreementFieldC
     disabled: true,
     group: 'main',
     showIf: (form: EmploymentAgreementFormData) =>
-      ['Permanent', 'Fixed-Term', 'Probationary'].includes(form.contractType)
+      form.contractType === 'Permanent' ||
+      form.contractType === 'Probationary' ||
+      (form.contractType === 'Fixed-Term' && form.compensationType === 'Salary')
   },
   noticePeriodEmployer: {
     label: 'Employer',
@@ -322,7 +351,8 @@ export const employmentAgreementSchema: Record<string, EmploymentAgreementFieldC
     placeholder: 'e.g. 40',
     clauseTemplate: 'The Employee will be paid {{hourlyRate}} per hour.',
     showIf: (form: EmploymentAgreementFormData) =>
-      ['Temporary', 'Hourly', 'Part-Time'].includes(form.contractType),
+      ['Temporary', 'Hourly', 'Part-Time'].includes(form.contractType) ||
+      (form.contractType === 'Fixed-Term' && form.compensationType === 'Hourly'),
     // disable schema-level validation; backend will validate both fields together
     validate: () => true,
     group: 'main',
@@ -335,7 +365,8 @@ export const employmentAgreementSchema: Record<string, EmploymentAgreementFieldC
     placeholder: 'Hours per week (e.g. 20)',
     clauseTemplate: 'The Employee will work {{hoursPerWeek}} hours per week.',
     showIf: (form: EmploymentAgreementFormData) =>
-      ['Temporary', 'Hourly', 'Part-Time'].includes(form.contractType),
+      ['Temporary', 'Hourly', 'Part-Time'].includes(form.contractType) ||
+      (form.contractType === 'Fixed-Term' && form.compensationType === 'Hourly'),
     // disable schema-level validation; backend will validate both fields together
     validate: () => true,
     group: 'main'
@@ -349,7 +380,8 @@ export const employmentAgreementSchema: Record<string, EmploymentAgreementFieldC
     group: 'main',
     inlineWith: 'contractDurationUnit',
     showIf: (form: EmploymentAgreementFormData) =>
-      ['Temporary', 'Hourly'].includes(form.contractType),
+      ['Temporary', 'Hourly'].includes(form.contractType) ||
+      form.contractType === 'Fixed-Term',
     // Disable schema-level validation; handled in parseAndValidateEmploymentAgreementForm.ts
     validate: () => true
   },
@@ -363,7 +395,8 @@ export const employmentAgreementSchema: Record<string, EmploymentAgreementFieldC
     clauseTemplate: 'The contract duration is {{contractDurationValue}} {{contractDurationUnit}}.',
     group: 'main',
     showIf: (form: EmploymentAgreementFormData) =>
-      ['Temporary', 'Hourly'].includes(form.contractType)
+      ['Temporary', 'Hourly'].includes(form.contractType) ||
+      form.contractType === 'Fixed-Term'
   },
   overtimePolicy: {
     label: 'Overtime Policy',
@@ -373,7 +406,8 @@ export const employmentAgreementSchema: Record<string, EmploymentAgreementFieldC
     clauseTemplate: 'Overtime will be handled as follows: {{overtimePolicy}}.',
     group: 'main',
     showIf: (form: EmploymentAgreementFormData) =>
-      ['Temporary', 'Hourly', 'Part-Time'].includes(form.contractType)
+      ['Temporary', 'Hourly', 'Part-Time'].includes(form.contractType) ||
+      (form.contractType === 'Fixed-Term' && form.compensationType === 'Hourly')
   },
 
   // Clause toggles

@@ -1,31 +1,39 @@
 type CompensationClauseProps = {
   contractType?: string;
+  compensationType?: string;
   baseSalary?: string;
   payFrequency?: string;
   hourlyRate?: string;
   hoursPerWeek?: string;
   bonusAmount?: string;
   bonusUnit?: string;
+  contractDurationValue?: number;
+  contractDurationUnit?: string;
 };
 
 export default function CompensationClause({
   contractType,
+  compensationType,
   baseSalary,
   payFrequency,
   hourlyRate,
   hoursPerWeek,
   bonusAmount,
   bonusUnit,
+  contractDurationValue,
+  contractDurationUnit,
 }: CompensationClauseProps) {
   // Normalize contract type
   const type = (contractType ?? '').trim().toLowerCase();
+  const compType = (compensationType ?? '').trim().toLowerCase();
 
   // Define which types are hourly-based in your product
   const HOURLY_TYPES = new Set(['hourly', 'temporary', 'part-time']);
 
-  // Derive payment model with a defensive fallback
+  // Derive payment model
   const isHourly =
     HOURLY_TYPES.has(type) ||
+    (type === 'fixed-term' && compType === 'hourly') ||
     (!!(hourlyRate && hourlyRate.trim()) && !(baseSalary && baseSalary.trim()));
 
   const resolvedBaseSalary = baseSalary?.trim() || 'the agreed salary';
@@ -54,6 +62,20 @@ export default function CompensationClause({
         : 'The Employee will not be entitled to a bonus for this year.'
       : '';
 
+  // Contract Duration sentence (always for Fixed-Term)
+  const durationText =
+    type === 'fixed-term' && contractDurationValue && contractDurationUnit
+      ? (
+        <>
+          {' '}
+          The contract duration is{' '}
+          <strong>
+            {contractDurationValue} {contractDurationUnit.toLowerCase()}
+          </strong>.
+        </>
+      )
+      : '';
+
   return (
     <section>
       <h3 style={{ fontWeight: 'bold' }}>Compensation</h3>
@@ -63,6 +85,7 @@ export default function CompensationClause({
           <strong>{resolvedHoursPerWeek}</strong> hours per week.
           {bonusText && ' '}
           {bonusText}
+          {durationText}
         </p>
       ) : (
         <p>
@@ -70,6 +93,7 @@ export default function CompensationClause({
           <strong>{resolvedPayFrequency}</strong>.
           {bonusText && ' '}
           {bonusText}
+          {durationText}
         </p>
       )}
     </section>

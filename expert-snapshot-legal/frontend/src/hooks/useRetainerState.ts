@@ -13,8 +13,14 @@ export function useRetainerState<T extends Record<string, any>>(
   setFormData: React.Dispatch<React.SetStateAction<T>>,
   schema: Record<string, any>,
   formType: FormType,
-  validateForm: (raw: T, schema: Record<string, any>) => { parsed: T; errors: Partial<Record<keyof T, string>> },
-  buildPreviewPayload: (formData: T, schema: Record<string, any>) => { metadata: Record<string, string> },
+  validateForm: (
+    raw: T,
+    schema: Record<string, any>
+  ) => { parsed: T; errors: Partial<Record<keyof T, string>> },
+  buildPreviewPayload: (
+    formData: T,
+    schema: Record<string, any>
+  ) => { metadata: Record<string, string> },
   getSerializedClauses: (formData: T) => Record<string, React.ReactNode>,
   sessionStorageKey: string
 ) {
@@ -25,19 +31,14 @@ export function useRetainerState<T extends Record<string, any>>(
 
   const navigate = useNavigate();
 
-  function validate(raw?: T) {
-    if (!raw) throw new Error('rawFormData is undefined during submission');
-    const { parsed, errors } = validateForm(raw, schema);
-    setFormData(parsed);
-    setErrors(errors);
-    return Object.keys(errors).length === 0;
-  }
-
   const markTouched = (field: keyof T) => {
     setTouched((prev) => ({ ...prev, [field]: true }));
   };
 
-  const updateField = (field: keyof T, value: string | number | boolean | Date) => {
+  const updateField = (
+    field: keyof T,
+    value: string | number | boolean | Date
+  ) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
@@ -60,14 +61,17 @@ export function useRetainerState<T extends Record<string, any>>(
   };
 
   const handleSubmit = async (raw: T) => {
-    const isValid = validate(raw);
-    if (!isValid) {
+    const { parsed, errors } = validateForm(raw, schema);
+    setFormData(parsed);
+    setErrors(errors);
+
+    if (Object.keys(errors).length > 0) {
       console.warn('Form submission blocked due to validation errors:', errors);
       return;
     }
 
     const html = await generatePreview();
-    const payload = raw;
+    const payload = parsed;
 
     sessionStorage.setItem(sessionStorageKey, JSON.stringify(payload));
     console.log('Form submitted successfully:', payload);
@@ -86,7 +90,6 @@ export function useRetainerState<T extends Record<string, any>>(
     errors,
     touched,
     markTouched,
-    validate,
     generatePreview,
     handleSubmit,
     previewHtml,

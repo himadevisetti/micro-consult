@@ -10,7 +10,8 @@ import type {
   NoticePeriodUnit,
   ProbationPeriodUnit,
   DurationUnit,
-  WorkScheduleEntry
+  WorkScheduleEntry,
+  CompensationType
 } from '../types/EmploymentAgreementFormData';
 
 /**
@@ -34,6 +35,14 @@ export function normalizeEmploymentAgreementFormData(
     bandOrGroup: raw.bandOrGroup as BandOrGroup,
     jurisdiction: String(raw.jurisdiction ?? ''),
     contractType: raw.contractType as ContractType,
+
+    // Compensation type (only relevant for Fixed-Term)
+    compensationType:
+      raw.compensationType !== undefined && raw.compensationType !== ''
+        ? (raw.compensationType as CompensationType)
+        : raw.contractType === 'Fixed-Term'
+          ? 'Salary'
+          : undefined,
 
     // Salary-based fields
     baseSalary:

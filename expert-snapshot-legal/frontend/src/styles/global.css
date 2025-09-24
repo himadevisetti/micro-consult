@@ -11,7 +11,8 @@
 html,
 body {
   height: 100%;
-  overflow: hidden;
+  overflow-y: auto;
+  overflow-x: hidden;
   margin: 0;
   padding: 0;
   box-sizing: border-box;
@@ -34,4 +35,9 @@ html.is-safari input[type="date"] {
   background-size: 1rem;
   padding-right: 2rem;
   pointer-events: auto;
+}
+
+.error-select-highlight {
+  outline: 2px solid var(--color-gold);
+  outline-offset: 2px;
 }

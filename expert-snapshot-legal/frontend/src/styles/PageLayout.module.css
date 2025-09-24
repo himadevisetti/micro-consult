@@ -1,20 +1,29 @@
 .pageWrapper {
   background-color: var(--color-creme);
-  height: 100vh;
+  /* was: height: 100vh */
+  min-height: 100%;
+  /* flex with html/body */
   display: flex;
   flex-direction: column;
   box-sizing: border-box;
-  overflow: hidden;
+  /* was: overflow: hidden */
+  overflow: visible;
+  /* don’t clip children */
 }
 
 .pageContent {
   flex-grow: 1;
   display: flex;
   flex-direction: column;
-  justify-content: center;
+  /* was: justify-content: center */
+  justify-content: flex-start;
+  /* avoid vertical clipping */
   align-items: stretch;
   padding: 0;
-  overflow: hidden;
+  /* was: overflow: hidden */
+  overflow-y: auto;
+  /* ✅ scroll lives here */
+  overflow-x: hidden;
 }
 
 .fullWidth {
@@ -24,8 +33,9 @@
 }
 
 .scrollablePage {
-  height: auto !important;
-  min-height: 100vh;
-  overflow-y: auto !important;
-  display: block !important;
+  /* was: height: auto !important; min-height: 100vh; overflow-y: auto !important; */
+  flex: 1 1 auto;
+  min-height: auto;
+  overflow: visible;
+  display: block;
 }

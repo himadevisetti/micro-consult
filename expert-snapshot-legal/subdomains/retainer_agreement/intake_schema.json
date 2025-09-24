@@ -18,7 +18,12 @@
       "id": "term_length",
       "label": "Duration of the agreement",
       "type": "dropdown",
-      "options": ["Monthly", "Quarterly", "Annual", "Custom"],
+      "options": [
+        "Monthly",
+        "Quarterly",
+        "Annually",
+        "Custom"
+      ],
       "required": true
     },
     {

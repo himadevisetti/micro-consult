@@ -88,10 +88,15 @@ export default function EmploymentAgreementForm({
   };
 
   useEffect(() => {
-    if (!errors || Object.keys(errors).length === 0) return;
-
     const formEl = document.getElementById('employment-agreement-form');
     if (!formEl) return;
+
+    // Always clear old highlights first
+    formEl.querySelectorAll('select.error-select-highlight').forEach(el => {
+      el.classList.remove('error-select-highlight');
+    });
+
+    if (!errors || Object.keys(errors).length === 0) return;
 
     /**
      * Expand combined keys like "baseSalary__payFrequency" into individual keys
@@ -114,14 +119,20 @@ export default function EmploymentAgreementForm({
       }
     }
 
-    // Get all focusable fields in DOM order
     const focusables = Array.from(
       formEl.querySelectorAll<HTMLElement>(
         'input:not([type="hidden"]):not([disabled]), textarea:not([disabled]), select:not([disabled])'
       )
     );
 
-    // Find the first focusable whose name matches an error field
+    // Highlight *all* errored selects
+    focusables.forEach(el => {
+      if (el.tagName === 'SELECT' && errorFieldNames.has(el.getAttribute('name') || '')) {
+        el.classList.add('error-select-highlight');
+      }
+    });
+
+    // Scroll to the first errored field
     const target = focusables.find(el =>
       errorFieldNames.has(el.getAttribute('name') || '')
     );
@@ -129,6 +140,12 @@ export default function EmploymentAgreementForm({
     if (target) {
       requestAnimationFrame(() => {
         target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+        if (target.tagName === 'SELECT') {
+          // 🚫 Skip programmatic focus for selects (Safari bug)
+          return;
+        }
+
         target.focus();
       });
     }

@@ -10,13 +10,14 @@ export type ContractType =
 
 export type WorkLocation = 'On-site' | 'Remote' | 'Hybrid';
 export type BandOrGroup =
+  | 'Not Applicable'
   | 'Band 1 - Entry'
   | 'Band 2 - Mid'
   | 'Band 3 - Senior'
   | 'Executive';
 
 export type PaymentFrequency = 'Weekly' | 'Biweekly' | 'Monthly';
-export type BonusUnit = 'None' | 'Quarterly' | 'Annual';
+export type BonusUnit = 'None' | 'Quarterly' | 'Annually';
 export type ProbationPeriodUnit = 'Months';
 export type NoticePeriodUnit = 'Weeks' | 'Months';
 export type DurationUnit = 'Days' | 'Weeks' | 'Months' | 'Years';
@@ -41,6 +42,8 @@ export type WorkScheduleEntry = {
   hours: TimeRange;
 };
 
+export type CompensationType = 'Salary' | 'Hourly';
+
 export interface EmploymentAgreementFormData {
   // Parties & Dates
   employerName: string;
@@ -54,6 +57,7 @@ export interface EmploymentAgreementFormData {
   bandOrGroup: BandOrGroup;
   jurisdiction: string;
   contractType: ContractType;
+  compensationType?: CompensationType;
 
   // Dynamic fields based on contractType
   baseSalary?: number; // Permanent/Fixed-Term/Probationary
@@ -109,9 +113,10 @@ export const defaultEmploymentAgreementFormData: EmploymentAgreementFormData = {
   jobTitle: '',
   department: '',
   reportsTo: '',
-  bandOrGroup: 'Band 1 - Entry',
+  bandOrGroup: 'Not Applicable',
   jurisdiction: '',
   contractType: 'Permanent',
+  compensationType: 'Salary',
 
   baseSalary: undefined,
   payFrequency: 'Biweekly',

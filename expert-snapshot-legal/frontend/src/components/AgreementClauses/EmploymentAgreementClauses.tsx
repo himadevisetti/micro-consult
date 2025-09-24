@@ -35,9 +35,6 @@ export function getEmploymentAgreementClauses(
           employeeName={fd.employeeName}
           employeeAddress={fd.employeeAddress}
           effectiveDate={fd.formattedEffectiveDateLong}
-          jobTitle={fd.jobTitle}
-          department={fd.department}
-          reportsTo={fd.reportsTo}
           workLocation={fd.workLocation}
           workSchedule={fd.workSchedule}
           contractType={fd.contractType}
@@ -61,12 +58,15 @@ export function getEmploymentAgreementClauses(
       render: (fd) => (
         <CompensationClause
           contractType={fd.contractType}
+          compensationType={fd.compensationType}
           baseSalary={fd.formattedBaseSalary}
           payFrequency={fd.payFrequency}
           hourlyRate={fd.formattedHourlyRate}
           hoursPerWeek={fd.formattedHoursPerWeek}
           bonusAmount={fd.formattedBonusAmount}
           bonusUnit={fd.bonusUnit}
+          contractDurationValue={fd.contractDurationValue}
+          contractDurationUnit={fd.contractDurationUnit}
         />
       ),
     },
@@ -154,6 +154,7 @@ export function getEmploymentAgreementClauses(
               durationUnit={fd.nonCompeteDurationUnit}
               employeeName={fd.employeeName}
               employerName={fd.employerName}
+              nonCompeteScope={fd.nonCompeteScope}
             />
           ),
         },
