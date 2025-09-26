@@ -2,11 +2,12 @@
 
 import React, { useRef, useState, useEffect } from 'react';
 import { StartupAdvisoryFormData, defaultStartupAdvisoryFormData } from '../../types/StartupAdvisoryFormData';
-import { FormType, RetainerTypeLabel } from '@/types/FormType';
+import { FormType, RetainerTypeLabel, getFormDomId } from '@/types/FormType';
 import { StartupAdvisoryFieldConfig } from '@/types/StartupAdvisoryFieldConfig';
 import CustomDatePicker from '../Inputs/CustomDatePicker';
 import styles from '../../styles/StandardRetainerForm.module.css';
 import { FormBlurHandler } from '@/types/FormUtils';
+import { focusFirstError } from '@/utils/focusFirstError';
 
 export interface StartupAdvisoryFormProps {
   schema: Record<string, StartupAdvisoryFieldConfig>;
@@ -33,6 +34,7 @@ export default function StartupAdvisoryForm({
   onSubmit,
   markTouched,
 }: StartupAdvisoryFormProps) {
+  const formId = getFormDomId(FormType.StartupAdvisory);
   const [submitted, setSubmitted] = useState(false);
 
   const handleChange = (field: keyof StartupAdvisoryFormData) => (
@@ -85,21 +87,20 @@ export default function StartupAdvisoryForm({
   };
 
   useEffect(() => {
-    const formEl = document.getElementById('startup-advisory-form');
+    const formEl = document.getElementById(formId);
     if (!formEl) return;
-    const editable = formEl.querySelector(
-      'input:not([type="hidden"]):not([disabled]):not([tabindex="-1"]), textarea:not([disabled]), select:not([disabled])'
-    ) as HTMLElement | null;
-    editable?.focus();
-  }, []);
 
-  useEffect(() => {
-    if (!submitted || !errors || Object.keys(errors).length === 0) return;
-    const firstErrorField = Object.keys(errors)[0];
-    const el = document.getElementById(firstErrorField);
-    el?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    setSubmitted(false);
-  }, [submitted, errors]);
+    if (errors && Object.keys(errors).length > 0) {
+      // Validation errors exist → focus the first invalid field(s)
+      focusFirstError(formId, errors);
+    } else {
+      // First mount (no errors yet) → focus the first editable field
+      const editable = formEl.querySelector<HTMLElement>(
+        'input:not([type="hidden"]):not([disabled]):not([tabindex="-1"]), textarea:not([disabled]), select:not([disabled])'
+      );
+      editable?.focus();
+    }
+  }, [errors]);
 
   // --- helper: strongly-typed default reader
   function getDefault<K extends keyof StartupAdvisoryFormData>(
@@ -206,14 +207,17 @@ export default function StartupAdvisoryForm({
   const renderField = (
     field: keyof StartupAdvisoryFormData,
     config: StartupAdvisoryFieldConfig,
-    suppressLabel = false
+    suppressLabel = false,
+    options?: { suppressError?: boolean }
   ) => {
+    const { suppressError = false } = options || {};
     const value = formData[field];
     if (config.type === 'checkbox') {
       return (
         <label className={styles.clauseToggle}>
           <input
             id={field}
+            name={field}
             type="checkbox"
             checked={value === true || value === 'true'}
             onChange={handleChange(field)}
@@ -223,9 +227,11 @@ export default function StartupAdvisoryForm({
             }}
           />
           {config.label}
-          {(submitted || touched?.[field]) && errors?.[field] && (
-            <span className={styles.error}>{errors[field]}</span>
-          )}
+          {!suppressError &&
+            (submitted || touched?.[field]) &&
+            errors?.[field] && (
+              <span className={styles.error}>{errors[field]}</span>
+            )}
         </label>
       );
     }
@@ -253,6 +259,7 @@ export default function StartupAdvisoryForm({
         {config.type === 'number' ? (
           <input
             id={field}
+            name={field}
             type="number"
             step="0.01"
             value={typeof value === 'number' ? value : ''}
@@ -267,6 +274,7 @@ export default function StartupAdvisoryForm({
             return (
               <CustomDatePicker
                 id={field}
+                name={field}
                 value={typeof rawValue === 'string' ? rawValue : ''}
                 onChange={(newIso: string) => {
                   onRawChange(field, newIso);
@@ -287,6 +295,7 @@ export default function StartupAdvisoryForm({
         ) : config.type === 'textarea' ? (
           <textarea
             id={field}
+            name={field}
             value={value as string}
             onChange={handleChange(field)}
             onBlur={handleBlur(field)}
@@ -296,6 +305,7 @@ export default function StartupAdvisoryForm({
         ) : config.type === 'dropdown' && config.options ? (
           <select
             id={field}
+            name={field}
             value={value as string}
             onChange={handleChange(field)}
             onBlur={handleBlur(field)}
@@ -311,6 +321,7 @@ export default function StartupAdvisoryForm({
         ) : (
           <input
             id={field}
+            name={field}
             type={config.type}
             value={value as string}
             onChange={handleChange(field)}
@@ -320,9 +331,11 @@ export default function StartupAdvisoryForm({
           />
         )}
 
-        {(submitted || touched?.[field]) && errors?.[field] && (
-          <span className={styles.error}>{errors[field]}</span>
-        )}
+        {!suppressError &&
+          (submitted || touched?.[field]) &&
+          errors?.[field] && (
+            <span className={styles.error}>{errors[field]}</span>
+          )}
       </>
     );
   };
@@ -331,7 +344,7 @@ export default function StartupAdvisoryForm({
     <div className={styles.pageContainer}>
       <div className={styles.formWrapper}>
         <form
-          id="startup-advisory-form"
+          id={formId}
           className={styles.formInner}
           onSubmit={handleFormSubmit}
         >
@@ -364,11 +377,37 @@ export default function StartupAdvisoryForm({
                   <div key={key} className={styles.formRow}>
                     <label className={styles.label}>{config.label}</label>
                     <div className={styles.inlinePair}>
-                      {renderField(key as keyof StartupAdvisoryFormData, config, true)}
-                      {renderField(partnerKey as keyof StartupAdvisoryFormData, partnerCfg, true)}
+                      {renderField(
+                        key as keyof StartupAdvisoryFormData,
+                        config,
+                        true,
+                        { suppressError: true }
+                      )}
+                      {renderField(
+                        partnerKey as keyof StartupAdvisoryFormData,
+                        partnerCfg,
+                        true,
+                        { suppressError: true }
+                      )}
                     </div>
-                    {combinedError && (
-                      <span className={styles.error}>{combinedError}</span>
+
+                    {/* Show combined error if both halves missing */}
+                    {combinedError &&
+                      !(errors?.[key as keyof StartupAdvisoryFormData] ||
+                        errors?.[partnerKey as keyof StartupAdvisoryFormData]) && (
+                        <span className={styles.error}>{combinedError}</span>
+                      )}
+
+                    {/* Show per-field errors below the pair if only one half invalid */}
+                    {!combinedError && errors?.[key as keyof StartupAdvisoryFormData] && (
+                      <span className={styles.error}>
+                        {errors[key as keyof StartupAdvisoryFormData]}
+                      </span>
+                    )}
+                    {!combinedError && errors?.[partnerKey as keyof StartupAdvisoryFormData] && (
+                      <span className={styles.error}>
+                        {errors[partnerKey as keyof StartupAdvisoryFormData]}
+                      </span>
                     )}
                   </div>
                 );

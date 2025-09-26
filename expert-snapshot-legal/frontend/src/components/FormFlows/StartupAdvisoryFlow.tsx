@@ -28,8 +28,8 @@ export default function StartupAdvisoryFlow({ schema }: Props) {
 
   const hydratedDefaults: StartupAdvisoryFormData = {
     ...defaultStartupAdvisoryFormData,
-    effectiveDate: formattedToday,
-    vestingStartDate: formattedToday
+    effectiveDate: formattedToday
+    // vestingStartDate: formattedToday
   };
 
   // Clear persisted state only on hard reload

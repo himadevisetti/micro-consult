@@ -3,6 +3,7 @@
 import type { StartupAdvisoryFormData } from '../types/StartupAdvisoryFormData';
 import type { StartupAdvisoryFieldConfig } from '../types/StartupAdvisoryFieldConfig';
 import { normalizeForValidation, isEmptyValue } from '../utils/formSchemaUtils';
+import { validateInlinePair } from '@/utils/validateInlinePair';
 
 export type StartupAdvisoryValidationErrors = Partial<
   Record<keyof StartupAdvisoryFormData, string>
@@ -65,34 +66,6 @@ export function parseAndValidateStartupAdvisoryForm(
   // --- Combined inline pair validation helpers ---
   const formSnapshot = { ...rawFormData, ...parsedRaw } as StartupAdvisoryFormData;
 
-  function validateInlinePair(
-    valueKey: keyof StartupAdvisoryFormData,
-    unitKey: keyof StartupAdvisoryFormData,
-    label: string
-  ) {
-    const valueCfg = schema[valueKey];
-    const unitCfg = schema[unitKey];
-
-    const valueVisible =
-      typeof (valueCfg as any).showIf === 'function'
-        ? !!(valueCfg as any).showIf(formSnapshot)
-        : true;
-    const unitVisible =
-      typeof (unitCfg as any).showIf === 'function'
-        ? !!(unitCfg as any).showIf(formSnapshot)
-        : true;
-
-    if (valueVisible && unitVisible) {
-      const value = formSnapshot[valueKey];
-      const unit = formSnapshot[unitKey];
-      if (isEmptyValue(value) || isEmptyValue(unit)) {
-        errors[`${String(valueKey)}__${String(unitKey)}` as keyof StartupAdvisoryFormData] =
-          `Please enter both a value and a unit for ${label}`;
-        console.warn(`⚠️ Missing required inline pair: ${label}`);
-      }
-    }
-  }
-
   function validateInlinePairPercentOnly(
     percentKey: keyof StartupAdvisoryFormData,
     sharesKey: keyof StartupAdvisoryFormData,
@@ -115,21 +88,58 @@ export function parseAndValidateStartupAdvisoryForm(
       const num = Number(percentVal);
       if (!Number.isFinite(num) || num <= 0) {
         errors[`${String(percentKey)}__${String(sharesKey)}` as keyof StartupAdvisoryFormData] =
-          `Please enter a valid percentage for ${label}`;
+          `Please enter a valid percentage for ${label}.`;
         console.warn(`⚠️ Missing/invalid percent for ${label}`);
       }
     }
   }
 
   // --- Always-required value+unit pairs ---
-  validateInlinePair('agreementDurationValue', 'agreementDurationUnit', 'Agreement Duration');
-  validateInlinePair('timeCommitmentValue', 'timeCommitmentUnit', 'Time Commitment');
+
+  validateInlinePair(
+    formSnapshot,
+    errors,
+    'agreementDurationValue',
+    'agreementDurationUnit',
+    'Agreement Duration',
+    false,  // allowZero
+    schema  // pass schema for visibility checks
+  );
+
+  validateInlinePair(
+    formSnapshot,
+    errors,
+    'timeCommitmentValue',
+    'timeCommitmentUnit',
+    'Time Commitment',
+    false,  // allowZero
+    schema  // pass schema for visibility checks
+  );
 
   // --- Conditionally-required value+unit pairs ---
-  validateInlinePair('cliffPeriodValue', 'cliffPeriodUnit', 'Cliff Period');
-  validateInlinePair('totalVestingPeriodValue', 'totalVestingPeriodUnit', 'Total Vesting Period');
+
+  validateInlinePair(
+    formSnapshot,
+    errors,
+    'cliffPeriodValue',
+    'cliffPeriodUnit',
+    'Cliff Period',
+    false,         // allowZero
+    schema         // pass schema for visibility checks
+  );
+
+  validateInlinePair(
+    formSnapshot,
+    errors,
+    'totalVestingPeriodValue',
+    'totalVestingPeriodUnit',
+    'Total Vesting Period',
+    false,         // allowZero
+    schema         // pass schema for visibility checks
+  );
 
   // --- Split equity grant percent-only pairs ---
+
   validateInlinePairPercentOnly('initialEquityPercentage', 'initialEquityShares', 'Initial Grant');
   validateInlinePairPercentOnly('futureEquityPercentage', 'futureEquityShares', 'Future Grant');
 

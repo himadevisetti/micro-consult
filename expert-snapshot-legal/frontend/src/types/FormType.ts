@@ -25,3 +25,7 @@ export const RetainerTypeLabel: Record<FormType, string> = {
 export function getFormTypeLabel(type: FormType): string {
   return RetainerTypeLabel[type];
 }
+
+export function getFormDomId(type: FormType): string {
+  return `${type}-form`;
+}
