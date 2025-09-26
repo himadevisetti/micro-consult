@@ -3,6 +3,7 @@
 import type { EmploymentAgreementFormData, WorkScheduleEntry } from '../types/EmploymentAgreementFormData';
 import type { EmploymentAgreementFieldConfig } from '../types/EmploymentAgreementFieldConfig';
 import { normalizeForValidation, isEmptyValue } from '../utils/formSchemaUtils';
+import { validateInlinePair } from '@/utils/validateInlinePair';
 
 export type EmploymentAgreementValidationErrors = Partial<
   Record<keyof EmploymentAgreementFormData, string>
@@ -87,127 +88,92 @@ export function parseAndValidateEmploymentAgreementForm(
   // --- Combined inline pair validation helpers ---
   const formSnapshot = { ...rawFormData, ...parsedRaw } as EmploymentAgreementFormData;
 
-  function validateInlinePair(
-    valueKey: keyof EmploymentAgreementFormData,
-    unitKey: keyof EmploymentAgreementFormData,
-    label: string,
-    required: boolean,
-    allowZero = false // ✅ new optional flag
-  ) {
-    const valueCfg = schema[valueKey];
-    const unitCfg = schema[unitKey];
+  // --- Required pairs ---
 
-    const valueVisible =
-      typeof (valueCfg as any).showIf === 'function'
-        ? !!(valueCfg as any).showIf(formSnapshot)
-        : true;
-    const unitVisible =
-      typeof (unitCfg as any).showIf === 'function'
-        ? !!(unitCfg as any).showIf(formSnapshot)
-        : true;
-
-    if (valueVisible && unitVisible) {
-      const value = formSnapshot[valueKey];
-      const unit = formSnapshot[unitKey];
-
-      const numericValue =
-        typeof value === 'string' && value.trim() !== ''
-          ? Number(value)
-          : typeof value === 'number'
-            ? value
-            : undefined;
-
-      // ✅ Only allow 0 if allowZero is true
-      const hasValidValue =
-        numericValue !== undefined &&
-        !Number.isNaN(numericValue) &&
-        (allowZero ? numericValue >= 0 : numericValue > 0);
-
-      const unitLooksDefault = isDefaultUnitValue(unitKey, unit);
-      const hasUnit =
-        !isEmptyValue(unit) &&
-        !(!required && numericValue === undefined && unitLooksDefault);
-
-      const combinedKey = `${String(valueKey)}__${String(unitKey)}` as keyof EmploymentAgreementFormData;
-
-      if (required) {
-        if (!hasValidValue || !hasUnit) {
-          errors[combinedKey] = `${label} must include a value${allowZero ? ' (0 or greater)' : ' greater than 0'} and a unit.`;
-        }
-      } else {
-        if ((hasValidValue && !hasUnit) || (!hasValidValue && hasUnit)) {
-          errors[combinedKey] = `Please enter both a value and a unit for ${label}`;
-        }
-      }
-    }
-  }
-
-  // Required pairs
   validateInlinePair(
+    formSnapshot,
+    errors,
     'baseSalary',
     'payFrequency',
     'Base Salary',
-    formSnapshot.contractType === 'Permanent' ||
-    formSnapshot.contractType === 'Probationary' ||
-    (formSnapshot.contractType === 'Fixed-Term' && formSnapshot.compensationType === 'Salary'),
-    false
+    false,   // allowZero
+    schema   // schema drives visibility + requiredness
   );
 
   validateInlinePair(
+    formSnapshot,
+    errors,
     'contractDurationValue',
     'contractDurationUnit',
     'Contract Duration',
-    formSnapshot.contractType === 'Temporary' ||
-    formSnapshot.contractType === 'Hourly' ||
-    formSnapshot.contractType === 'Fixed-Term',
-    false
+    false,   // allowZero
+    schema
   );
 
   validateInlinePair(
+    formSnapshot,
+    errors,
     'nonCompeteDurationValue',
     'nonCompeteDurationUnit',
     'Non-Compete Duration',
-    true,
-    false
+    false,   // allowZero
+    schema
   );
 
   validateInlinePair(
+    formSnapshot,
+    errors,
     'noticePeriodEmployer',
     'noticePeriodEmployerUnit',
     'Employer Notice Period',
-    true,
-    false
+    false,   // allowZero
+    schema
   );
 
   validateInlinePair(
+    formSnapshot,
+    errors,
     'noticePeriodEmployee',
     'noticePeriodEmployeeUnit',
     'Employee Notice Period',
-    true,
-    false
+    false,   // allowZero
+    schema
   );
 
-  // Optional pairs
-  validateInlinePair('bonusAmount', 'bonusUnit', 'Bonus', false, false);
+  // --- Optional pairs ---
 
-  // Probation Period — allow zero
   validateInlinePair(
+    formSnapshot,
+    errors,
+    'bonusAmount',
+    'bonusUnit',
+    'Bonus',
+    false,   // allowZero
+    schema   // mark pairOptional: true in schema if truly optional
+  );
+
+  // --- Probation Period (allow zero) ---
+
+  validateInlinePair(
+    formSnapshot,
+    errors,
     'probationPeriod',
     'probationPeriodUnit',
     'Probation Period',
-    formSnapshot.contractType === 'Probationary' ||
-    (formSnapshot.contractType === 'Fixed-Term' && formSnapshot.compensationType === 'Salary'),
-    true
+    true,    // allowZero
+    schema
   );
 
+  // --- Hourly Rate + Hours per Week ---
+
   validateInlinePair(
+    formSnapshot,
+    errors,
     'hourlyRate',
     'hoursPerWeek',
     'Hourly Rate and Hours per Week',
-    formSnapshot.contractType === 'Hourly' ||
-    formSnapshot.contractType === 'Temporary' ||
-    (formSnapshot.contractType === 'Fixed-Term' && formSnapshot.compensationType === 'Hourly'),
-    false
+    false,   // allowZero
+    schema
   );
 
   if (formSnapshot.contractType === 'Part-Time') {

@@ -46,7 +46,8 @@ export function validateInlinePair<T extends Record<string, any>>(
     !Number.isNaN(numericValue) &&
     (allowZero ? numericValue >= 0 : numericValue > 0);
 
-  const hasUnit = !isEmptyValue(unit);
+  // Treat "None" as empty for unit
+  const hasUnit = !isEmptyValue(unit) && unit !== 'None';
 
   const combinedKey = `${String(valueKey)}__${String(unitKey)}`;
 

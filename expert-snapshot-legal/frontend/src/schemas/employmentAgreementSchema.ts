@@ -195,6 +195,7 @@ export const employmentAgreementSchema: Record<string, EmploymentAgreementFieldC
       form.contractType === 'Permanent' ||
       form.contractType === 'Probationary' ||
       (form.contractType === 'Fixed-Term' && form.compensationType === 'Salary'),
+    pairOptional: true,
     group: 'main',
     inlineWith: 'bonusUnit',
     validate: (val: string) => {

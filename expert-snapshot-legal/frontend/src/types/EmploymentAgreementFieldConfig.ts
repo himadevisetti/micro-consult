@@ -52,6 +52,9 @@ export interface EmploymentAgreementFieldConfig<T = string> {
   // For inline-pair fields (used by workSchedule)
   pair?: InlinePairField[];
 
+  // Explicit override: if true, this field’s inline-pair is optional even when visible
+  pairOptional?: boolean;
+
   // If this field is an array-like value, join defines how to stringify it (e.g., for clauses)
   join?: (entries: T extends any[] ? T : never) => string;
 }

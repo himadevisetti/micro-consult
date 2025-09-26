@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import type { IPRightsLicensingFormData } from '../../types/IPRightsLicensingFormData';
-import { FormType, RetainerTypeLabel } from '@/types/FormType';
+import { FormType, RetainerTypeLabel, getFormDomId } from '@/types/FormType';
 import { IPRetainerFieldConfig } from '@/types/IPRetainerFieldConfig';
 import { getDateInputValue } from '../../utils/formRenderUtils';
 import CustomDatePicker from '../Inputs/CustomDatePicker';
@@ -34,6 +34,7 @@ export default function IPRightsLicensingForm({
   onSubmit,
   markTouched,
 }: IPRightsLicensingFormProps) {
+  const formId = getFormDomId(FormType.IPRightsLicensing);
   const [submitted, setSubmitted] = useState(false);
 
   const handleChange = (field: keyof IPRightsLicensingFormData) => (
@@ -101,7 +102,7 @@ export default function IPRightsLicensingForm({
   return (
     <div className={styles.pageContainer}>
       <div className={styles.formWrapper}>
-        <form id="ip-rights-licensing-form" className={styles.formInner} onSubmit={handleFormSubmit}>
+        <form id={formId} className={styles.formInner} onSubmit={handleFormSubmit}>
           {errors && Object.keys(errors).length > 0 && (
             <div className={styles.errorBanner}>
               Please fix the highlighted fields below.

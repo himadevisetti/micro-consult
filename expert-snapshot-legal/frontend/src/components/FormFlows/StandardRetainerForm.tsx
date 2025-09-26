@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import type { RetainerFormData } from '../../types/RetainerFormData';
-import { FormType, RetainerTypeLabel } from '@/types/FormType';
+import { FormType, RetainerTypeLabel, getFormDomId } from '@/types/FormType';
 import { RetainerFieldConfig } from '@/types/RetainerFieldConfig';
 import { getDateInputValue } from '../../utils/formRenderUtils';
 import CustomDatePicker from '../Inputs/CustomDatePicker';
@@ -33,6 +33,7 @@ export default function StandardRetainerForm({
   onSubmit,
   markTouched,
 }: StandardRetainerFormProps) {
+  const formId = getFormDomId(FormType.StandardRetainer);
   const [submitted, setSubmitted] = useState(false);
 
   const handleChange = (field: keyof RetainerFormData) => (
@@ -98,7 +99,7 @@ export default function StandardRetainerForm({
   return (
     <div className={styles.pageContainer}>
       <div className={styles.formWrapper}>
-        <form id="standard-retainer-form" className={styles.formInner} onSubmit={handleFormSubmit}>
+        <form id={formId} className={styles.formInner} onSubmit={handleFormSubmit}>
           {errors && Object.keys(errors).length > 0 && (
             <div className={styles.errorBanner}>
               Please fix the highlighted fields below.

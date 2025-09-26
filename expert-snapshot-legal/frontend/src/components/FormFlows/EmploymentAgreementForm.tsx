@@ -5,11 +5,12 @@ import {
   EmploymentAgreementFormData,
   defaultEmploymentAgreementFormData
 } from '../../types/EmploymentAgreementFormData';
-import { FormType, RetainerTypeLabel } from '@/types/FormType';
+import { FormType, RetainerTypeLabel, getFormDomId } from '@/types/FormType';
 import { EmploymentAgreementFieldConfig } from '@/types/EmploymentAgreementFieldConfig';
 import CustomDatePicker from '../Inputs/CustomDatePicker';
 import styles from '../../styles/StandardRetainerForm.module.css';
 import { FormBlurHandler } from '@/types/FormUtils';
+import { focusFirstError } from '@/utils/focusFirstError';
 
 export interface EmploymentAgreementFormProps {
   schema: Record<string, EmploymentAgreementFieldConfig>;
@@ -36,6 +37,7 @@ export default function EmploymentAgreementForm({
   onSubmit,
   markTouched,
 }: EmploymentAgreementFormProps) {
+  const formId = getFormDomId(FormType.EmploymentAgreement);
   const [submitted, setSubmitted] = useState(false);
 
   const handleChange = (field: keyof EmploymentAgreementFormData) => (
@@ -88,66 +90,18 @@ export default function EmploymentAgreementForm({
   };
 
   useEffect(() => {
-    const formEl = document.getElementById('employment-agreement-form');
+    const formEl = document.getElementById(formId);
     if (!formEl) return;
 
-    // Always clear old highlights first
-    formEl.querySelectorAll('select.error-select-highlight').forEach(el => {
-      el.classList.remove('error-select-highlight');
-    });
-
-    if (!errors || Object.keys(errors).length === 0) return;
-
-    /**
-     * Expand combined keys like "baseSalary__payFrequency" into individual keys
-     * purely for DOM matching.
-     *
-     * ⚠️ This does NOT change validation behaviour:
-     * - Validation still produces a single combined key for inline pairs.
-     * - UI still shows one combined error message under the pair.
-     * - This split is ONLY so we can match either member of the pair in the DOM
-     *   and decide which actual input to focus (usually the first in the pair).
-     */
-    const errorFieldNames = new Set<string>();
-    for (const key of Object.keys(errors)) {
-      if (key.includes('__')) {
-        const [a, b] = key.split('__');
-        errorFieldNames.add(a);
-        errorFieldNames.add(b);
-      } else {
-        errorFieldNames.add(key);
-      }
-    }
-
-    const focusables = Array.from(
-      formEl.querySelectorAll<HTMLElement>(
-        'input:not([type="hidden"]):not([disabled]), textarea:not([disabled]), select:not([disabled])'
-      )
-    );
-
-    // Highlight *all* errored selects
-    focusables.forEach(el => {
-      if (el.tagName === 'SELECT' && errorFieldNames.has(el.getAttribute('name') || '')) {
-        el.classList.add('error-select-highlight');
-      }
-    });
-
-    // Scroll to the first errored field
-    const target = focusables.find(el =>
-      errorFieldNames.has(el.getAttribute('name') || '')
-    );
-
-    if (target) {
-      requestAnimationFrame(() => {
-        target.scrollIntoView({ behavior: 'smooth', block: 'center' });
-
-        if (target.tagName === 'SELECT') {
-          // 🚫 Skip programmatic focus for selects (Safari bug)
-          return;
-        }
-
-        target.focus();
-      });
+    if (errors && Object.keys(errors).length > 0) {
+      // Validation errors exist → focus the first invalid field(s)
+      focusFirstError(formId, errors);
+    } else {
+      // First mount (no errors yet) → focus the first editable field
+      const editable = formEl.querySelector<HTMLElement>(
+        'input:not([type="hidden"]):not([disabled]):not([tabindex="-1"]), textarea:not([disabled]), select:not([disabled])'
+      );
+      editable?.focus();
     }
   }, [errors]);
 
@@ -246,8 +200,10 @@ export default function EmploymentAgreementForm({
   const renderField = (
     field: keyof EmploymentAgreementFormData,
     config: EmploymentAgreementFieldConfig,
-    suppressLabel = false
+    suppressLabel = false,
+    options?: { suppressError?: boolean }
   ) => {
+    const { suppressError = false } = options || {};
     const value = formData[field];
 
     // Early return for checkboxes – matches EmploymentAgreementForm
@@ -266,9 +222,11 @@ export default function EmploymentAgreementForm({
             }}
           />
           {config.label}
-          {(submitted || touched?.[field]) && errors?.[field] && (
-            <span className={styles.error}>{errors[field]}</span>
-          )}
+          {!suppressError &&
+            (submitted || touched?.[field]) &&
+            errors?.[field] && (
+              <span className={styles.error}>{errors[field]}</span>
+            )}
         </label>
       );
     }
@@ -584,9 +542,11 @@ export default function EmploymentAgreementForm({
           />
         )}
 
-        {(submitted || touched?.[field]) && errors?.[field] && (
-          <span className={styles.error}>{errors[field]}</span>
-        )}
+        {!suppressError &&
+          (submitted || touched?.[field]) &&
+          errors?.[field] && (
+            <span className={styles.error}>{errors[field]}</span>
+          )}
       </>
     );
   };
@@ -595,7 +555,7 @@ export default function EmploymentAgreementForm({
     <div className={styles.pageContainer}>
       <div className={styles.formWrapper}>
         <form
-          id="employment-agreement-form"
+          id={formId}
           className={styles.formInner}
           onSubmit={handleFormSubmit}
         >
@@ -628,12 +588,40 @@ export default function EmploymentAgreementForm({
                   <div key={key} className={styles.formRow}>
                     <label className={styles.label}>{config.label}</label>
                     <div className={styles.inlinePair}>
-                      {renderField(key as keyof EmploymentAgreementFormData, config, true)}
-                      {renderField(partnerKey as keyof EmploymentAgreementFormData, partnerCfg, true)}
+                      {renderField(
+                        key as keyof EmploymentAgreementFormData,
+                        config,
+                        true,
+                        { suppressError: true }
+                      )}
+                      {renderField(
+                        partnerKey as keyof EmploymentAgreementFormData,
+                        partnerCfg,
+                        true,
+                        { suppressError: true }
+                      )}
                     </div>
-                    {combinedError && (
-                      <span className={styles.error}>{combinedError}</span>
-                    )}
+
+                    {/* Show combined error if both halves missing */}
+                    {combinedError &&
+                      !(errors?.[key as keyof EmploymentAgreementFormData] ||
+                        errors?.[partnerKey as keyof EmploymentAgreementFormData]) && (
+                        <span className={styles.error}>{combinedError}</span>
+                      )}
+
+                    {/* Show per-field errors below the pair if only one half invalid */}
+                    {!combinedError &&
+                      errors?.[key as keyof EmploymentAgreementFormData] && (
+                        <span className={styles.error}>
+                          {errors[key as keyof EmploymentAgreementFormData]}
+                        </span>
+                      )}
+                    {!combinedError &&
+                      errors?.[partnerKey as keyof EmploymentAgreementFormData] && (
+                        <span className={styles.error}>
+                          {errors[partnerKey as keyof EmploymentAgreementFormData]}
+                        </span>
+                      )}
                   </div>
                 );
               }
