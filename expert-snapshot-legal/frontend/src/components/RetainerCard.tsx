@@ -1,3 +1,5 @@
+// src/components/RetainerCard.tsx
+
 import React from 'react';
 import styles from '../styles/HomePage.module.css';
 import { FormType } from '@/types/FormType';
@@ -8,37 +10,49 @@ interface RetainerCardProps {
   templateId: FormType;
   iconSrc: IconName;
   onStart: (templateId: FormType) => void;
+  tooltip?: string; // optional hover text
+  disabled?: boolean;
 }
 
-const RetainerCard: React.FC<RetainerCardProps> = ({ title, templateId, iconSrc, onStart }) => {
-  const getAltText = (iconName: IconName): string => {
-    switch (iconName) {
-      case 'standard-retainer':
-        return 'Standard Retainer icon';
-      case 'ip-rights-licensing':
-        return 'IP Rights & Licensing icon';
-      case 'startup-advisory':
-        return 'Startup Advisory icon';
-      case 'employment-agreement':
-        return 'Employment Agreement icon';
-      case 'litigation-engagement':
-        return 'Litigation Engagement icon';
-      case 'real-estate-contract':
-        return 'Real Estate Contract icon';
-      case 'family-law-agreement':
-        return 'Family Law Agreement icon';
-      case 'custom-template':
-        return 'Custom Template icon';
-      default:
-        return 'Legal agreement icon'; // fallback
-    }
-  };
+// Centralized lookup object for alt text
+const altTextMap: Record<IconName, string> = {
+  'standard-retainer': 'Standard Retainer icon',
+  'ip-rights-licensing': 'IP Rights & Licensing icon',
+  'startup-advisory': 'Startup Advisory icon',
+  'employment-agreement': 'Employment Agreement icon',
+  'litigation-engagement': 'Litigation Engagement icon',
+  'real-estate-contract': 'Real Estate Contract icon',
+  'family-law-agreement': 'Family Law Agreement icon',
+  'custom-template': 'Custom Template icon',
+  'upload-template': 'Upload Template icon',
+  'generate-document': 'Generate Document icon',
+};
+
+const RetainerCard: React.FC<RetainerCardProps> = ({
+  title,
+  templateId,
+  iconSrc,
+  onStart,
+  tooltip,
+  disabled = false,
+}) => {
+  const classNames = [
+    styles.retainerCard,
+    disabled ? styles.disabledCard : '',
+  ]
+    .filter(Boolean)
+    .join(' ');
 
   return (
-    <button className={styles.retainerCard} onClick={() => onStart(templateId)}>
+    <button
+      className={classNames}
+      onClick={() => !disabled && onStart(templateId)}
+      title={tooltip}
+      disabled={disabled}
+    >
       <img
         src={`/icons/${iconSrc}.svg`}
-        alt={getAltText(iconSrc)}
+        alt={altTextMap[iconSrc] || 'Legal agreement icon'}
         className={styles.cardIcon}
       />
       <h3>{title}</h3>

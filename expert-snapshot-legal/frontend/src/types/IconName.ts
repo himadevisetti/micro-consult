@@ -8,6 +8,6 @@ export type IconName =
   | 'litigation-engagement'
   | 'real-estate-contract'
   | 'family-law-agreement'
-  | 'custom-template';
-
-
+  | 'custom-template'
+  | 'upload-template'
+  | 'generate-document';

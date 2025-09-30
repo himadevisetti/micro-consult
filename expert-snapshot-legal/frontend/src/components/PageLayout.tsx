@@ -11,6 +11,7 @@ interface PageLayoutProps {
   onHomeClick?: () => void;
   onBackClick?: () => void;
   scrollable?: boolean;
+  mainHeading?: string;
 }
 
 const PageLayout: React.FC<PageLayoutProps> = ({
@@ -19,6 +20,7 @@ const PageLayout: React.FC<PageLayoutProps> = ({
   onHomeClick,
   onBackClick,
   scrollable = false,
+  mainHeading,
 }) => {
   const location = useLocation();
   const isHomePage = location.pathname === '/';
@@ -27,17 +29,16 @@ const PageLayout: React.FC<PageLayoutProps> = ({
 
   return (
     <div
-      className={`${styles.pageWrapper} ${scrollable ? styles.scrollablePage : ''
-        }`}
+      className={`${styles.pageWrapper} ${scrollable ? styles.scrollablePage : ''}`}
     >
       <AppHeader
         showHomeButton={shouldShowHomeButton}
         onHomeClick={onHomeClick}
         onBackClick={onBackClick}
+        mainHeading={mainHeading} // <-- forward to AppHeader
       />
       <main
-        className={`${styles.pageContent} ${!isHomePage ? styles.fullWidth : ''
-          }`}
+        className={`${styles.pageContent} ${!isHomePage ? styles.fullWidth : ''}`}
       >
         {children}
       </main>

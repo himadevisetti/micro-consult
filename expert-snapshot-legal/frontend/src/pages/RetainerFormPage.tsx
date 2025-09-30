@@ -6,14 +6,14 @@ import StandardRetainerFlow from '../components/FormFlows/StandardRetainerFlow';
 import IPRightsLicensingFlow from '../components/FormFlows/IPRightsLicensingFlow';
 import StartupAdvisoryFlow from '../components/FormFlows/StartupAdvisoryFlow';
 import EmploymentAgreementFlow from '../components/FormFlows/EmploymentAgreementFlow';
-// import CustomUploadForm from '../components/FormFlows/CustomUploadForm';
+import CustomTemplateFlow from '../components/FormFlows/CustomTemplateFlow';
 import PageLayout from '../components/PageLayout';
 import { FormType } from '@/types/FormType';
 import { formSchemas } from '../schemas/formSchemas';
 
 const RetainerFormPage = () => {
   const navigate = useNavigate();
-  const { type } = useParams(); // e.g. 'standard-retainer', 'ip-rights-licensing', 'startup-advisory', 'employment-agreement'
+  const { type } = useParams(); // e.g. 'standard-retainer', 'ip-rights-licensing', 'startup-advisory', 'employment-agreement', 'custom-template'
 
   const isValidType = type && Object.values(FormType).includes(type as FormType);
   const formType = isValidType ? (type as FormType) : FormType.StandardRetainer;
@@ -42,8 +42,8 @@ const RetainerFormPage = () => {
       case FormType.EmploymentAgreement:
         return <EmploymentAgreementFlow schema={formSchemas[FormType.EmploymentAgreement]} />;
 
-      // case FormType.CustomTemplate:
-      //   return <CustomUploadForm />;
+      case FormType.CustomTemplate:
+        return <CustomTemplateFlow />;
 
       default:
         return null;
@@ -55,8 +55,16 @@ const RetainerFormPage = () => {
     navigate('/');
   };
 
+  // Only show a main heading in the green header for Custom Template
+  const getMainHeading = () => {
+    if (formType === FormType.CustomTemplate) {
+      return 'Custom Template';
+    }
+    return undefined;
+  };
+
   return (
-    <PageLayout onHomeClick={handleHomeClick}>
+    <PageLayout onHomeClick={handleHomeClick} mainHeading={getMainHeading()}>
       {isValid && renderForm()}
     </PageLayout>
   );

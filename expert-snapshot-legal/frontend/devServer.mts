@@ -14,6 +14,12 @@ const root = path.resolve(__dirname, '..', '..', '..');
 const frontendBuildPath = path.resolve(root, 'expert-snapshot-legal/frontend/build/frontend');
 const indexPath = path.join(frontendBuildPath, 'index.html');
 
+// ✅ Base path for template storage (local dev): expert-snapshot-legal/frontend/storage
+const storageBasePath = path.resolve(root, 'expert-snapshot-legal/frontend/storage');
+
+// Allowed template extensions
+const allowedExtensions = new Set(['.docx', '.pdf']);
+
 async function startDevServer() {
   const app = express();
 
@@ -31,6 +37,31 @@ async function startDevServer() {
   // Test route
   app.get('/api/test-proxy', (req, res) => {
     res.send('Proxy working');
+  });
+
+  // ✅ Return list of templates for a customer
+  app.get('/api/templates/:customerId', (req, res) => {
+    const { customerId } = req.params;
+
+    const customerTemplatePath = path.join(storageBasePath, customerId, 'templates');
+
+    fs.readdir(customerTemplatePath, (err, files) => {
+      if (err || !files || files.length === 0) {
+        return res.json({ templates: [] });
+      }
+
+      const templates = files
+        .filter((f) => {
+          const ext = path.extname(f).toLowerCase();
+          return allowedExtensions.has(ext);
+        })
+        .map((f) => ({
+          id: path.parse(f).name, // filename without extension
+          name: f,                // display name
+        }));
+
+      return res.json({ templates });
+    });
   });
 
   if (isDev) {

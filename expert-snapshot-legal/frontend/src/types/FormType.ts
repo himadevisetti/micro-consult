@@ -9,6 +9,10 @@ export enum FormType {
   RealEstateContract = 'real-estate-contract',
   FamilyLawAgreement = 'family-law-agreement',
   CustomTemplate = 'custom-template',
+
+  // Sub‑flows inside Custom Template
+  CustomTemplateUpload = 'custom-template-upload',
+  CustomTemplateGenerate = 'custom-template-generate',
 }
 
 export const RetainerTypeLabel: Record<FormType, string> = {
@@ -20,6 +24,9 @@ export const RetainerTypeLabel: Record<FormType, string> = {
   [FormType.RealEstateContract]: 'Real Estate Contract',
   [FormType.FamilyLawAgreement]: 'Family Law Agreement',
   [FormType.CustomTemplate]: 'Custom Template',
+
+  [FormType.CustomTemplateUpload]: 'Upload Template',
+  [FormType.CustomTemplateGenerate]: 'Generate Document',
 };
 
 export function getFormTypeLabel(type: FormType): string {

@@ -61,6 +61,7 @@
   width: 100%;
   max-width: 1200px;
   margin: 0 auto;
+  justify-content: center;
 }
 
 @media (max-width: 1024px) {
@@ -152,4 +153,119 @@
 
 .retainerCard:hover .cardIcon {
   filter: brightness(1.05) sepia(20%) hue-rotate(40deg) saturate(150%);
+}
+
+.disabledCard {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.loadingWrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 2rem;
+}
+
+.spinner {
+  border: 4px solid #eee;
+  border-top: 4px solid var(--accent-color);
+  border-radius: 50%;
+  width: 32px;
+  height: 32px;
+  animation: spin 1s linear infinite;
+  margin-bottom: 1rem;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.modalBackdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.modalContent {
+  background: var(--cream);
+  padding: 2rem;
+  border-radius: var(--radius-md);
+  max-width: 700px;
+  width: 90%;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+
+  display: flex;
+  flex-direction: column;
+  max-height: 80vh;
+}
+
+.modalHeading {
+  margin-bottom: 1rem;
+  text-align: center;
+}
+
+.modalBody {
+  flex: 1;
+  overflow-y: auto;
+  padding-top: 0.5rem;
+  padding-bottom: 0.5rem;
+  position: relative;
+}
+
+/* Fade overlays */
+.modalBody::before,
+.modalBody::after {
+  content: "";
+  position: sticky;
+  left: 0;
+  right: 0;
+  height: 1.5rem;
+  pointer-events: none;
+  /* don’t block clicks/scroll */
+  z-index: 2;
+}
+
+.modalBody::before {
+  top: 0;
+  background: linear-gradient(var(--cream), rgba(255, 255, 255, 0));
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.modalBody::after {
+  bottom: 0;
+  background: linear-gradient(rgba(255, 255, 255, 0), var(--cream));
+  box-shadow: 0 -2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.modalFooter {
+  margin-top: 1rem;
+  text-align: center;
+}
+
+.cancelButton {
+  display: block;
+  margin: 1rem auto 0 auto;
+  min-width: 120px;
+  padding: 0.4rem 1rem;
+  font-size: 1rem;
+  border-radius: var(--radius-sm);
+  font-family: var(--font-sans);
+  font-weight: bold;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+
+  background-color: var(--cream-light);
+  color: var(--forest-green);
+  border: 1px solid var(--forest-green);
+}
+
+.cancelButton:hover {
+  background-color: var(--hover-bg);
 }
