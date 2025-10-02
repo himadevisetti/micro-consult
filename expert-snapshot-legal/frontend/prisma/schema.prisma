@@ -25,9 +25,13 @@ model ExportLog {
   timestamp    DateTime @default(now())
   clientName   String
   retainerType String
-  submittedBy String // user ID or email
+  submittedBy String? // user ID or email
   formVersion   String? // if schema evolves
   feeAmount     Float?  // optional, for audit
   jurisdiction  String? // optional, for filtering
-  format String // e.g. 'pdf', 'html'
+  format String? // e.g. 'pdf', 'html'
+  employerName String?
+  advisorName String? 
+  inventorName String?
+  providerName String?
 }

@@ -7,7 +7,6 @@ import RetainerPreviewPage from './pages/RetainerPreviewPage';
 import IPRightsLicensingPreviewPage from './pages/IPRightsLicensingPreviewPage';
 import StartupAdvisoryPreviewPage from './pages/StartupAdvisoryPreviewPage';
 import EmploymentAgreementPreviewPage from './pages/EmploymentAgreementPreviewPage';
-import CustomTemplatePage from './pages/CustomTemplatePage'; // <-- import it
 import { FormType } from '@/types/FormType';
 
 export default function App() {

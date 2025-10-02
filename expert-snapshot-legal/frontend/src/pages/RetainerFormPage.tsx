@@ -10,6 +10,7 @@ import CustomTemplateFlow from '../components/FormFlows/CustomTemplateFlow';
 import PageLayout from '../components/PageLayout';
 import { FormType } from '@/types/FormType';
 import { formSchemas } from '../schemas/formSchemas';
+import UploadTemplateFlow from '../components/FormFlows/UploadTemplateFlow';
 
 const RetainerFormPage = () => {
   const navigate = useNavigate();
@@ -44,6 +45,16 @@ const RetainerFormPage = () => {
 
       case FormType.CustomTemplate:
         return <CustomTemplateFlow />;
+
+      case FormType.CustomTemplateUpload:
+        return (
+          <UploadTemplateFlow
+            customerId="customer-001"   // TODO: replace with session user
+          />
+        );
+
+      case FormType.CustomTemplateGenerate:
+        return <div>Generate flow coming soon</div>;
 
       default:
         return null;

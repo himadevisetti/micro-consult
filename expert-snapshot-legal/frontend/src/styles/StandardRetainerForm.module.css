@@ -446,3 +446,182 @@ select[multiple] {
   background-color: #f8d7da;
   color: #900;
 }
+
+.uploadRow {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  margin: 1.5rem 0;
+}
+
+.uploadLabel {
+  font-weight: 600;
+  text-align: center;
+  margin-bottom: 4px;
+}
+
+.uploadInputWrapper {
+  width: 100%;
+  max-width: 560px;
+  display: flex;
+  justify-content: center;
+  margin-bottom: 1rem;
+  align-items: center;
+}
+
+.uploadInput {
+  display: inline-block;
+  width: 100%;
+  max-width: 500px;
+  box-sizing: border-box;
+}
+
+/* Table formatting with theme tokens */
+.formattedTable {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 1rem;
+  font-family: var(--font-sans);
+}
+
+/* Sticky header row */
+.formattedTable thead th {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background-color: var(--cream-light);
+  font-weight: 600;
+  border-bottom: 2px solid var(--border-strong);
+  padding: 0.75rem 1rem;
+  text-align: left;
+}
+
+/* Table cells (base) */
+.formattedTable th,
+.formattedTable td {
+  padding: 0.3rem 0.5rem;
+  text-align: left;
+  vertical-align: middle;
+  background-color: var(--cream);
+  border: 1px solid var(--border-default);
+}
+
+/* Push only body cells in specific columns */
+.formattedTable tbody td.rawTextCol,
+.formattedTable tbody td.statusCol,
+.formattedTable tbody td.actionsCol {
+  padding-left: 0.8rem;
+}
+
+/* Row hover effect */
+.formattedTable tbody tr:hover td {
+  background-color: var(--hover-bg);
+}
+
+/* === Base input styles for all table controls === */
+.selectInput,
+.textInput,
+.suggestedText {
+  width: 100%;
+  border: 1px solid var(--cream-light);
+  border-radius: var(--radius-sm);
+  font-family: var(--font-sans);
+  font-size: 1rem;
+  line-height: 1.3;
+  padding: 0.4rem 0.6rem;
+  /* default padding */
+}
+
+/* Nudge text inputs a bit more to align with select text */
+.textInput,
+.suggestedText {
+  padding: 0.4rem 0.6rem 0.4rem 1rem;
+  /* extra left padding */
+}
+
+/* Suggested text styled like a ghost input */
+.suggestedText {
+  background-color: var(--cream-light);
+  color: var(--forest-green);
+}
+
+/* Placeholder option styling */
+.selectInput option[value=""] {
+  color: var(--placeholder-text);
+  font-style: italic;
+}
+
+/* Helper text under inputs */
+.helperText {
+  font-size: 0.8rem;
+  color: var(--info-blue);
+  margin-top: 0.25rem;
+}
+
+/* === Status labels === */
+.statusSuggested {
+  color: var(--info-blue);
+  font-weight: 500;
+  font-style: italic;
+}
+
+.statusMapped {
+  color: var(--forest-green);
+  font-weight: 500;
+}
+
+.statusUnmapped {
+  color: var(--gold);
+  font-weight: 500;
+}
+
+/* === Column widths & alignment === */
+.rawTextCol {
+  width: 35%;
+  padding-left: 0.8rem;
+}
+
+.mappedFieldCol {
+  width: 25%;
+  padding-left: 0.8rem;
+}
+
+.statusCol {
+  width: 20%;
+  text-align: left;
+  padding-left: 0.8rem;
+}
+
+.actionsCol {
+  width: 20%;
+  text-align: left;
+  padding-left: 0.8rem;
+}
+
+/* Secondary button (outlined style) */
+.secondaryButton {
+  display: block;
+  min-width: 120px;
+  padding: 0.4rem 1rem;
+  font-size: 1rem;
+  border-radius: var(--radius-sm);
+  background-color: var(--cream-light);
+  color: var(--forest-green);
+  border: 1px solid var(--border-default);
+  cursor: pointer;
+  font-family: var(--font-sans);
+  transition: background-color 0.2s ease, color 0.2s ease;
+  margin: 0 auto 0.75rem auto;
+}
+
+.secondaryButton:hover {
+  background-color: var(--cream);
+}
+
+.submitButton:disabled {
+  background-color: var(--disabled-bg);
+  color: var(--disabled-text);
+  cursor: not-allowed;
+  opacity: 1;
+}

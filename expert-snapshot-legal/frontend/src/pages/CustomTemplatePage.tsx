@@ -1,12 +1,14 @@
-// src/pages/CustomTemplatePage.tsx
-
 import { useNavigate } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import styles from '../styles/HomePage.module.css';
 import { FormType, RetainerTypeLabel } from '@/types/FormType';
 import RetainerCard from '../components/RetainerCard';
 
-type TemplateInfo = { id: string; name: string };
+type TemplateInfo = {
+  id: string;
+  name: string;
+  hasManifest: boolean; // ✅ new field from backend
+};
 
 const CustomTemplatePage = () => {
   const navigate = useNavigate();
@@ -40,9 +42,12 @@ const CustomTemplatePage = () => {
   };
 
   const handleGenerateClick = () => {
-    if (templates.length === 1) {
-      navigate(`/form/${templates[0].id}`);
-    } else if (templates.length > 1) {
+    // Only consider templates that have manifests
+    const readyTemplates = templates.filter((t) => t.hasManifest);
+
+    if (readyTemplates.length === 1) {
+      navigate(`/form/${readyTemplates[0].id}`);
+    } else if (readyTemplates.length > 1) {
       setShowModal(true);
     }
   };
@@ -90,11 +95,11 @@ const CustomTemplatePage = () => {
                 iconSrc="generate-document"
                 onStart={handleGenerateClick}
                 tooltip={
-                  templates.length > 0
+                  templates.some((t) => t.hasManifest)
                     ? 'Use your uploaded template and fill in the variable fields to generate a document.'
-                    : 'We couldn’t find your uploaded template. Please re‑upload to continue.'
+                    : 'We couldn’t find a ready template (with manifest). Please upload and confirm mapping first.'
                 }
-                disabled={templates.length === 0}
+                disabled={!templates.some((t) => t.hasManifest)} // ✅ only enable if manifest exists
               />
             )}
           </div>
@@ -113,17 +118,19 @@ const CustomTemplatePage = () => {
                   gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
                 }}
               >
-                {templates.map((tpl) => (
-                  <RetainerCard
-                    key={tpl.id}
-                    title={tpl.name}
-                    templateId={tpl.id as any}
-                    iconSrc="generate-document"
-                    onStart={() => navigate(`/form/${tpl.id}`)}
-                    tooltip={`Generate a document using ${tpl.name}`}
-                    disabled={false}
-                  />
-                ))}
+                {templates
+                  .filter((tpl) => tpl.hasManifest) // ✅ only show ready templates
+                  .map((tpl) => (
+                    <RetainerCard
+                      key={tpl.id}
+                      title={tpl.name}
+                      templateId={tpl.id as any}
+                      iconSrc="generate-document"
+                      onStart={() => navigate(`/form/${tpl.id}`)}
+                      tooltip={`Generate a document using ${tpl.name}`}
+                      disabled={false}
+                    />
+                  ))}
               </div>
             </div>
 

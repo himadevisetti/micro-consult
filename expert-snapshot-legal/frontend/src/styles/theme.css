@@ -19,6 +19,39 @@
   --focus-ring: var(--forest-green);
   --accent-color: var(--forest-green);
 
+  /* Semantic intent colors */
+  --success-green: #2e7d32;
+  /* darker than forest for contrast */
+  --warning-amber: #ffb300;
+  /* accessible amber */
+  --error-red: #c62828;
+  /* strong error red */
+  --info-blue: #1565c0;
+  /* deep info blue */
+  --placeholder-text: #888888;
+  /* muted gray for dropdown placeholders */
+
+  /* Optional lighter backgrounds for badges/rows */
+  --success-bg: #e8f5e9;
+  --warning-bg: #fff8e1;
+  --error-bg: #ffebee;
+  --info-bg: #e3f2fd;
+
+  --border-default: #ccc;
+  /* light gray */
+  --border-strong: #999;
+  /* darker gray for emphasis */
+
+  /* Neutral borders */
+  --border-default: #ccc;
+  --border-strong: #999;
+
+  /* Disabled state */
+  --disabled-bg: #e0e0e0;
+  /* light gray background */
+  --disabled-text: #666666;
+  /* muted text */
+
   /* Typography */
   --font-serif: 'Georgia', serif;
   --font-sans: 'Inter', sans-serif;

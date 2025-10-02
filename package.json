@@ -49,6 +49,7 @@
     "html2pdf.js": "^0.10.3",
     "jsdom": "^26.1.0",
     "on-finished": "^2.4.1",
+    "pdf-parse": "1.1.1",
     "puppeteer": "^24.16.0",
     "react-router-dom": "^7.8.0",
     "side-channel": "^1.1.0",

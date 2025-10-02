@@ -13,7 +13,8 @@
   },
   "include": [
     "devServer.ts",
-    "src/server/exportPdfMiddleware.ts"
+    "src/server/**/*.ts",
+    "src/utils/**/*.ts"
   ],
   "exclude": [
     "node_modules",
