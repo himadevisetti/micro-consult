@@ -102,6 +102,5 @@ node_modules/.vite/
 frontend/prisma/dev.db
 
 # Ignore local storage temp files
-frontend/storage/tmp/
-
+/expert-snapshot-legal/frontend/storage/
 
