@@ -101,4 +101,7 @@ node_modules/.vite/
 # Ignore local Prisma database
 frontend/prisma/dev.db
 
+# Ignore local storage temp files
+frontend/storage/tmp/
+
 
