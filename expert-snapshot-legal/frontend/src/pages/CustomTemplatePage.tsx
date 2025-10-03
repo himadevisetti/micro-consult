@@ -1,21 +1,46 @@
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useEffect, useState } from 'react';
-import styles from '../styles/HomePage.module.css';
+import homeStyles from '../styles/HomePage.module.css';
+import formStyles from '../styles/StandardRetainerForm.module.css';
 import { FormType, RetainerTypeLabel } from '@/types/FormType';
 import RetainerCard from '../components/RetainerCard';
 
 type TemplateInfo = {
   id: string;
   name: string;
-  hasManifest: boolean; // ✅ new field from backend
+  hasManifest: boolean;
 };
 
 const CustomTemplatePage = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const [templates, setTemplates] = useState<TemplateInfo[]>([]);
   const [loading, setLoading] = useState(true);
   const [showSpinner, setShowSpinner] = useState(false);
   const [showModal, setShowModal] = useState(false);
+
+  const [showSuccess, setShowSuccess] = useState(false);
+
+  // ✅ consume success flag once and clear it
+  useEffect(() => {
+    if (location.state?.success) {
+      setShowSuccess(true);
+      // clear the state so it doesn't persist on future navigations
+      setTimeout(() => {
+        navigate(location.pathname, { replace: true, state: {} });
+      }, 0);
+    }
+    // run only once on mount
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // ✅ auto-dismiss after 10s
+  useEffect(() => {
+    if (showSuccess) {
+      const timer = setTimeout(() => setShowSuccess(false), 10000);
+      return () => clearTimeout(timer);
+    }
+  }, [showSuccess]);
 
   useEffect(() => {
     const customerId = 'customer-001';
@@ -42,7 +67,6 @@ const CustomTemplatePage = () => {
   };
 
   const handleGenerateClick = () => {
-    // Only consider templates that have manifests
     const readyTemplates = templates.filter((t) => t.hasManifest);
 
     if (readyTemplates.length === 1) {
@@ -53,19 +77,19 @@ const CustomTemplatePage = () => {
   };
 
   return (
-    <div className={styles.landing}>
-      <header className={styles.hero}>
+    <div className={homeStyles.landing}>
+      <header className={homeStyles.hero}>
         <p>
           Upload your base template once, then generate new documents with variable inputs.
         </p>
       </header>
 
-      <section className={styles.templateOptions}>
-        <div className={styles.cardGroup}>
+      <section className={homeStyles.templateOptions}>
+        <div className={homeStyles.cardGroup}>
           <h3>Get Started</h3>
 
           <div
-            className={styles.retainerCardGrid}
+            className={homeStyles.retainerCardGrid}
             style={{ gridTemplateColumns: 'repeat(2, 1fr)' }}
           >
             <RetainerCard
@@ -80,12 +104,12 @@ const CustomTemplatePage = () => {
 
             {loading ? (
               showSpinner ? (
-                <div className={styles.retainerCard}>
-                  <div className={styles.spinner}></div>
+                <div className={homeStyles.retainerCard}>
+                  <div className={homeStyles.spinner}></div>
                   <p>Checking for uploaded templates...</p>
                 </div>
               ) : (
-                <div className={styles.retainerCard}></div>
+                <div className={homeStyles.retainerCard}></div>
               )
             ) : (
               <RetainerCard
@@ -99,27 +123,45 @@ const CustomTemplatePage = () => {
                     ? 'Use your uploaded template and fill in the variable fields to generate a document.'
                     : 'We couldn’t find a ready template (with manifest). Please upload and confirm mapping first.'
                 }
-                disabled={!templates.some((t) => t.hasManifest)} // ✅ only enable if manifest exists
+                disabled={!templates.some((t) => t.hasManifest)}
               />
             )}
           </div>
         </div>
       </section>
 
-      {showModal && (
-        <div className={styles.modalBackdrop}>
-          <div className={styles.modalContent}>
-            <h3 className={styles.modalHeading}>Select a template</h3>
+      {/* ✅ Success banner below the section, using formStyles */}
+      <div
+        className={`${formStyles.successBanner} ${showSuccess ? formStyles.show : formStyles.hide
+          }`}
+      >
+        <span>
+          ✅ Template mapping saved successfully. You can now generate documents.
+        </span>
+        <button
+          type="button"
+          className={formStyles.closeButton}
+          onClick={() => setShowSuccess(false)}
+          aria-label="Close"
+        >
+          ×
+        </button>
+      </div>
 
-            <div className={styles.modalBody}>
+      {showModal && (
+        <div className={homeStyles.modalBackdrop}>
+          <div className={homeStyles.modalContent}>
+            <h3 className={homeStyles.modalHeading}>Select a template</h3>
+
+            <div className={homeStyles.modalBody}>
               <div
-                className={styles.retainerCardGrid}
+                className={homeStyles.retainerCardGrid}
                 style={{
                   gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
                 }}
               >
                 {templates
-                  .filter((tpl) => tpl.hasManifest) // ✅ only show ready templates
+                  .filter((tpl) => tpl.hasManifest)
                   .map((tpl) => (
                     <RetainerCard
                       key={tpl.id}
@@ -134,9 +176,9 @@ const CustomTemplatePage = () => {
               </div>
             </div>
 
-            <div className={styles.modalFooter}>
+            <div className={homeStyles.modalFooter}>
               <button
-                className={styles.cancelButton}
+                className={homeStyles.cancelButton}
                 onClick={() => setShowModal(false)}
               >
                 Cancel

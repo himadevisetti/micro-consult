@@ -625,3 +625,49 @@ select[multiple] {
   cursor: not-allowed;
   opacity: 1;
 }
+
+.successBanner {
+  position: relative;
+  margin-top: 2rem;
+  padding: 1rem 1.5rem;
+  padding-right: 2.5rem;
+  background-color: var(--success-bg);
+  border: 1px solid var(--success-green);
+  border-radius: var(--radius-md);
+  text-align: center;
+  font-weight: 500;
+  color: var(--text-dark);
+  opacity: 0;
+  transform: translateY(-10px);
+  transition: opacity 0.6s ease, transform 0.6s ease;
+}
+
+/* Visible state */
+.successBanner.show {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* Hidden state */
+.successBanner.hide {
+  opacity: 0;
+  transform: translateY(-10px);
+  pointer-events: none;
+}
+
+.closeButton {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  background: none;
+  border: none;
+  font-size: 1.25rem;
+  font-weight: bold;
+  color: inherit;
+  cursor: pointer;
+  line-height: 1;
+}
+
+.closeButton:hover {
+  opacity: 0.7;
+}

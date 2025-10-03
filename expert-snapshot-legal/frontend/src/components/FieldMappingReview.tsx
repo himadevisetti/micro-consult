@@ -1,29 +1,34 @@
-// src/components/FieldMappingReview.tsx
 import React, { useState } from 'react';
 import { TemplateVariable } from '../types/templates';
+import { NormalizedMapping } from '../types/confirmMapping';
 import styles from '../styles/StandardRetainerForm.module.css';
 
 interface MappingRow extends TemplateVariable {
   touched?: boolean;
+  confirmed?: boolean;
 }
 
 interface Props {
   templateName: string | null;
   candidates: TemplateVariable[];
-  onConfirm: (finalMapping: TemplateVariable[]) => void;
+  onConfirm: (finalMapping: NormalizedMapping[]) => void;
 }
 
 export default function FieldMappingReview({ templateName, candidates, onConfirm }: Props) {
-  // filter out Title upfront and initialize touched=false
   const initial: MappingRow[] = candidates
     .filter(c => c.schemaField !== 'title')
-    .map(c => ({ ...c, touched: false }));
+    .map(c => ({ ...c, touched: false, confirmed: false }));
 
   const [mapping, setMapping] = useState<MappingRow[]>(initial);
 
   const handleChange = (index: number, field: string | null) => {
     const updated = [...mapping];
-    updated[index] = { ...updated[index], schemaField: field, touched: true };
+    updated[index] = {
+      ...updated[index],
+      schemaField: field,
+      touched: true,
+      confirmed: !!field
+    };
     setMapping(updated);
   };
 
@@ -32,32 +37,47 @@ export default function FieldMappingReview({ templateName, candidates, onConfirm
     setMapping(updated);
   };
 
-  const handleConfirm = () => {
-    onConfirm(mapping);
+  const handleCheckbox = (index: number) => {
+    const updated = [...mapping];
+    updated[index] = { ...updated[index], confirmed: !updated[index].confirmed };
+    setMapping(updated);
   };
 
-  const addVariable = () => {
-    setMapping([
-      ...mapping,
-      { rawValue: '', schemaField: null, candidates: [], confidence: undefined, touched: false },
-    ]);
+  const handleRawTextChange = (index: number, value: string) => {
+    const updated = [...mapping];
+    updated[index] = { ...updated[index], rawValue: value, touched: true };
+    setMapping(updated);
   };
-
-  const showConfidence = process.env.NODE_ENV === 'development';
 
   const getStatus = (m: MappingRow): string => {
     if (!m.schemaField) return 'Unmapped';
-
     if (m.candidates?.length === 1 && m.schemaField === m.candidates[0] && !m.touched) {
       return 'Suggested';
     }
-
     if ((m.candidates?.length ?? 0) > 1 && !m.touched) {
       return 'Suggested';
     }
-
     return 'Mapped';
   };
+
+  const handleConfirm = () => {
+    const normalized: NormalizedMapping[] = mapping.map(m => {
+      const status = getStatus(m);
+      if (status === 'Unmapped' || !m.schemaField) {
+        throw new Error("Cannot confirm unmapped field");
+      }
+      return {
+        raw: m.rawValue,
+        normalized: m.normalized,
+        schemaField: m.schemaField
+      };
+    });
+
+    onConfirm(normalized);
+  };
+
+  const showConfidence = process.env.NODE_ENV === 'development';
+  const disableConfirm = mapping.some(m => getStatus(m) === 'Unmapped' || !m.confirmed);
 
   return (
     <div className={styles.formWrapper}>
@@ -71,7 +91,7 @@ export default function FieldMappingReview({ templateName, candidates, onConfirm
             <th className={styles.rawTextCol}>Raw Text</th>
             <th className={styles.mappedFieldCol}>Mapped Field</th>
             {showConfidence && <th>Confidence</th>}
-            <th className={styles.statusCol}>Status</th>
+            <th className={styles.statusCol}>Reviewed</th>
             <th className={styles.actionsCol}>Actions</th>
           </tr>
         </thead>
@@ -79,10 +99,20 @@ export default function FieldMappingReview({ templateName, candidates, onConfirm
           {mapping.map((m, idx) => (
             <tr key={idx}>
               <td className={styles.rawTextCol}>
-                {/* Render enriched values */}
-                {m.schemaField === 'partyA' || m.schemaField === 'partyB'
-                  ? `${m.schemaField === 'partyA' ? 'Party A' : 'Party B'} (${m.roleHint ?? ''}): ${m.rawValue}`
-                  : m.displayValue ?? m.normalized ?? m.rawValue}
+                {/* ✅ Editable input only for user-added variables (no schemaField + no candidates) */}
+                {!m.schemaField && (m.candidates?.length ?? 0) === 0 ? (
+                  <input
+                    type="text"
+                    value={m.rawValue ?? ''}
+                    onChange={(e) => handleRawTextChange(idx, e.target.value)}
+                    placeholder="Enter raw text from document"
+                    className={styles.textInput}
+                  />
+                ) : (
+                  m.schemaField === 'partyA' || m.schemaField === 'partyB'
+                    ? `${m.schemaField === 'partyA' ? 'Party A' : 'Party B'} (${m.roleHint ?? ''}): ${m.rawValue}`
+                    : m.displayValue ?? m.normalized ?? m.rawValue
+                )}
               </td>
               <td className={styles.mappedFieldCol}>
                 {m.candidates && m.candidates.length > 1 ? (
@@ -119,16 +149,14 @@ export default function FieldMappingReview({ templateName, candidates, onConfirm
                 <td>{m.confidence != null ? `${(m.confidence * 100).toFixed(0)}%` : '—'}</td>
               )}
               <td className={styles.statusCol}>
-                {(() => {
-                  const status = getStatus(m);
-                  if (status === 'Mapped') {
-                    return <span className={styles.statusMapped}>Mapped</span>;
-                  }
-                  if (status === 'Suggested') {
-                    return <span className={styles.statusSuggested}>Suggested</span>;
-                  }
-                  return <span className={styles.statusUnmapped}>Unmapped</span>;
-                })()}
+                <input
+                  type="checkbox"
+                  checked={m.confirmed}
+                  onChange={() => handleCheckbox(idx)}
+                  disabled={getStatus(m) === 'Unmapped'}
+                  title={getStatus(m)}
+                />
+                <span style={{ marginLeft: '0.5rem' }}>{getStatus(m)}</span>
               </td>
               <td className={styles.actionsCol}>
                 <button
@@ -145,13 +173,28 @@ export default function FieldMappingReview({ templateName, candidates, onConfirm
       </table>
 
       <div className={styles.submitRow}>
-        <button onClick={addVariable} className={styles.secondaryButton}>
+        <button
+          onClick={() =>
+            setMapping([
+              ...mapping,
+              {
+                rawValue: '',
+                schemaField: null,
+                candidates: [],
+                confidence: undefined,
+                touched: false,
+                confirmed: false
+              }
+            ])
+          }
+          className={styles.secondaryButton}
+        >
           + Add Variable
         </button>
         <button
           onClick={handleConfirm}
           className={styles.submitButton}
-          disabled={mapping.some(m => !m.schemaField)}
+          disabled={disableConfirm}
         >
           Confirm Mapping
         </button>

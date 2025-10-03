@@ -37,14 +37,15 @@
   --error-bg: #ffebee;
   --info-bg: #e3f2fd;
 
+  /* Neutral borders */
   --border-default: #ccc;
   /* light gray */
   --border-strong: #999;
   /* darker gray for emphasis */
 
-  /* Neutral borders */
-  --border-default: #ccc;
-  --border-strong: #999;
+  /* Text colors */
+  --text-dark: #1a1a1a;
+  /* strong neutral for legibility */
 
   /* Disabled state */
   --disabled-bg: #e0e0e0;

@@ -7,23 +7,25 @@ import { createServer as createViteServer } from 'vite';
 import fs from 'fs';
 import multer, { FileFilterCallback } from 'multer';
 import { Request } from 'express';
-import mammoth from 'mammoth';
-import { createRequire } from 'module';
-import dotenv from 'dotenv';
+import * as dotenv from "dotenv";
 import { DocumentAnalysisClient, AzureKeyCredential } from "@azure/ai-form-recognizer";
 import {
   canonicalField,
   mergeCandidates,
   parseIsoDate,
   Candidate,
-  sortCandidates,
+  sortCandidatesByDocumentOrder,
+  logAllContractFields,
+  logMissingContractFields,
+  logRegexAmounts,
 } from "./src/utils/candidateUtils.js";
+import { NormalizedMapping } from './src/types/confirmMapping.js';
 
 // load .env at startup
 dotenv.config();
-const require = createRequire(import.meta.url);
 
-const pdfParse = require('pdf-parse');
+// then override with .env.local if present
+dotenv.config({ path: ".env.local", override: true });
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const isDev = process.env.NODE_ENV !== 'production';
@@ -135,21 +137,26 @@ async function startDevServer() {
         fs.copyFileSync(file.path, destPath);
         const templateId = path.parse(file.originalname).name;
 
+        // Read file into Buffer
         const buffer = fs.readFileSync(destPath);
 
-        // Analyze with Azure Form Recognizer (prebuilt-contract)
-        const poller = await formRecClient.beginAnalyzeDocument("prebuilt-contract", buffer);
+        // ✅ Correct overload: Buffer only, no contentType
+        const poller = await formRecClient.beginAnalyzeDocument(
+          "prebuilt-contract",
+          buffer
+        );
         const fr = await poller.pollUntilDone();
 
         const debug = process.env.DEBUG_CONTRACTS === "true";
         if (debug) {
           console.log("DEBUG: Full Form Recognizer content:", fr.content?.slice(0, 500), "...");
-          console.log("DEBUG: Full Form Recognizer documents:", JSON.stringify(fr.documents, null, 2));
+          // console.log("DEBUG: Full Form Recognizer documents:", JSON.stringify(fr.documents, null, 2));
+          logAllContractFields(fr);
+          logMissingContractFields(fr);
+          logRegexAmounts(fr);
         }
 
         const candidates: Candidate[] = [];
-
-        // Helper: strip trailing commas/periods for non-date fields
         const cleanTail = (raw: string) => raw.replace(/[,\.]\s*$/, "");
 
         if (fr.documents) {
@@ -159,7 +166,10 @@ async function startDevServer() {
             for (const [fieldName, fieldVal] of Object.entries(fields)) {
               if (!fieldVal) continue;
 
-              // Array-valued fields (Parties, Jurisdictions)
+              const region = fieldVal.boundingRegions?.[0];
+              const pageNumber = region?.pageNumber;
+              const yPosition = region?.polygon?.[1];
+
               if (Array.isArray(fieldVal.values)) {
                 fieldVal.values.forEach((v: any, idx: number) => {
                   const rawVal =
@@ -177,7 +187,6 @@ async function startDevServer() {
                     schemaField = "governingLaw";
                   }
 
-                  // Clean non-date raw values for UI
                   const raw = schemaField && schemaField.toLowerCase().includes("date")
                     ? raw0
                     : cleanTail(raw0);
@@ -193,6 +202,8 @@ async function startDevServer() {
                     schemaField,
                     candidates: schemaField ? [schemaField] : [canonicalField(fieldName)],
                     confidence,
+                    pageNumber,
+                    yPosition,
                   };
 
                   if (schemaField === "partyA") candidate.roleHint = "Client";
@@ -201,14 +212,11 @@ async function startDevServer() {
                   candidates.push(candidate);
                 });
               } else {
-                // Single-valued fields
                 const rawVal = fieldVal.content ?? fieldVal.value;
                 const raw0 = rawVal == null ? "" : String(rawVal);
                 if (!raw0) continue;
 
                 const schemaField = canonicalField(fieldName);
-
-                // Clean non-date raw values for UI
                 const raw = schemaField && schemaField.toLowerCase().includes("date")
                   ? raw0
                   : cleanTail(raw0);
@@ -218,9 +226,10 @@ async function startDevServer() {
                   schemaField,
                   candidates: [schemaField],
                   confidence: fieldVal.confidence ?? null,
+                  pageNumber,
+                  yPosition,
                 };
 
-                // Enrichment: explicit Azure dates retain normalized + displayValue
                 if (schemaField && schemaField.toLowerCase().includes("date")) {
                   const d = new Date(raw);
                   if (!isNaN(d.getTime())) {
@@ -236,7 +245,6 @@ async function startDevServer() {
                 candidates.push(candidate);
               }
 
-              // Log unknowns (post-canonicalization)
               const canon = canonicalField(fieldName);
               if (
                 ![
@@ -259,7 +267,7 @@ async function startDevServer() {
 
         const fullText = fr.content ?? "";
 
-        // Regex fallback for amounts only
+        // Regex fallback for amounts
         const moneyRegex = /\$\d{1,3}(?:,\d{3})*(?:\.\d{2})?/g;
         let m;
         while ((m = moneyRegex.exec(fullText)) !== null) {
@@ -271,7 +279,7 @@ async function startDevServer() {
           });
         }
 
-        // Regex fallback for endDate if Azure didn't provide one (termination/expiration clauses)
+        // Regex fallback for endDate if Azure missed it
         const hasEndDate = candidates.some(c => c.schemaField === "endDate");
         if (!hasEndDate) {
           const terminationClauseRegex =
@@ -294,15 +302,14 @@ async function startDevServer() {
                   year: "numeric",
                 }),
               });
-              break; // only need the first termination/expiration date
+              break;
             }
           }
         }
 
-        // Ensure startDate presence if Azure omitted it but effectiveDate exists (same value)
+        // Ensure startDate if only effectiveDate exists
         const hasEffective = candidates.some(c => c.schemaField === "effectiveDate");
         const hasStart = candidates.some(c => c.schemaField === "startDate");
-
         if (hasEffective && !hasStart) {
           const eff = candidates.find(c => c.schemaField === "effectiveDate")!;
           candidates.push({
@@ -312,12 +319,14 @@ async function startDevServer() {
             confidence: eff.confidence,
             normalized: eff.normalized,
             displayValue: eff.displayValue,
+            pageNumber: eff.pageNumber,
+            yPosition: eff.yPosition,
           });
         }
 
-        // Merge and return
+        // Merge and sort by document order
         const mergedCandidates = mergeCandidates(candidates);
-        const orderedCandidates = sortCandidates(mergedCandidates);
+        const orderedCandidates = sortCandidatesByDocumentOrder(mergedCandidates);
 
         return res.json({
           templateId,
@@ -341,24 +350,24 @@ async function startDevServer() {
   );
 
   // Confirm mapping for a template
-  app.post('/api/templates/:customerId/:templateId/confirm-mapping', (req, res) => {
+  app.post('/api/templates/:customerId/:templateId/confirm-mapping', async (req, res) => {
     const { customerId, templateId } = req.params;
-    const mapping = req.body.mapping as Array<{
-      raw: string;
-      normalized?: string;
-      schemaField: string | null;
-    }>;
+    const mapping = req.body as NormalizedMapping[];
 
     if (!Array.isArray(mapping) || mapping.length === 0) {
-      return res.status(400).json({ error: 'No mapping provided' });
+      return res.status(400).json({ success: false, error: 'No mapping provided' });
     }
 
-    // Basic validation: ensure each entry has required fields
     const valid = mapping.every(
-      (m) => typeof m.raw === 'string' && 'schemaField' in m
+      (m) =>
+        typeof m.raw === 'string' &&
+        m.raw.trim() !== '' &&
+        typeof m.schemaField === 'string' &&
+        m.schemaField.trim() !== ''
     );
+
     if (!valid) {
-      return res.status(400).json({ error: 'Invalid mapping format' });
+      return res.status(400).json({ success: false, error: 'Invalid mapping format' });
     }
 
     const manifest = {
@@ -368,22 +377,18 @@ async function startDevServer() {
       variables: mapping,
     };
 
-    // ✅ Save manifest into the "manifests" folder, not "templates"
-    const customerManifestPath = getCustomerManifestPath(customerId);
-    fs.mkdirSync(customerManifestPath, { recursive: true });
+    try {
+      const customerManifestPath = getCustomerManifestPath(customerId);
+      await fs.promises.mkdir(customerManifestPath, { recursive: true });
 
-    const manifestPath = path.join(
-      customerManifestPath,
-      `${templateId}.manifest.json`
-    );
+      const manifestPath = path.join(customerManifestPath, `${templateId}.manifest.json`);
+      await fs.promises.writeFile(manifestPath, JSON.stringify(manifest, null, 2));
 
-    fs.writeFile(manifestPath, JSON.stringify(manifest, null, 2), (err) => {
-      if (err) {
-        console.error(err);
-        return res.status(500).json({ error: 'Failed to save manifest' });
-      }
       return res.json({ success: true });
-    });
+    } catch (err) {
+      console.error(err);
+      return res.status(500).json({ success: false, error: 'Failed to save manifest' });
+    }
   });
 
   if (isDev) {

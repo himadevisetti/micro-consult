@@ -8,6 +8,9 @@ export interface Candidate {
   normalized?: string;   // canonical normalized form (e.g. ISO date)
   displayValue?: string; // optional preformatted string for UI
   roleHint?: string;     // e.g. "Client" or "Provider"
+  // For document-order sorting
+  pageNumber?: number;
+  yPosition?: number;
 }
 
 /**
@@ -16,12 +19,10 @@ export interface Candidate {
 export function normalizeValue(raw: string, schemaField: string | null): string {
   let val = raw.trim();
 
-  // Strip trailing commas/periods for all non-date fields
   if (!isDateLike(schemaField)) {
     val = val.replace(/[,\.]\s*$/, "");
   }
 
-  // Normalize dates to ISO for stable dedupe
   if (schemaField?.toLowerCase().includes("date")) {
     const d = new Date(val);
     if (!isNaN(d.getTime())) {
@@ -34,14 +35,10 @@ export function normalizeValue(raw: string, schemaField: string | null): string 
 
 /**
  * Merge Azure candidates, deduping by schemaField + normalized value.
- * IMPORTANT:
- * - Do NOT merge rows where schemaField is null (defensive passthrough).
- * - Preserve normalized/displayValue/roleHint; union candidate lists; prefer higher confidence.
- * - Different roles with the same normalized value (e.g., effectiveDate == startDate) remain as distinct rows.
  */
 export function mergeCandidates(candidates: Candidate[]): Candidate[] {
   const seen = new Map<string, Candidate>();
-  const passthrough: Candidate[] = []; // keep schemaField === null rows distinct
+  const passthrough: Candidate[] = [];
 
   for (const c of candidates) {
     if (c.schemaField == null) {
@@ -54,7 +51,6 @@ export function mergeCandidates(candidates: Candidate[]): Candidate[] {
 
     if (!seen.has(key)) {
       const next: Candidate = { ...c };
-      // If date and normalized is missing, compute it; keep rawValue as-is for UI
       if (!next.normalized && c.schemaField?.toLowerCase().includes("date")) {
         const d = new Date(c.rawValue);
         if (!isNaN(d.getTime())) next.normalized = d.toISOString().slice(0, 10);
@@ -62,19 +58,15 @@ export function mergeCandidates(candidates: Candidate[]): Candidate[] {
       seen.set(key, next);
     } else {
       const existing = seen.get(key)!;
-
-      // union candidate lists
       const mergedCandidates = Array.from(
         new Set([...(existing.candidates ?? []), ...(c.candidates ?? [])])
       );
       if (mergedCandidates.length) existing.candidates = mergedCandidates;
 
-      // prefer higher confidence
       const existingConf = existing.confidence ?? 0;
       const newConf = c.confidence ?? 0;
       if (newConf > existingConf) existing.confidence = c.confidence;
 
-      // preserve normalized/displayValue/roleHint if missing
       if (!existing.normalized && c.normalized) existing.normalized = c.normalized;
       if (!existing.displayValue && c.displayValue) existing.displayValue = c.displayValue;
       if (!existing.roleHint && c.roleHint) existing.roleHint = c.roleHint;
@@ -86,46 +78,30 @@ export function mergeCandidates(candidates: Candidate[]): Candidate[] {
 
 export function canonicalField(fieldName: string): string {
   switch (fieldName) {
-    // Primary text fields
     case "Title":
       return "title";
-
-    // Dates (map Azure variants to our schema)
     case "EffectiveDate":
       return "effectiveDate";
     case "StartDate":
       return "startDate";
     case "EndDate":
-      return "endDate";
     case "TerminationDate":
-      return "endDate";
     case "ExpirationDate":
       return "endDate";
-
-    // Parties / jurisdictions
     case "Parties":
-      return "parties"; // array; we remap items to partyA/partyB
+      return "parties";
     case "Jurisdictions":
-      return "jurisdictions"; // array; we remap items to governingLaw
-
-    // Amounts (map common Azure money fields)
+      return "jurisdictions";
     case "ContractValue":
-      return "feeAmount";
     case "TotalAmount":
-      return "feeAmount";
     case "Amount":
-      return "feeAmount";
     case "Fee":
-      return "feeAmount";
     case "FeeAmount":
       return "feeAmount";
     case "Retainer":
-      return "retainerAmount";
     case "RetainerAmount":
       return "retainerAmount";
-
     default:
-      // Generic PascalCase → camelCase
       return fieldName.charAt(0).toLowerCase() + fieldName.slice(1);
   }
 }
@@ -139,6 +115,7 @@ export function parseIsoDate(raw: string): string | undefined {
   return isNaN(d.getTime()) ? undefined : d.toISOString().slice(0, 10);
 }
 
+// Existing logical order (optional)
 export const FIELD_ORDER = [
   "title",
   "startDate",
@@ -151,10 +128,124 @@ export const FIELD_ORDER = [
   "retainerAmount",
 ];
 
-export function sortCandidates(cands: Candidate[]): Candidate[] {
+export function sortCandidatesLogical(cands: Candidate[]): Candidate[] {
   return [...cands].sort((a, b) => {
     const ai = FIELD_ORDER.indexOf(a.schemaField ?? "");
     const bi = FIELD_ORDER.indexOf(b.schemaField ?? "");
     return (ai === -1 ? 999 : ai) - (bi === -1 ? 999 : bi);
   });
+}
+
+// New: sort by document order
+export function sortCandidatesByDocumentOrder(cands: Candidate[]): Candidate[] {
+  return [...cands].sort((a, b) => {
+    const pa = a.pageNumber ?? 9999;
+    const pb = b.pageNumber ?? 9999;
+    if (pa !== pb) return pa - pb;
+    const ya = a.yPosition ?? 999999;
+    const yb = b.yPosition ?? 999999;
+    return ya - yb;
+  });
+}
+
+// Debug helper: log all raw fields from prebuilt_contract
+// Top-level fields from the official prebuilt-contract schema (2024-11-30 GA).
+// You can expand this list further if you want to cover every documented field.
+const CONTRACT_SCHEMA_FIELDS = [
+  "Title",
+  "ContractId",
+  "Parties",
+  "ExecutionDate",
+  "EffectiveDate",
+  "ExpirationDate",
+  "ContractDuration",
+  "RenewalDate",
+  "Jurisdictions"
+];
+
+// Recursively print all fields, including nested properties and arrays
+export function logAllContractFields(fr: any) {
+  if (!fr.documents) {
+    console.log("No documents returned by Form Recognizer");
+    return;
+  }
+
+  for (const doc of fr.documents) {
+    console.log(`\n=== Document type: ${doc.docType} ===`);
+    printFields(doc.fields, 0);
+  }
+}
+
+function printFields(fields: Record<string, any>, indent: number) {
+  const pad = "  ".repeat(indent);
+
+  for (const [fieldName, fieldVal] of Object.entries(fields)) {
+    if (!fieldVal) continue;
+
+    // Arrays (e.g. Parties, Jurisdictions)
+    if (Array.isArray(fieldVal.values)) {
+      console.log(`${pad}${fieldName}:`);
+      fieldVal.values.forEach((v: any, idx: number) => {
+        if (v?.properties) {
+          console.log(`${pad}  [${idx}]`);
+          printFields(v.properties, indent + 2);
+        } else {
+          const val = v.content ?? v.value;
+          if (val) {
+            console.log(
+              `${pad}  [${idx}] ${val} (confidence: ${v.confidence ?? "n/a"})`
+            );
+          }
+        }
+      });
+    }
+    // Objects with nested properties
+    else if (fieldVal.properties) {
+      console.log(`${pad}${fieldName}:`);
+      printFields(fieldVal.properties, indent + 1);
+    }
+    // Scalars
+    else {
+      const val = fieldVal.content ?? fieldVal.value;
+      if (val) {
+        const conf = fieldVal.confidence ?? "n/a";
+        const page = fieldVal.boundingRegions?.[0]?.pageNumber ?? "?";
+        console.log(
+          `${pad}${fieldName} => ${val} (confidence: ${conf}) page: ${page}`
+        );
+      }
+    }
+  }
+}
+
+// Compare actual fields against schema and log missing ones
+export function logMissingContractFields(fr: any) {
+  if (!fr.documents) return;
+
+  for (const doc of fr.documents) {
+    const present = Object.keys(doc.fields ?? {});
+    const missing = CONTRACT_SCHEMA_FIELDS.filter(
+      f => !present.includes(f)
+    );
+
+    console.log("\n=== Missing fields compared to schema ===");
+    console.log(missing.length > 0 ? missing.join(", ") : "None — all present");
+  }
+}
+
+// Regex-based amount detection from full text
+export function logRegexAmounts(fr: any) {
+  const fullText = fr.content ?? "";
+  const moneyRegex = /\$\d{1,3}(?:,\d{3})*(?:\.\d{2})?/g;
+  const matches = fullText.match(moneyRegex) || [];
+
+  if (matches.length > 0) {
+    console.log("\n=== Regex-detected amounts ===");
+    matches.forEach((m: string, idx: number) => {
+      console.log(`  [${idx}] ${m}`);
+    });
+  } else {
+    console.log("\n=== Regex-detected amounts ===");
+    console.log("  None found");
+  }
 }

@@ -1,8 +1,10 @@
 // src/components/FormFlows/UploadTemplateFlow.tsx
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import UploadTemplatePage from './UploadTemplatePage';
 import FieldMappingReview from '../FieldMappingReview';
 import { TemplateVariable } from '../../types/templates';
+import { NormalizedMapping } from '../../types/confirmMapping';
 import styles from '../../styles/StandardRetainerForm.module.css';
 
 interface Props {
@@ -13,10 +15,10 @@ export default function UploadTemplateFlow({ customerId }: Props) {
   const [templateId, setTemplateId] = useState<string | null>(null);
   const [templateName, setTemplateName] = useState<string | null>(null);
   const [candidates, setCandidates] = useState<TemplateVariable[] | null>(null);
-  const [success, setSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // ✅ Upload step now receives enriched candidates
+  const navigate = useNavigate();
+
   const handleUploadComplete = (
     newTemplateId: string,
     newTemplateName: string,
@@ -24,13 +26,11 @@ export default function UploadTemplateFlow({ customerId }: Props) {
   ) => {
     setTemplateId(newTemplateId);
     setTemplateName(newTemplateName);
-    setCandidates(detected); // detected includes rawValue, schemaField, confidence, etc.
-    setSuccess(false);
+    setCandidates(detected);
     setError(null);
   };
 
-  // ✅ Confirm mapping posts enriched mapping back to backend
-  const handleConfirmMapping = async (finalMapping: TemplateVariable[]) => {
+  const handleConfirmMapping = async (finalMapping: NormalizedMapping[]) => {
     if (!templateId) {
       setError('No templateId available — upload step must complete first.');
       return;
@@ -42,16 +42,16 @@ export default function UploadTemplateFlow({ customerId }: Props) {
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ mapping: finalMapping }),
+          body: JSON.stringify(finalMapping),
         }
       );
 
       if (!res.ok) throw new Error(`Failed to save mapping: ${res.statusText}`);
 
-      setSuccess(true);
-      setTemplateId(null);
-      setTemplateName(null);
-      setCandidates(null);
+      // ✅ Navigate back to Custom Template landing screen
+      navigate('/form/custom-template', {
+        state: { success: true, templateId, templateName },
+      });
     } catch (err: any) {
       setError(err.message || 'Failed to save mapping');
     }
@@ -59,11 +59,6 @@ export default function UploadTemplateFlow({ customerId }: Props) {
 
   return (
     <div className={styles.pageContainer}>
-      {success && (
-        <div className={styles.successBanner}>
-          ✅ Template mapping saved successfully
-        </div>
-      )}
       {error && <div className={styles.errorBanner}>❌ {error}</div>}
 
       {!candidates ? (
