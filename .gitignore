@@ -101,10 +101,10 @@ node_modules/.vite/
 # Ignore local Prisma database
 frontend/prisma/dev.db
 
-# Ignore everything under storage
-/expert-snapshot-legal/frontend/storage/*
+# Ignore all storage contents (customers, subfolders, files)
+expert-snapshot-legal/frontend/storage/**
 
-# But keep placeholder files so the directories exist
-!/expert-snapshot-legal/frontend/storage/**/.gitkeep
+# Keep just the root placeholder so the directory exists after clone/deploy
+!expert-snapshot-legal/frontend/storage/.gitkeep
 
 
