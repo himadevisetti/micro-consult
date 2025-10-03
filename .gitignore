@@ -101,6 +101,10 @@ node_modules/.vite/
 # Ignore local Prisma database
 frontend/prisma/dev.db
 
-# Ignore local storage temp files
-/expert-snapshot-legal/frontend/storage/
+# Ignore everything under storage
+/expert-snapshot-legal/frontend/storage/*
+
+# But keep placeholder files so the directories exist
+!/expert-snapshot-legal/frontend/storage/**/.gitkeep
+
 
