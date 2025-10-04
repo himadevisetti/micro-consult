@@ -10,14 +10,10 @@ import { Request } from 'express';
 import * as dotenv from "dotenv";
 import { DocumentAnalysisClient, AzureKeyCredential } from "@azure/ai-form-recognizer";
 import {
-  canonicalField,
   mergeCandidates,
-  parseIsoDate,
-  Candidate,
   sortCandidatesByDocumentOrder,
-  logAllContractFields,
-  logMissingContractFields,
-  logRegexAmounts,
+  logAllReadFields,
+  deriveCandidatesFromRead,
 } from "./src/utils/candidateUtils.js";
 import { NormalizedMapping } from './src/types/confirmMapping.js';
 
@@ -140,192 +136,24 @@ async function startDevServer() {
         // Read file into Buffer
         const buffer = fs.readFileSync(destPath);
 
-        // ✅ Correct overload: Buffer only, no contentType
-        const poller = await formRecClient.beginAnalyzeDocument(
-          "prebuilt-contract",
+        // 🔹 Run prebuilt-read only
+        const readPoller = await formRecClient.beginAnalyzeDocument(
+          "prebuilt-read",
           buffer
         );
-        const fr = await poller.pollUntilDone();
+        const readResult = await readPoller.pollUntilDone();
 
         const debug = process.env.DEBUG_CONTRACTS === "true";
         if (debug) {
-          console.log("DEBUG: Full Form Recognizer content:", fr.content?.slice(0, 500), "...");
-          // console.log("DEBUG: Full Form Recognizer documents:", JSON.stringify(fr.documents, null, 2));
-          logAllContractFields(fr);
-          logMissingContractFields(fr);
-          logRegexAmounts(fr);
+          console.log("DEBUG: Full prebuilt-read content:", readResult.content?.slice(0, 500), "...");
+          logAllReadFields(readResult);
         }
 
-        const candidates: Candidate[] = [];
-        const cleanTail = (raw: string) => raw.replace(/[,\.]\s*$/, "");
+        // 🔹 Extract candidates from prebuilt-read
+        const readCandidates = deriveCandidatesFromRead(readResult);
 
-        if (fr.documents) {
-          for (const doc of fr.documents) {
-            const fields = doc.fields as Record<string, any>;
-
-            for (const [fieldName, fieldVal] of Object.entries(fields)) {
-              if (!fieldVal) continue;
-
-              const region = fieldVal.boundingRegions?.[0];
-              const pageNumber = region?.pageNumber;
-              const yPosition = region?.polygon?.[1];
-
-              if (Array.isArray(fieldVal.values)) {
-                fieldVal.values.forEach((v: any, idx: number) => {
-                  const rawVal =
-                    v.properties?.Name?.content ??
-                    v.properties?.Region?.content ??
-                    v.content ??
-                    v.value;
-                  const raw0 = rawVal == null ? "" : String(rawVal);
-                  if (!raw0) return;
-
-                  let schemaField: string | null = canonicalField(fieldName);
-                  if (fieldName === "Parties") {
-                    schemaField = idx === 0 ? "partyA" : "partyB";
-                  } else if (fieldName === "Jurisdictions") {
-                    schemaField = "governingLaw";
-                  }
-
-                  const raw = schemaField && schemaField.toLowerCase().includes("date")
-                    ? raw0
-                    : cleanTail(raw0);
-
-                  const confidence =
-                    v.properties?.Name?.confidence ??
-                    v.properties?.Region?.confidence ??
-                    v.confidence ??
-                    null;
-
-                  const candidate: Candidate = {
-                    rawValue: raw,
-                    schemaField,
-                    candidates: schemaField ? [schemaField] : [canonicalField(fieldName)],
-                    confidence,
-                    pageNumber,
-                    yPosition,
-                  };
-
-                  if (schemaField === "partyA") candidate.roleHint = "Client";
-                  if (schemaField === "partyB") candidate.roleHint = "Provider";
-
-                  candidates.push(candidate);
-                });
-              } else {
-                const rawVal = fieldVal.content ?? fieldVal.value;
-                const raw0 = rawVal == null ? "" : String(rawVal);
-                if (!raw0) continue;
-
-                const schemaField = canonicalField(fieldName);
-                const raw = schemaField && schemaField.toLowerCase().includes("date")
-                  ? raw0
-                  : cleanTail(raw0);
-
-                const candidate: Candidate = {
-                  rawValue: raw,
-                  schemaField,
-                  candidates: [schemaField],
-                  confidence: fieldVal.confidence ?? null,
-                  pageNumber,
-                  yPosition,
-                };
-
-                if (schemaField && schemaField.toLowerCase().includes("date")) {
-                  const d = new Date(raw);
-                  if (!isNaN(d.getTime())) {
-                    candidate.normalized = d.toISOString().slice(0, 10);
-                    candidate.displayValue = d.toLocaleDateString("en-US", {
-                      month: "short",
-                      day: "numeric",
-                      year: "numeric",
-                    });
-                  }
-                }
-
-                candidates.push(candidate);
-              }
-
-              const canon = canonicalField(fieldName);
-              if (
-                ![
-                  "title",
-                  "effectiveDate",
-                  "startDate",
-                  "endDate",
-                  "parties",
-                  "jurisdictions",
-                  "governingLaw",
-                  "feeAmount",
-                  "retainerAmount",
-                ].includes(canon)
-              ) {
-                console.log("Unrecognized field from Azure:", fieldName);
-              }
-            }
-          }
-        }
-
-        const fullText = fr.content ?? "";
-
-        // Regex fallback for amounts
-        const moneyRegex = /\$\d{1,3}(?:,\d{3})*(?:\.\d{2})?/g;
-        let m;
-        while ((m = moneyRegex.exec(fullText)) !== null) {
-          candidates.push({
-            rawValue: cleanTail(m[0]),
-            schemaField: null,
-            candidates: ["feeAmount", "retainerAmount"],
-            confidence: null,
-          });
-        }
-
-        // Regex fallback for endDate if Azure missed it
-        const hasEndDate = candidates.some(c => c.schemaField === "endDate");
-        if (!hasEndDate) {
-          const terminationClauseRegex =
-            /\b(?:terminate[sd]?|termination|expire[sd]?|expiration|end[s]?)\b[^.]*?\b(?:on|effective|as of)\s+([A-Z][a-z]+ \d{1,2}, \d{4})/gi;
-
-          let tm;
-          while ((tm = terminationClauseRegex.exec(fullText)) !== null) {
-            const rawDate = tm[1];
-            const iso = parseIsoDate(rawDate);
-            if (iso) {
-              candidates.push({
-                rawValue: rawDate,
-                schemaField: "endDate",
-                candidates: ["endDate"],
-                confidence: null,
-                normalized: iso,
-                displayValue: new Date(rawDate).toLocaleDateString("en-US", {
-                  month: "short",
-                  day: "numeric",
-                  year: "numeric",
-                }),
-              });
-              break;
-            }
-          }
-        }
-
-        // Ensure startDate if only effectiveDate exists
-        const hasEffective = candidates.some(c => c.schemaField === "effectiveDate");
-        const hasStart = candidates.some(c => c.schemaField === "startDate");
-        if (hasEffective && !hasStart) {
-          const eff = candidates.find(c => c.schemaField === "effectiveDate")!;
-          candidates.push({
-            rawValue: eff.rawValue,
-            schemaField: "startDate",
-            candidates: ["startDate"],
-            confidence: eff.confidence,
-            normalized: eff.normalized,
-            displayValue: eff.displayValue,
-            pageNumber: eff.pageNumber,
-            yPosition: eff.yPosition,
-          });
-        }
-
-        // Merge and sort by document order
-        const mergedCandidates = mergeCandidates(candidates);
+        // 🔹 Merge + sort (still useful for deduplication and ordering)
+        const mergedCandidates = mergeCandidates(readCandidates);
         const orderedCandidates = sortCandidatesByDocumentOrder(mergedCandidates);
 
         return res.json({

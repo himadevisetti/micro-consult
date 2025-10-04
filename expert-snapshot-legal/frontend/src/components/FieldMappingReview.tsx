@@ -78,6 +78,7 @@ export default function FieldMappingReview({ templateName, candidates, onConfirm
 
   const showConfidence = process.env.NODE_ENV === 'development';
   const disableConfirm = mapping.some(m => getStatus(m) === 'Unmapped' || !m.confirmed);
+  const [expandedIndex, setExpandedIndex] = useState<number | null>(null);
 
   return (
     <div className={styles.formWrapper}>
@@ -99,7 +100,6 @@ export default function FieldMappingReview({ templateName, candidates, onConfirm
           {mapping.map((m, idx) => (
             <tr key={idx}>
               <td className={styles.rawTextCol}>
-                {/* ✅ Editable input only for user-added variables (no schemaField + no candidates) */}
                 {!m.schemaField && (m.candidates?.length ?? 0) === 0 ? (
                   <input
                     type="text"
@@ -108,10 +108,34 @@ export default function FieldMappingReview({ templateName, candidates, onConfirm
                     placeholder="Enter raw text from document"
                     className={styles.textInput}
                   />
+                ) : m.schemaField === 'partyA' || m.schemaField === 'partyB' ? (
+                  `${m.schemaField === 'partyA' ? 'Party A' : 'Party B'} (${m.roleHint ?? ''}): ${m.rawValue}`
                 ) : (
-                  m.schemaField === 'partyA' || m.schemaField === 'partyB'
-                    ? `${m.schemaField === 'partyA' ? 'Party A' : 'Party B'} (${m.roleHint ?? ''}): ${m.rawValue}`
-                    : m.displayValue ?? m.normalized ?? m.rawValue
+                  <>
+                    <span>
+                      {expandedIndex === idx
+                        ? m.rawValue
+                        : m.displayValue ?? m.normalized ?? m.rawValue}
+                    </span>
+                    {(() => {
+                      const shouldShowToggle =
+                        m.displayValue &&
+                        m.rawValue &&
+                        m.rawValue.trim() !== m.displayValue.trim() &&
+                        m.rawValue.length > m.displayValue.length + 10; // require meaningful gap
+                      return shouldShowToggle ? (
+                        <button
+                          type="button"
+                          className={styles.viewFullButton}
+                          onClick={() =>
+                            setExpandedIndex(expandedIndex === idx ? null : idx)
+                          }
+                        >
+                          {expandedIndex === idx ? 'Hide' : 'View full'}
+                        </button>
+                      ) : null;
+                    })()}
+                  </>
                 )}
               </td>
               <td className={styles.mappedFieldCol}>
