@@ -1,17 +1,19 @@
 // candidateUtils.ts
 
+import { CONTRACT_KEYWORDS } from "../constants/contractKeywords.js";
+
 export interface Candidate {
   rawValue: string;
   schemaField: string | null;
   candidates?: string[];
-  confidence: number | null;
   normalized?: string;   // canonical normalized form (e.g. ISO date)
   displayValue?: string; // optional preformatted string for UI
   roleHint?: string;     // e.g. "Client" or "Provider"
-  // For document-order sorting
-  pageNumber?: number;
-  yPosition?: number;
+  pageNumber: number;
+  yPosition: number;
 }
+
+const DEBUG = process.env.NODE_ENV === "development";
 
 /**
  * Normalize values for deduplication
@@ -33,47 +35,143 @@ export function normalizeValue(raw: string, schemaField: string | null): string 
   return val;
 }
 
+function normalizeHeading(h?: string): string {
+  return (h ?? "").trim().toLowerCase();
+}
+
+function isPreferredHeadingForGoverningLaw(roleHint?: string): boolean {
+  const h = normalizeHeading(roleHint);
+  return h === "governing law" || h === "jurisdiction";
+}
+
 /**
  * Merge candidates, deduping by schemaField + normalized value.
  */
 export function mergeCandidates(candidates: Candidate[]): Candidate[] {
-  const seen = new Map<string, Candidate>();
-  const passthrough: Candidate[] = [];
+  // INPUT LOG
+  if (DEBUG) {
+    console.log(">>> mergeCandidates INPUT:");
+    candidates.forEach((c, i) => {
+      const schema = c.schemaField ?? "null";
+      const normKey = c.schemaField
+        ? `${c.schemaField}::${normalizeValue(c.rawValue, c.schemaField)}`
+        : "(passthrough)";
+      console.log(
+        `[${i}] field=${schema} page=${c.pageNumber} y=${c.yPosition} roleHint="${c.roleHint ?? ""}" normalized="${c.normalized ?? ""}" raw="${c.rawValue}" key=${normKey}`
+      );
+    });
+  }
 
-  for (const c of candidates) {
+  const indexByKey = new Map<string, number>();
+  const out: Candidate[] = [];
+
+  for (let i = 0; i < candidates.length; i++) {
+    const c = candidates[i];
+
     if (c.schemaField == null) {
-      passthrough.push({ ...c });
+      out.push({ ...c });
       continue;
     }
 
     const norm = normalizeValue(c.rawValue, c.schemaField);
     const key = `${c.schemaField}::${norm}`;
+    const existingIdx = indexByKey.get(key);
 
-    if (!seen.has(key)) {
+    if (existingIdx == null) {
       const next: Candidate = { ...c };
       if (!next.normalized && c.schemaField?.toLowerCase().includes("date")) {
         const d = new Date(c.rawValue);
         if (!isNaN(d.getTime())) next.normalized = d.toISOString().slice(0, 10);
       }
-      seen.set(key, next);
+      indexByKey.set(key, out.length);
+      out.push(next);
+      if (DEBUG) {
+        console.log(
+          `ADD key=${key} @outIdx=${out.length - 1} field=${c.schemaField} page=${c.pageNumber} y=${c.yPosition} roleHint="${c.roleHint ?? ""}" raw="${c.rawValue}"`
+        );
+      }
+      continue;
+    }
+
+    const existing = out[existingIdx];
+
+    // Preferred-heading logic for governingLaw with fallback
+    let shouldReplace = false;
+    if (c.schemaField === "governingLaw") {
+      const existingPreferred = isPreferredHeadingForGoverningLaw(existing.roleHint);
+      const incomingPreferred = isPreferredHeadingForGoverningLaw(c.roleHint);
+
+      if (DEBUG) {
+        console.log(
+          `DUP key=${key} existingIdx=${existingIdx} ` +
+          `existing(roleHint="${existing.roleHint ?? ""}", preferred=${existingPreferred}, page=${existing.pageNumber}, y=${existing.yPosition}) ` +
+          `incoming(roleHint="${c.roleHint ?? ""}", preferred=${incomingPreferred}, page=${c.pageNumber}, y=${c.yPosition})`
+        );
+      }
+
+      if (!existingPreferred && incomingPreferred) {
+        shouldReplace = true;
+        if (DEBUG) {
+          console.log(
+            `REPLACE_DECISION: governingLaw incoming is preferred-heading, existing is not. key=${key}`
+          );
+        }
+      } else {
+        if (DEBUG) {
+          console.log(
+            `KEEP_DECISION: governingLaw prefers first occurrence or both preferred; merging metadata only. key=${key}`
+          );
+        }
+      }
     } else {
-      const existing = seen.get(key)!;
-      const mergedCandidates = Array.from(
+      if (DEBUG) {
+        console.log(
+          `DUP key=${key} field=${c.schemaField} -> KEEP first occurrence; merging metadata only. ` +
+          `existing(roleHint="${existing.roleHint ?? ""}") incoming(roleHint="${c.roleHint ?? ""}")`
+        );
+      }
+    }
+
+    if (shouldReplace) {
+      out[existingIdx] = { ...existing, ...c };
+      if (DEBUG) {
+        console.log(
+          `REPLACED key=${key} @outIdx=${existingIdx} with incoming (page=${c.pageNumber}, y=${c.yPosition}, roleHint="${c.roleHint ?? ""}")`
+        );
+      }
+    } else {
+      const mergedLabels = Array.from(
         new Set([...(existing.candidates ?? []), ...(c.candidates ?? [])])
       );
-      if (mergedCandidates.length) existing.candidates = mergedCandidates;
-
-      const existingConf = existing.confidence ?? 0;
-      const newConf = c.confidence ?? 0;
-      if (newConf > existingConf) existing.confidence = c.confidence;
-
+      if (mergedLabels.length) existing.candidates = mergedLabels;
       if (!existing.normalized && c.normalized) existing.normalized = c.normalized;
       if (!existing.displayValue && c.displayValue) existing.displayValue = c.displayValue;
       if (!existing.roleHint && c.roleHint) existing.roleHint = c.roleHint;
+
+      if (DEBUG) {
+        console.log(
+          `MERGED_METADATA key=${key} @outIdx=${existingIdx} ` +
+          `normalized="${existing.normalized ?? ""}" displayValue="${existing.displayValue ?? ""}" roleHint="${existing.roleHint ?? ""}"`
+        );
+      }
     }
   }
 
-  return [...Array.from(seen.values()), ...passthrough];
+  // OUTPUT LOG
+  if (DEBUG) {
+    console.log(">>> mergeCandidates OUTPUT:");
+    out.forEach((c, i) => {
+      const schema = c.schemaField ?? "null";
+      const normKey = c.schemaField
+        ? `${c.schemaField}::${normalizeValue(c.rawValue, c.schemaField)}`
+        : "(passthrough)";
+      console.log(
+        `[${i}] field=${schema} page=${c.pageNumber} y=${c.yPosition} roleHint="${c.roleHint ?? ""}" normalized="${c.normalized ?? ""}" raw="${c.rawValue}" key=${normKey}`
+      );
+    });
+  }
+
+  return out;
 }
 
 export function isDateLike(field: string | null): boolean {
@@ -85,37 +183,16 @@ export function parseIsoDate(raw: string): string | undefined {
   return isNaN(d.getTime()) ? undefined : d.toISOString().slice(0, 10);
 }
 
-// Optional logical order (if you still want it for testing)
-export const FIELD_ORDER = [
-  "title",
-  "effectiveDate",
-  "executionDate",
-  "expirationDate",
-  "partyA",
-  "partyB",
-  "governingLaw",
-  "feeAmount",
-  "retainerAmount",
-  "scopeOfRepresentation",
-];
-
-export function sortCandidatesLogical(cands: Candidate[]): Candidate[] {
-  return [...cands].sort((a, b) => {
-    const ai = FIELD_ORDER.indexOf(a.schemaField ?? "");
-    const bi = FIELD_ORDER.indexOf(b.schemaField ?? "");
-    return (ai === -1 ? 999 : ai) - (bi === -1 ? 999 : bi);
-  });
-}
-
-// Sort by document order using page + yPosition
+// Sort by document order using page + yPosition (or docIndex if present)
 export function sortCandidatesByDocumentOrder(cands: Candidate[]): Candidate[] {
   return [...cands].sort((a, b) => {
-    const pa = a.pageNumber ?? 9999;
-    const pb = b.pageNumber ?? 9999;
-    if (pa !== pb) return pa - pb;
-    const ya = a.yPosition ?? 999999;
-    const yb = b.yPosition ?? 999999;
-    return ya - yb;
+    if (a.pageNumber !== b.pageNumber) {
+      return a.pageNumber - b.pageNumber;
+    }
+    if ((a as any).docIndex != null && (b as any).docIndex != null) {
+      return (a as any).docIndex - (b as any).docIndex;
+    }
+    return a.yPosition - b.yPosition;
   });
 }
 
@@ -156,134 +233,178 @@ export function logAllReadFields(readResult: any) {
   }
 }
 
-// --- Keyword sets for detectors ---
-const FEE_STRUCTURE_KEYWORDS: Record<string, string[]> = {
-  Flat: ["flat"],
-  Hourly: ["hour", "per hour"],
-  Monthly: ["monthly", "per month"],
-  Contingency: ["contingency", "contingent"],
-};
-
-const FEE_CONTEXT_KEYWORDS = [
-  "fee", "fees", "compensation", "payment", "remuneration",
-  "charges", "billing", "consideration", "retainer", "deposit", "advance"
-];
-
-const GOVERNING_LAW_KEYWORDS = [
-  "governing law", "jurisdiction", "laws of", "construed in accordance"
-];
-
-const SCOPE_KEYWORDS = [
-  "represent", "representation", "engage", "engagement",
-  "services", "scope", "responsibilities", "duties", "work to be performed"
-];
-
 /**
  * Derive structured candidates from prebuilt-read output.
  */
 export function deriveCandidatesFromRead(readResult: any): Candidate[] {
   const candidates: Candidate[] = [];
-  if (!readResult || !readResult.pages) return candidates;
+  if (!readResult) return candidates;
 
-  const fullText = String(readResult.content ?? "");
+  const anchors: TextAnchor[] = getTextAnchors(readResult);
 
-  // --- 1) Fee structure ---
-  for (const page of readResult.pages) {
-    for (const [lineIdx, line] of (page.lines ?? []).entries()) {
-      if (Object.values(FEE_STRUCTURE_KEYWORDS).some(keys =>
-        keys.some(k => line.content.toLowerCase().includes(k))
-      )) {
-        candidates.push({
-          rawValue: "flat", // or normalized keyword
-          schemaField: "feeStructure",
-          candidates: ["feeStructure"],
-          confidence: null,
-          normalized: "flat",
-          pageNumber: page.pageNumber,
-          yPosition: line.boundingBox?.[1] ?? lineIdx,
-        });
+  // --- Parties ---
+  for (const anchor of anchors) {
+    const partyRegex = /between\s+(.+?)\s+and\s+([^.,]+)(?:[.,]|$)/i;
+    const match = anchor.text.match(partyRegex);
+    if (match) {
+      const clean = (s: string) =>
+        s
+          .replace(/\s*,?\s*effective as of.*$/i, "")
+          .replace(/\s*,?\s*dated.*$/i, "")
+          .trim();
+
+      let partyA = clean(match[1]);
+      let partyB = clean(match[2]);
+
+      const labelRegex = /\(the\s+["“]?([A-Za-z]+)["”]?\)/i;
+      const labelA = partyA.match(labelRegex)?.[1];
+      const labelB = partyB.match(labelRegex)?.[1];
+
+      partyA = partyA.replace(labelRegex, "").trim();
+      partyB = partyB.replace(labelRegex, "").trim();
+
+      if (partyA && partyB) {
+        if (labelA || labelB) {
+          candidates.push({
+            rawValue: partyA,
+            schemaField: "partyA",
+            candidates: ["partyA"],
+            roleHint: labelA ?? anchor.roleHint ?? "PartyA",
+            pageNumber: anchor.page,
+            yPosition: anchor.y,
+          });
+          candidates.push({
+            rawValue: partyB,
+            schemaField: "partyB",
+            candidates: ["partyB"],
+            roleHint: labelB ?? anchor.roleHint ?? "PartyB",
+            pageNumber: anchor.page,
+            yPosition: anchor.y,
+          });
+        } else {
+          candidates.push({
+            rawValue: partyA,
+            schemaField: null,
+            candidates: ["partyA", "partyB"],
+            roleHint: anchor.roleHint ?? "Parties",
+            pageNumber: anchor.page,
+            yPosition: anchor.y,
+          });
+          candidates.push({
+            rawValue: partyB,
+            schemaField: null,
+            candidates: ["partyA", "partyB"],
+            roleHint: anchor.roleHint ?? "Parties",
+            pageNumber: anchor.page,
+            yPosition: anchor.y,
+          });
+        }
+        if (DEBUG) console.log(">>> Parties detected:", { partyA, partyB, labelA, labelB });
         break;
       }
     }
   }
 
-  // --- 2) Amounts ---
-  const amountRegex = /\$(\d+(?:,\d{3})*(?:\.\d{2})?)/g;
-  const isFeeCue = (text: string) =>
-    FEE_CONTEXT_KEYWORDS.some(k => text.includes(k));
-  const isRetainerCue = (text: string) =>
-    text.includes("retainer") || text.includes("deposit") || text.includes("advance");
-
-  for (const page of readResult.pages) {
-    const lines = page.lines ?? [];
-    for (let i = 0; i < lines.length; i++) {
-      const curr = lines[i].content ?? "";
-      const prev = lines[i - 1]?.content ?? "";
-      const next = lines[i + 1]?.content ?? "";
-
-      const currLower = curr.toLowerCase();
-      const prevLower = prev.toLowerCase();
-      const nextLower = next.toLowerCase();
-
-      const feeIdx = (() => {
-        const keys = FEE_CONTEXT_KEYWORDS.filter(k => currLower.includes(k));
-        if (!keys.length) return -1;
-        return Math.max(...keys.map(k => currLower.lastIndexOf(k)));
-      })();
-      const retainerIdx = (() => {
-        const keys = ["retainer", "deposit", "advance"].filter(k => currLower.includes(k));
-        if (!keys.length) return -1;
-        return Math.max(...keys.map(k => currLower.lastIndexOf(k)));
-      })();
-
-      let m: RegExpExecArray | null;
-      while ((m = amountRegex.exec(curr)) !== null) {
-        const raw = `$${m[1]}`;
-        const amountPos = m.index;
-        let schemaField: string | null = null;
-
-        if (feeIdx >= 0 && retainerIdx >= 0) {
-          const feeDist = Math.abs(amountPos - feeIdx);
-          const retDist = Math.abs(amountPos - retainerIdx);
-          schemaField = feeDist <= retDist ? "feeAmount" : "retainerAmount";
-        } else if (feeIdx >= 0) {
-          schemaField = "feeAmount";
-        } else if (retainerIdx >= 0) {
-          schemaField = "retainerAmount";
-        } else if (isRetainerCue(prevLower) || isRetainerCue(nextLower)) {
-          schemaField = "retainerAmount";
-        } else if (isFeeCue(prevLower) || isFeeCue(nextLower)) {
-          schemaField = "feeAmount";
-        }
+  // --- Fee Structure ---
+  for (const anchor of anchors) {
+    const lower = anchor.text.toLowerCase();
+    for (const [norm, keywords] of Object.entries(CONTRACT_KEYWORDS.amounts.feeStructure)) {
+      const match = keywords.find(k => lower.includes(k));
+      if (match) {
+        const regex = new RegExp(`\\b${match}\\b`, "i");
+        const rawMatch = anchor.text.match(regex)?.[0] ?? match;
 
         candidates.push({
-          rawValue: raw,
-          schemaField,
-          candidates: schemaField ? [schemaField] : ["feeAmount", "retainerAmount"],
-          confidence: null,
-          pageNumber: page.pageNumber,
-          yPosition: lines[i].boundingBox?.[1] ?? i,
+          rawValue: rawMatch,
+          schemaField: "feeStructure",
+          candidates: ["feeStructure"],
+          normalized: normalizeValue(rawMatch, "feeStructure"),
+          pageNumber: anchor.page,
+          yPosition: anchor.y,
+          roleHint: anchor.roleHint,
         });
+
+        if (DEBUG) console.log(">>> Fee structure detected:", { norm, rawMatch });
+        break;
       }
     }
   }
 
-  // --- 3) Dates: Effective, Expiration (inline) + Execution (signature block only) ---
-  const monthDateRegex =
-    /\b(?:jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\s+\d{1,2},\s+\d{4}\b/gi;
+  // --- Amounts ---
+  const amountRegex = /\$(\d+(?:,\d{3})*(?:\.\d{2})?)/g;
+  const isFeeCue = (t: string) =>
+    CONTRACT_KEYWORDS.amounts.feeContext.some(k => t.includes(k));
+  const isRetainerCue = (t: string) =>
+    CONTRACT_KEYWORDS.amounts.retainerCues.some(k => t.includes(k));
+
+  let seenFee = false;
+  let seenRetainer = false;
+
+  for (let i = 0; i < anchors.length; i++) {
+    const curr = anchors[i].text;
+    const prev = anchors[i - 1]?.text ?? "";
+    const next = anchors[i + 1]?.text ?? "";
+
+    const currLower = curr.toLowerCase();
+    const prevLower = prev.toLowerCase();
+    const nextLower = next.toLowerCase();
+
+    let m: RegExpExecArray | null;
+    while ((m = amountRegex.exec(curr)) !== null) {
+      const raw = `$${m[1]}`;
+
+      const hasFeeCue =
+        isFeeCue(currLower) || isFeeCue(prevLower) || isFeeCue(nextLower);
+      const hasRetainerCue =
+        isRetainerCue(currLower) || isRetainerCue(prevLower) || isRetainerCue(nextLower);
+
+      let schemaField: "feeAmount" | "retainerAmount" | null = null;
+      let options: string[] = [];
+
+      if (hasFeeCue && !hasRetainerCue) {
+        schemaField = "feeAmount";
+        options = ["feeAmount"];
+        seenFee = true;
+      } else if (hasRetainerCue && !hasFeeCue) {
+        schemaField = "retainerAmount";
+        options = ["retainerAmount"];
+        seenRetainer = true;
+      } else {
+        schemaField = null;
+        options = ["feeAmount", "retainerAmount"];
+        if (seenFee && !seenRetainer) {
+          options = ["retainerAmount"];
+        } else if (seenRetainer && !seenFee) {
+          options = ["feeAmount"];
+        }
+      }
+
+      candidates.push({
+        rawValue: raw,
+        schemaField,
+        candidates: options,
+        pageNumber: anchors[i].page,
+        yPosition: anchors[i].y,
+        roleHint: anchors[i].roleHint,
+      });
+
+      if (DEBUG) console.log(">>> Amount detected:", { raw, schemaField, options });
+    }
+  }
+
+  // --- Dates ---
+  const monthDateRegex = CONTRACT_KEYWORDS.dates.monthDateRegex;
 
   const emitDate = (
     rawDate: string,
     schemaField: "effectiveDate" | "expirationDate" | "executionDate",
-    pageNumber: number,
-    yPosition: number
+    anchor: TextAnchor
   ) => {
     const iso = parseIsoDate(rawDate);
     candidates.push({
       rawValue: rawDate,
       schemaField,
       candidates: [schemaField],
-      confidence: null,
       normalized: iso,
       displayValue: iso
         ? new Date(rawDate).toLocaleDateString("en-US", {
@@ -291,163 +412,274 @@ export function deriveCandidatesFromRead(readResult: any): Candidate[] {
           day: "numeric",
           year: "numeric",
         })
-        : undefined,
-      pageNumber,
-      yPosition,
+        : rawDate,
+      pageNumber: anchor.page,
+      yPosition: anchor.y,
+      roleHint: anchor.roleHint,
     });
+    if (DEBUG) console.log(`>>> Date emitted: ${schemaField} = ${rawDate}`);
   };
 
-  // A) Inline Effective / Expiration only
-  for (const page of readResult.pages) {
-    for (const [lineIdx, line] of (page.lines ?? []).entries()) {
-      const text = String(line.content ?? "");
-      const lower = text.toLowerCase();
-      let dm: RegExpExecArray | null;
+  // Inline dates
+  for (const anchor of anchors) {
+    let dm: RegExpExecArray | null;
+    while ((dm = monthDateRegex.exec(anchor.text)) !== null) {
+      const rawDate = dm[0];
+      const lower = anchor.text.toLowerCase();
 
-      while ((dm = monthDateRegex.exec(text)) !== null) {
-        const rawDate = dm[0];
-
-        if (lower.includes("effective")) {
-          emitDate(rawDate, "effectiveDate", page.pageNumber, line.boundingBox?.[1] ?? lineIdx);
-        } else if (
-          lower.includes("terminate") ||
-          lower.includes("termination") ||
-          lower.includes("expiration") ||
-          lower.includes("expire")
-        ) {
-          emitDate(rawDate, "expirationDate", page.pageNumber, line.boundingBox?.[1] ?? lineIdx);
-        }
+      if (CONTRACT_KEYWORDS.dates.effective.some(k => lower.includes(k))) {
+        emitDate(rawDate, "effectiveDate", anchor);
+      } else if (CONTRACT_KEYWORDS.dates.expiration.some(k => lower.includes(k))) {
+        emitDate(rawDate, "expirationDate", anchor);
+      } else if (CONTRACT_KEYWORDS.dates.execution.some(k => lower.includes(k))) {
+        emitDate(rawDate, "executionDate", anchor);
+      } else {
+        // No cues → ambiguous
+        candidates.push({
+          rawValue: rawDate,
+          schemaField: null,
+          candidates: ["effectiveDate", "expirationDate"],
+          pageNumber: anchor.page,
+          yPosition: anchor.y,
+          roleHint: anchor.roleHint,
+        });
+        if (DEBUG) console.log(`>>> Ambiguous date emitted: ${rawDate}`);
       }
     }
   }
 
-  // B) Execution date from signature block (prefer content after "Signatures")
-  interface LineAnchor {
-    text: string;
-    page: number;
-    y: number;
-  }
+  // Execution date from signature block (extra guard)
+  const sigStartIdx = anchors.findIndex(a => /signatures/i.test(a.text));
+  const sigBlock = sigStartIdx >= 0 ? anchors.slice(sigStartIdx) : anchors.slice(-20);
 
-  const lastPage = readResult.pages[readResult.pages.length - 1];
-  const lastLines: LineAnchor[] = (lastPage?.lines ?? []).map((line: any, idx: number) => ({
-    text: String(line.content ?? ""),
-    page: lastPage.pageNumber,
-    y: line.boundingBox?.[1] ?? idx,
-  }));
-
-  // Prefer lines after a "Signatures" heading; otherwise use the full last page
-  const sigStartIdx = lastLines.findIndex(l => /signatures/i.test(l.text));
-  const sigBlock = sigStartIdx >= 0 ? lastLines.slice(sigStartIdx) : lastLines;
-
-  // Scan with a 2‑line window to catch split dates
   for (let i = 0; i < sigBlock.length; i++) {
     const curr = sigBlock[i];
     const next = sigBlock[i + 1];
     const windowText = `${curr.text} ${next ? next.text : ""}`;
     const windowLower = windowText.toLowerCase();
 
-    const hasCue = /(executed on|signed on|signed this|dated|as of)/.test(windowLower);
-    const dateMatch = windowText.match(monthDateRegex);
-
-    if (hasCue && dateMatch && dateMatch.length) {
-      emitDate(dateMatch[0], "executionDate", curr.page, curr.y);
-      break; // stop after the first valid signature date
+    if (CONTRACT_KEYWORDS.dates.execution.some(k => windowLower.includes(k))) {
+      const dateMatch = windowText.match(monthDateRegex);
+      if (dateMatch) {
+        emitDate(dateMatch[0], "executionDate", curr);
+        break;
+      }
     }
   }
 
-  // --- 4) Parties ---
-  for (const page of readResult.pages) {
-    for (const [lineIdx, line] of (page.lines ?? []).entries()) {
-      const partyRegex = /between\s+(.+?)\s+and\s+(.+?)(?:\.|,|$)/i;
-      const match = line.content.match(partyRegex);
+  // --- Governing Law ---
+  for (const anchor of anchors) {
+    const lower = anchor.text.toLowerCase();
+    if (CONTRACT_KEYWORDS.governingLaw.cues.some(k => lower.includes(k))) {
+      const match = anchor.text.match(/laws of\s+([A-Za-z\s]+)/i);
       if (match) {
         candidates.push({
           rawValue: match[1].trim(),
-          schemaField: "partyA",
-          candidates: ["partyA"],
-          confidence: null,
-          roleHint: "Client",
-          pageNumber: page.pageNumber,
-          yPosition: line.boundingBox?.[1] ?? lineIdx,
+          schemaField: "governingLaw",
+          candidates: ["governingLaw"],
+          pageNumber: anchor.page,
+          yPosition: anchor.y,
+          roleHint: anchor.roleHint,
         });
-        candidates.push({
-          rawValue: match[2].trim(),
-          schemaField: "partyB",
-          candidates: ["partyB"],
-          confidence: null,
-          roleHint: "Provider",
-          pageNumber: page.pageNumber,
-          yPosition: line.boundingBox?.[1] ?? lineIdx,
-        });
+        if (DEBUG) console.log(`>>> Governing law detected: ${match[1].trim()}`);
       }
     }
   }
 
-  // --- 5) Governing law ---
-  for (const page of readResult.pages) {
-    for (const [lineIdx, line] of (page.lines ?? []).entries()) {
-      const lower = line.content.toLowerCase();
-      if (GOVERNING_LAW_KEYWORDS.some(k => lower.includes(k))) {
-        const match = line.content.match(/laws of\s+([A-Za-z\s]+)/i);
-        if (match) {
-          candidates.push({
-            rawValue: match[1].trim(),
-            schemaField: "governingLaw",
-            candidates: ["governingLaw"],
-            confidence: null,
-            pageNumber: page.pageNumber,
-            yPosition: line.boundingBox?.[1] ?? lineIdx,
-          });
-        }
-      }
-    }
-  }
-
-  // --- 6) Scope of Representation: single candidate, no redundant heading, UI preview ---
+  // --- Scope of Representation ---
   const scopeHeadingRegex = /^\s*scope of representation\s*$/i;
-  let scopeFragments: { text: string; page: number; y: number }[] = [];
+  const scopeFragments = anchors.filter(
+    a =>
+      !scopeHeadingRegex.test(a.text.toLowerCase()) &&
+      CONTRACT_KEYWORDS.scope.cues.some(k => a.text.toLowerCase().includes(k))
+  );
 
-  for (const page of readResult.pages) {
-    for (const [lineIdx, line] of (page.lines ?? []).entries()) {
-      const text = String(line.content ?? "").trim();
-      const lower = text.toLowerCase();
-
-      // Skip pure heading lines
-      if (scopeHeadingRegex.test(lower)) continue;
-
-      if (SCOPE_KEYWORDS.some(k => lower.includes(k))) {
-        // Trim trailing punctuation like commas or stray dots
-        const cleaned = text.replace(/[,\.]\s*$/, "");
-        scopeFragments.push({
-          text: cleaned,
-          page: page.pageNumber,
-          y: line.boundingBox?.[1] ?? lineIdx,
-        });
-      }
-    }
-  }
-
-  if (scopeFragments.length > 0) {
-    const fullScope = scopeFragments.map(f => f.text).join(" ").replace(/\s+/g, " ").trim();
-
-    // First sentence or trimmed preview up to ~200 chars
+  if (scopeFragments.length) {
+    const fullScope = scopeFragments
+      .map(f => f.text)
+      .join(" ")
+      .replace(/\s+/g, " ")
+      .trim();
     const firstSentence = fullScope.match(/[^.]{1,200}\./)?.[0]?.trim();
-    const previewSource = firstSentence ?? fullScope;
-    const preview =
-      previewSource.length > 200
-        ? `${previewSource.slice(0, 200)}…`
-        : previewSource;
-
+    const preview = firstSentence ?? fullScope;
     candidates.push({
-      rawValue: fullScope,        // full clause for detail view
-      displayValue: preview,      // short preview for table cell
+      rawValue: fullScope,
+      displayValue: preview.length > 200 ? `${preview.slice(0, 200)}…` : preview,
       schemaField: "scopeOfRepresentation",
       candidates: ["scopeOfRepresentation"],
-      confidence: null,
       pageNumber: scopeFragments[0].page,
       yPosition: scopeFragments[0].y,
+      roleHint: scopeFragments[0].roleHint,
+    });
+    if (DEBUG) console.log(">>> Scope of representation detected");
+  }
+
+  // --- Final instrumentation ---
+  if (DEBUG) {
+    console.log(">>> deriveCandidatesFromRead OUTPUT:");
+    candidates.forEach((c, i) => {
+      console.log(
+        `[${i}] field=${c.schemaField} page=${c.pageNumber} y=${c.yPosition} roleHint="${c.roleHint ?? ""}" raw="${c.rawValue}"`
+      );
     });
   }
 
   return candidates;
+}
+
+export interface TextAnchor {
+  text: string;
+  page: number;
+  y: number;
+  roleHint?: string;
+}
+
+export function getTextAnchors(readResult: any): TextAnchor[] {
+  const anchors: TextAnchor[] = [];
+  if (!readResult) return anchors;
+
+  const HEADING_KEYWORDS = CONTRACT_KEYWORDS.headings.clauseKeywords;
+
+  const norm = (s: string) =>
+    s.replace(/\u00A0/g, " ") // normalize NBSP
+      .trim()
+      .replace(/\s+/g, " ");
+
+  const isHeading = (raw: string): boolean => {
+    let text = norm(raw).replace(/[:\-–]\s*$/, ""); // strip trailing colon/dash
+    if (!text) return false;
+
+    const lower = text.toLowerCase();
+    if (HEADING_KEYWORDS.some(k => lower.includes(k))) return true;
+
+    // heuristic fallback (short, title-like, no sentence end)
+    if (/[.?!]$/.test(text)) return false;
+    const words = text.split(" ");
+    if (words.length > 8) return false;
+    if (/^[A-Z0-9][A-Z0-9\s&:–-]+$/.test(text)) return true;
+    if (/^[A-Z][A-Za-z0-9\s&:–-]+$/.test(text)) return true;
+
+    return false;
+  };
+
+  const getY = (bb?: number[], fallback = 0): number => {
+    if (Array.isArray(bb) && bb.length >= 8) {
+      const ys = [bb[1], bb[3], bb[5], bb[7]].filter((v) => typeof v === "number");
+      if (ys.length) return Math.min(...ys as number[]);
+    }
+    return fallback;
+  };
+
+  // Case A: PDF/image
+  if (readResult.pages?.some((p: any) => (p.lines ?? []).length > 0)) {
+    if (DEBUG) console.log(">>> getTextAnchors: PDF/image branch");
+    for (const page of readResult.pages) {
+      let buffer = "";
+      let bufferY = 0;
+      let currentHeading: string | undefined;
+
+      for (const [lineIdx, line] of (page.lines ?? []).entries()) {
+        const content = norm(String(line.content ?? ""));
+        if (!content) continue;
+
+        const heading = isHeading(content);
+        if (heading) {
+          if (buffer) {
+            anchors.push({ text: buffer, page: page.pageNumber, y: bufferY, roleHint: currentHeading });
+            if (DEBUG) console.log(`PDF EMIT body: page=${page.pageNumber} y=${bufferY} roleHint="${currentHeading ?? ""}" text="${buffer}"`);
+            buffer = "";
+          }
+          currentHeading = content;
+          const y = getY(line.boundingBox, lineIdx);
+          anchors.push({ text: content, page: page.pageNumber, y, roleHint: currentHeading });
+          if (DEBUG) console.log(`PDF HEADING: page=${page.pageNumber} y=${y} heading="${currentHeading}"`);
+          continue;
+        }
+
+        if (!buffer) {
+          buffer = content;
+          bufferY = getY(line.boundingBox, lineIdx);
+        } else {
+          buffer += " " + content;
+        }
+
+        if (/[.?!]$/.test(content)) {
+          anchors.push({ text: buffer, page: page.pageNumber, y: bufferY, roleHint: currentHeading });
+          if (DEBUG) console.log(`PDF EMIT sentence: page=${page.pageNumber} y=${bufferY} roleHint="${currentHeading ?? ""}" text="${buffer}"`);
+          buffer = "";
+        }
+      }
+
+      if (buffer) {
+        anchors.push({ text: buffer, page: page.pageNumber, y: bufferY, roleHint: currentHeading });
+        if (DEBUG) console.log(`PDF EMIT tail: page=${page.pageNumber} y=${bufferY} roleHint="${currentHeading ?? ""}" text="${buffer}"`);
+        buffer = "";
+      }
+    }
+    if (DEBUG) console.log(`>>> getTextAnchors OUTPUT (PDF): count=${anchors.length}`);
+    return anchors;
+  }
+
+  // Case B: DOCX
+  if (readResult.paragraphs?.length) {
+    if (DEBUG) console.log(">>> getTextAnchors: DOCX branch");
+    let currentHeading: string | undefined;
+
+    readResult.paragraphs.forEach((p: any, idx: number) => {
+      const pageNum = p.boundingRegions?.[0]?.pageNumber ?? 1;
+      const rawPara = String(p.content ?? "");
+      const text = norm(rawPara);
+      if (!text) return;
+
+      const wasHeading = isHeading(text);
+      if (DEBUG) console.log(`DOCX PARA[${idx}] page=${pageNum} wasHeading=${wasHeading} text="${text}"`);
+
+      if (wasHeading) {
+        currentHeading = text;
+        const y = idx * 100;
+        anchors.push({ text, page: pageNum, y, roleHint: currentHeading });
+        if (DEBUG) console.log(`  -> SET currentHeading="${currentHeading}" EMIT heading: page=${pageNum} y=${y}`);
+        return;
+      }
+
+      const parts = text
+        .split(/(?<=[.?!])\s+(?=[A-Z])/)
+        .map(norm)
+        .filter(Boolean);
+
+      for (let j = 0; j < parts.length; j++) {
+        const s = parts[j];
+        const y = idx * 100 + j;
+        anchors.push({ text: s, page: pageNum, y, roleHint: currentHeading });
+        if (DEBUG) console.log(`  EMIT sentence: page=${pageNum} y=${y} roleHint="${currentHeading ?? ""}" text="${s}"`);
+      }
+    });
+
+    if (DEBUG) console.log(`>>> getTextAnchors OUTPUT (DOCX): count=${anchors.length}`);
+    return anchors;
+  }
+
+  // Case C: fallback
+  if (readResult.content) {
+    if (DEBUG) console.log(">>> getTextAnchors: Fallback branch");
+    let currentHeading: string | undefined;
+    String(readResult.content)
+      .split(/\r?\n/)
+      .map(norm)
+      .filter(Boolean)
+      .forEach((line, idx) => {
+        const wasHeading = isHeading(line);
+        if (wasHeading) {
+          currentHeading = line;
+          anchors.push({ text: line, page: 1, y: idx, roleHint: currentHeading });
+          if (DEBUG) console.log(`FALLBACK HEADING: page=1 y=${idx} heading="${currentHeading}"`);
+        } else {
+          anchors.push({ text: line, page: 1, y: idx, roleHint: currentHeading });
+          if (DEBUG) console.log(`FALLBACK EMIT: page=1 y=${idx} roleHint="${currentHeading ?? ""}" text="${line}"`);
+        }
+      });
+    if (DEBUG) console.log(`>>> getTextAnchors OUTPUT (Fallback): count=${anchors.length}`);
+  }
+
+  return anchors;
 }

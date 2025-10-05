@@ -180,7 +180,12 @@ export default function FieldMappingReview({ templateName, candidates, onConfirm
                   disabled={getStatus(m) === 'Unmapped'}
                   title={getStatus(m)}
                 />
-                <span style={{ marginLeft: '0.5rem' }}>{getStatus(m)}</span>
+                <span
+                  className={styles[`status${getStatus(m)}`]}
+                  style={{ marginLeft: '0.5rem' }}
+                >
+                  {getStatus(m)}
+                </span>
               </td>
               <td className={styles.actionsCol}>
                 <button
