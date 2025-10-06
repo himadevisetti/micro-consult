@@ -39,12 +39,31 @@ export default function UploadTemplatePage({ customerId, onUploadComplete }: Pro
         body: formData,
       });
 
-      if (!res.ok) throw new Error(`Upload failed: ${res.statusText}`);
+      if (!res.ok) {
+        let message = `Upload failed: ${res.statusText}`;
+        try {
+          const errorData = await res.json();
+          if (errorData?.error) {
+            message = `Upload failed: ${errorData.error}`;
+          }
+        } catch {
+          if (res.status === 400) {
+            message =
+              'Upload failed: File type you uploaded is currently unsupported. Only DOCX and PDF are supported.';
+          } else if (res.status >= 500) {
+            message = 'Upload failed: Server error. Please try again later.';
+          } else {
+            message = 'Upload failed: Network or unexpected error.';
+          }
+        }
+        throw new Error(message);
+      }
 
       const data = await res.json();
       onUploadComplete(data.templateId, data.name, data.candidates || []);
     } catch (err: any) {
-      setError(err.message || 'Upload failed');
+      // Network errors (e.g. server unreachable) will land here too
+      setError(err.message || 'Upload failed: Network error, please try again.');
     } finally {
       setUploading(false);
     }

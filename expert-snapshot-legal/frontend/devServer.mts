@@ -122,7 +122,7 @@ async function startDevServer() {
 
       const ext = path.extname(file.originalname).toLowerCase();
       if (!allowedExtensions.has(ext)) {
-        return res.status(400).json({ error: "Unsupported file type" });
+        return res.status(400).json({ error: "Unsupported file type - only DOCX and PDF are supported." });
       }
 
       const customerTemplatePath = path.join(storageBasePath, customerId, "templates");

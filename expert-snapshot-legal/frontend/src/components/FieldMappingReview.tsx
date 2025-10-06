@@ -89,7 +89,7 @@ export default function FieldMappingReview({ templateName, candidates, onConfirm
       <table className={`${styles.mappingTable} ${styles.formattedTable}`}>
         <thead>
           <tr>
-            <th className={styles.rawTextCol}>Raw Text</th>
+            <th className={styles.rawTextCol}>Extracted Text</th>
             <th className={styles.mappedFieldCol}>Mapped Field</th>
             {showConfidence && <th>Confidence</th>}
             <th className={styles.statusCol}>Reviewed</th>
@@ -109,7 +109,7 @@ export default function FieldMappingReview({ templateName, candidates, onConfirm
                     className={styles.textInput}
                   />
                 ) : m.schemaField === 'partyA' || m.schemaField === 'partyB' ? (
-                  `${m.schemaField === 'partyA' ? 'Party A' : 'Party B'} (${m.roleHint ?? ''}): ${m.rawValue}`
+                  <span className={styles.rawValue}>{m.rawValue}</span>
                 ) : (
                   <>
                     <span>
