@@ -12,6 +12,12 @@ export const CONTRACT_KEYWORDS = {
       "standard retainer agreement",
       "parties",
       "scope of representation",
+      "scope of work",
+      "position and duties",
+      "responsibilities",
+      "description of services",
+      "services",
+      "engagement",
       "client responsibilities",
       "communication expectations",
       "fee structure",
@@ -23,6 +29,10 @@ export const CONTRACT_KEYWORDS = {
       "jurisdiction",
       "entire agreement",
       "signatures",
+      // IPR&L‑specific
+      "license terms",
+      "ip validity",
+      "invention assignment",
     ],
   },
 
@@ -74,6 +84,15 @@ export const CONTRACT_KEYWORDS = {
       "consultant",
       "company",
       "firm",
+      "inventor",
+      "filing party", // signature block role
+    ],
+    inventorCues: [
+      "inventor",
+      "created by",
+      "invented by",
+      "originated by",
+      "conceived by",
     ],
   },
 
@@ -87,7 +106,17 @@ export const CONTRACT_KEYWORDS = {
   },
 
   scope: {
-    headings: ["scope of representation", "services", "engagement"],
+    headings: [
+      "scope of representation",
+      "scope of work",
+      "position and duties",
+      "responsibilities",
+      "description of services",
+      "job description",
+      "services",
+      "engagement",
+      "intellectual property description",
+    ],
     cues: [
       "represent",
       "representation",
@@ -98,10 +127,88 @@ export const CONTRACT_KEYWORDS = {
       "responsibilities",
       "duties",
       "work to be performed",
+      "scope of work",
+      "description of services",
+      "intellectual property description",
+      "ip description",
+      "position",
+      "role",
+      "functions",
+      "obligations",
+      "tasks",
+      "assignments",
+      "job description",
+      "services to be rendered",
+      "consulting services",
+      "work responsibilities",
     ],
+  },
+
+  ip: {
+    typeCues: ["patent", "trademark", "copyright", "trade secret", "ip type"],
+    licenseScopeCues: [
+      "worldwide",
+      "exclusive",
+      "non-exclusive",
+      "perpetual",
+      "territory",
+    ],
+    inventionAssignmentCues: [
+      "assigns all rights",
+      "invention assignment",
+      "hereby assigns",
+    ],
+    // descriptionCues removed — unified under scope.cues
   },
 
   textAnchors: {
     ignoreHeadings: ["table of contents", "exhibit", "schedule"],
   },
+};
+
+// Recognized placeholder schema fields
+export const PLACEHOLDER_KEYWORDS: Set<string> = new Set([
+  "partyA",
+  "partyB",
+  "client",
+  "provider",
+  "inventor",
+  "effectiveDate",
+  "executionDate",
+  "expirationDate",
+  "contractDuration",
+  "feeAmount",
+  "retainerAmount",
+  "filingParty",
+  "ipType",
+  "licenseScope",
+  "inventionAssignment",
+  "scope",
+  "feeStructure",
+  "governingLaw",
+]);
+
+// Regex to detect {{placeholders}}
+export const PLACEHOLDER_REGEX = /\{\{([a-zA-Z0-9_]+)\}\}/g;
+
+// User‑friendly labels for schema fields
+export const FIELD_LABELS: Record<string, string> = {
+  scope: "Scope",
+  partyA: "Party A",
+  partyB: "Party B",
+  client: "Client",
+  provider: "Provider",
+  inventor: "Inventor",
+  effectiveDate: "Effective Date",
+  executionDate: "Execution Date",
+  expirationDate: "Expiration Date",
+  contractDuration: "Contract Duration",
+  feeAmount: "Fee Amount",
+  retainerAmount: "Retainer Amount",
+  filingParty: "Filing Party",
+  ipType: "IP Type",
+  licenseScope: "License Scope",
+  inventionAssignment: "Invention Assignment",
+  governingLaw: "Governing Law",
+  feeStructure: "Fee Structure",
 };

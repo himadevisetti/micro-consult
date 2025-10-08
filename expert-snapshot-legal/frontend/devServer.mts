@@ -14,8 +14,10 @@ import {
   sortCandidatesByDocumentOrder,
   logAllReadFields,
   deriveCandidatesFromRead,
+  placeholderizeDocument,
 } from "./src/utils/candidateUtils.js";
 import { NormalizedMapping } from './src/types/confirmMapping.js';
+import { logDebug } from "./src/utils/logger.js";
 
 // load .env at startup
 dotenv.config();
@@ -71,7 +73,7 @@ async function startDevServer() {
   });
 
   // ✅ Return list of templates for a customer
-  app.get('/api/templates/:customerId', (req, res) => {
+  app.get("/api/templates/:customerId", (req, res) => {
     const { customerId } = req.params;
 
     const customerTemplatePath = getCustomerTemplatePath(customerId);
@@ -79,6 +81,10 @@ async function startDevServer() {
 
     fs.readdir(customerTemplatePath, (err, files) => {
       if (err || !files || files.length === 0) {
+        logDebug("getTemplates.noFiles", {
+          customerId,
+          error: err ? err.message : null,
+        });
         return res.json({ templates: [] });
       }
 
@@ -89,15 +95,27 @@ async function startDevServer() {
         })
         .map((f) => {
           const id = path.parse(f).name;
-          const manifestPath = path.join(customerManifestPath, `${id}.manifest.json`);
+          const manifestPath = path.join(
+            customerManifestPath,
+            `${id}.manifest.json`
+          );
           const hasManifest = fs.existsSync(manifestPath);
 
           return {
             id,
             name: f,
-            hasManifest, // ✅ now checks the correct folder
+            hasManifest,
           };
         });
+
+      logDebug("getTemplates.success", {
+        customerId,
+        templateCount: templates.length,
+        templates: templates.map((t) => ({
+          id: t.id,
+          hasManifest: t.hasManifest,
+        })),
+      });
 
       return res.json({ templates });
     });
@@ -118,132 +136,224 @@ async function startDevServer() {
       const { customerId } = req.params;
       const file = req.file;
 
-      if (!file) return res.status(400).json({ error: "No file uploaded" });
+      if (!file) {
+        return res.status(400).json({ error: "No file uploaded" });
+      }
 
       const ext = path.extname(file.originalname).toLowerCase();
       if (!allowedExtensions.has(ext)) {
-        return res.status(400).json({ error: "Unsupported file type - only DOCX and PDF are supported." });
+        return res.status(400).json({
+          error: "Unsupported file type - only DOCX and PDF are supported.",
+        });
       }
 
-      const customerTemplatePath = path.join(storageBasePath, customerId, "templates");
-      fs.mkdirSync(customerTemplatePath, { recursive: true });
-      const destPath = path.join(customerTemplatePath, file.originalname);
+      // Save original into _seed/
+      const customerSeedPath = path.join(storageBasePath, customerId, "_seed");
+      fs.mkdirSync(customerSeedPath, { recursive: true });
+      const seedPath = path.join(customerSeedPath, file.originalname);
+      fs.copyFileSync(file.path, seedPath);
 
       try {
-        fs.copyFileSync(file.path, destPath);
         const templateId = path.parse(file.originalname).name;
 
         // Read file into Buffer
-        const buffer = fs.readFileSync(destPath);
+        const buffer = fs.readFileSync(seedPath);
 
-        // 🔹 Run prebuilt-read only
+        // Run prebuilt-read
         const readPoller = await formRecClient.beginAnalyzeDocument(
           "prebuilt-read",
           buffer
         );
         const readResult = await readPoller.pollUntilDone();
 
-        const debug = process.env.DEBUG_CONTRACTS === "true";
-        if (debug) {
-          console.log("DEBUG: Full prebuilt-read content:", readResult.content?.slice(0, 500), "...");
-          logAllReadFields(readResult);
-        }
+        logDebug("upload.prebuiltRead", {
+          preview: readResult.content?.slice(0, 500),
+        });
+        logAllReadFields(readResult);
 
-        // 🔹 Extract candidates from prebuilt-read
+        // Extract candidates
         const readCandidates = deriveCandidatesFromRead(readResult);
 
-        // 🔹 Merge + sort (still useful for deduplication and ordering)
+        // Merge + sort
         const mergedCandidates = mergeCandidates(readCandidates);
         const orderedCandidates = sortCandidatesByDocumentOrder(mergedCandidates);
+
+        // Placeholderize + enrich
+        const { placeholderBuffer, enrichedCandidates } = placeholderizeDocument(
+          buffer,
+          orderedCandidates
+        );
+
+        // Save placeholderized copy
+        const customerTemplatePath = path.join(storageBasePath, customerId, "templates");
+        fs.mkdirSync(customerTemplatePath, { recursive: true });
+        const templatePath = path.join(customerTemplatePath, file.originalname);
+        fs.writeFileSync(templatePath, placeholderBuffer);
+
+        logDebug("upload.filesSaved", {
+          seedPath,
+          templatePath,
+        });
+
+        logDebug("upload.placeholdersGenerated", {
+          placeholders: enrichedCandidates
+            .filter(c => c.placeholder)
+            .map(c => ({ field: c.schemaField, placeholder: c.placeholder })),
+        });
+
+        // Cleanup tmp file
+        fs.unlink(file.path, (err) => {
+          if (err) {
+            logDebug("upload.cleanupFailed", { tmpFile: file.path, error: err.message });
+          } else {
+            logDebug("upload.cleanupSuccess", { tmpFile: file.path });
+          }
+        });
 
         return res.json({
           templateId,
           name: file.originalname,
-          candidates: orderedCandidates,
+          candidates: enrichedCandidates,
         });
       } catch (err: unknown) {
         if (err instanceof Error) {
-          console.error("Azure analysis failed:", err.message, err.stack);
-          return res
-            .status(500)
-            .json({ error: "Failed to analyze template", details: err.message });
+          logDebug("upload.error", { message: err.message, stack: err.stack });
+          return res.status(500).json({
+            error: "Failed to analyze template",
+            details: err.message,
+          });
         } else {
-          console.error("Azure analysis failed with non-Error:", err);
-          return res
-            .status(500)
-            .json({ error: "Failed to analyze template", details: String(err) });
+          logDebug("upload.error", { error: String(err) });
+          return res.status(500).json({
+            error: "Failed to analyze template",
+            details: String(err),
+          });
+        }
+      } finally {
+        // Always attempt to clean up the tmp file
+        if (file?.path) {
+          fs.unlink(file.path, (unlinkErr) => {
+            if (unlinkErr) {
+              logDebug("upload.cleanupFailed", { tmpFile: file.path, error: unlinkErr.message });
+            } else {
+              logDebug("upload.cleanupSuccess", { tmpFile: file.path });
+            }
+          });
         }
       }
     }
   );
 
   // Confirm mapping for a template
-  app.post('/api/templates/:customerId/:templateId/confirm-mapping', async (req, res) => {
-    const { customerId, templateId } = req.params;
-    const mapping = req.body as NormalizedMapping[];
+  app.post(
+    "/api/templates/:customerId/:templateId/confirm-mapping",
+    async (req, res) => {
+      const { customerId, templateId } = req.params;
+      const mapping = req.body as NormalizedMapping[];
 
-    if (!Array.isArray(mapping) || mapping.length === 0) {
-      return res.status(400).json({ success: false, error: 'No mapping provided' });
+      if (!Array.isArray(mapping) || mapping.length === 0) {
+        return res
+          .status(400)
+          .json({ success: false, error: "No mapping provided" });
+      }
+
+      // 🔹 Validate required fields: raw, schemaField, placeholder
+      const valid = mapping.every(
+        (m) =>
+          typeof m.raw === "string" &&
+          m.raw.trim() !== "" &&
+          typeof m.schemaField === "string" &&
+          m.schemaField.trim() !== "" &&
+          typeof m.placeholder === "string" &&
+          m.placeholder.trim() !== ""
+      );
+
+      if (!valid) {
+        return res
+          .status(400)
+          .json({ success: false, error: "Invalid mapping format" });
+      }
+
+      const manifest = {
+        templateId,
+        customerId,
+        createdAt: new Date().toISOString(),
+        variables: mapping.map((m) => ({
+          raw: m.raw,
+          normalized: m.normalized,
+          schemaField: m.schemaField,
+          placeholder: m.placeholder,
+        })),
+      };
+
+      try {
+        const customerManifestPath = getCustomerManifestPath(customerId);
+        await fs.promises.mkdir(customerManifestPath, { recursive: true });
+
+        const manifestPath = path.join(
+          customerManifestPath,
+          `${templateId}.manifest.json`
+        );
+        await fs.promises.writeFile(
+          manifestPath,
+          JSON.stringify(manifest, null, 2)
+        );
+
+        logDebug("confirmMapping.manifestSaved", {
+          manifestPath,
+          templateId,
+          customerId,
+        });
+
+        logDebug("confirmMapping.placeholders", {
+          placeholders: manifest.variables.map((v) => ({
+            field: v.schemaField,
+            placeholder: v.placeholder,
+          })),
+        });
+
+        return res.json({ success: true });
+      } catch (err) {
+        logDebug("confirmMapping.error", {
+          error: err instanceof Error ? err.message : String(err),
+          stack: err instanceof Error ? err.stack : undefined,
+        });
+        return res
+          .status(500)
+          .json({ success: false, error: "Failed to save manifest" });
+      }
     }
-
-    const valid = mapping.every(
-      (m) =>
-        typeof m.raw === 'string' &&
-        m.raw.trim() !== '' &&
-        typeof m.schemaField === 'string' &&
-        m.schemaField.trim() !== ''
-    );
-
-    if (!valid) {
-      return res.status(400).json({ success: false, error: 'Invalid mapping format' });
-    }
-
-    const manifest = {
-      templateId,
-      customerId,
-      createdAt: new Date().toISOString(),
-      variables: mapping,
-    };
-
-    try {
-      const customerManifestPath = getCustomerManifestPath(customerId);
-      await fs.promises.mkdir(customerManifestPath, { recursive: true });
-
-      const manifestPath = path.join(customerManifestPath, `${templateId}.manifest.json`);
-      await fs.promises.writeFile(manifestPath, JSON.stringify(manifest, null, 2));
-
-      return res.json({ success: true });
-    } catch (err) {
-      console.error(err);
-      return res.status(500).json({ success: false, error: 'Failed to save manifest' });
-    }
-  });
+  );
 
   if (isDev) {
     const vite = await createViteServer({
       server: { middlewareMode: true },
-      root: path.resolve(root, 'expert-snapshot-legal/frontend'),
+      root: path.resolve(root, "expert-snapshot-legal/frontend"),
     });
 
     app.use(vite.middlewares);
   } else {
-    console.log('📦 Serving static from:', frontendBuildPath);
-    console.log('📄 Index exists:', fs.existsSync(indexPath));
+    logDebug("server.staticConfig", {
+      frontendBuildPath,
+      indexExists: fs.existsSync(indexPath),
+    });
 
     // Serve static assets
     app.use(express.static(frontendBuildPath));
 
     // ✅ SPA fallback for React Router
-    app.get('*', (req, res) => {
-      console.log('🌐 Frontend route hit:', req.url);
+    app.get("*", (req, res) => {
+      logDebug("server.frontendRoute", { url: req.url });
       res.sendFile(indexPath);
     });
   }
 
-  app.listen(3001, '127.0.0.1', () => {
-    console.log(`✅ Express server running at http://localhost:3001`);
-    console.log(`🌍 Mode: ${isDev ? 'development' : 'production'}`);
-    console.log(`🔑 Using Azure endpoint: ${process.env.AZURE_FORM_RECOGNIZER_ENDPOINT}`);
+  app.listen(3001, "127.0.0.1", () => {
+    logDebug("server.started", {
+      url: "http://localhost:3001",
+      mode: isDev ? "development" : "production",
+      azureEndpoint: process.env.AZURE_FORM_RECOGNIZER_ENDPOINT,
+    });
   });
 }
 

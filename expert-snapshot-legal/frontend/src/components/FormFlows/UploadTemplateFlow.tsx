@@ -5,6 +5,7 @@ import UploadTemplatePage from './UploadTemplatePage';
 import FieldMappingReview from '../FieldMappingReview';
 import { TemplateVariable } from '../../types/templates';
 import { NormalizedMapping } from '../../types/confirmMapping';
+import { logDebug, logError } from "../../utils/logger.js";
 import styles from '../../styles/StandardRetainerForm.module.css';
 
 interface Props {
@@ -32,28 +33,56 @@ export default function UploadTemplateFlow({ customerId }: Props) {
 
   const handleConfirmMapping = async (finalMapping: NormalizedMapping[]) => {
     if (!templateId) {
-      setError('No templateId available — upload step must complete first.');
+      setError("No templateId available — upload step must complete first.");
       return;
     }
 
+    const url = `/api/templates/${customerId}/${templateId}/confirm-mapping`;
+
+    // Log API request context (endpoint + summary, not full payload again)
+    logDebug("confirmMapping.apiRequest", {
+      url,
+      fieldCount: finalMapping.length,
+      fields: finalMapping.map((m) => m.schemaField),
+    });
+
     try {
-      const res = await fetch(
-        `/api/templates/${customerId}/${templateId}/confirm-mapping`,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(finalMapping),
-        }
-      );
+      const res = await fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(finalMapping),
+      });
 
-      if (!res.ok) throw new Error(`Failed to save mapping: ${res.statusText}`);
+      if (!res.ok) {
+        // Log error context before throwing
+        logError("confirmMapping.apiError", {
+          url,
+          status: res.status,
+          statusText: res.statusText,
+        });
+        throw new Error(`Failed to save mapping: ${res.statusText}`);
+      }
 
-      // ✅ Navigate back to Custom Template landing screen
-      navigate('/form/custom-template', {
+      // ✅ Success log
+      logDebug("confirmMapping.apiSuccess", {
+        url,
+        fieldCount: finalMapping.length,
+        templateId,
+        templateName,
+      });
+
+      // Navigate back to Custom Template landing screen
+      navigate("/form/custom-template", {
         state: { success: true, templateId, templateName },
       });
     } catch (err: any) {
-      setError(err.message || 'Failed to save mapping');
+      // Log unexpected errors (network, JSON, etc.)
+      logError("confirmMapping.apiError", {
+        url,
+        message: err?.message,
+        stack: err?.stack,
+      });
+      setError(err.message || "Failed to save mapping");
     }
   };
 

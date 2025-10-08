@@ -1,39 +1,22 @@
 // candidateUtils.ts
 
-import { CONTRACT_KEYWORDS } from "../constants/contractKeywords.js";
+import {
+  CONTRACT_KEYWORDS,
+  PLACEHOLDER_KEYWORDS,
+  PLACEHOLDER_REGEX
+} from "../constants/contractKeywords.js";
 
-export interface Candidate {
-  rawValue: string;
-  schemaField: string | null;
-  candidates?: string[];
-  normalized?: string;   // canonical normalized form (e.g. ISO date)
-  displayValue?: string; // optional preformatted string for UI
-  roleHint?: string;     // e.g. "Client" or "Provider"
-  pageNumber: number;
-  yPosition: number;
-}
-
-const DEBUG = process.env.NODE_ENV === "development";
-
-/**
- * Normalize values for deduplication
- */
-export function normalizeValue(raw: string, schemaField: string | null): string {
-  let val = raw.trim();
-
-  if (!isDateLike(schemaField)) {
-    val = val.replace(/[,\.]\s*$/, "");
-  }
-
-  if (schemaField?.toLowerCase().includes("date")) {
-    const d = new Date(val);
-    if (!isNaN(d.getTime())) {
-      return d.toISOString().slice(0, 10);
-    }
-  }
-
-  return val;
-}
+import { Candidate } from "../types/Candidate";
+import { TextAnchor } from "../types/TextAnchor";
+import { normalizeBySchema } from "../utils/normalizeValue.js";
+import { extractActors } from "./candidateExtractors/actors.js";
+import { extractFeeStructure } from "./candidateExtractors/fees.js";
+import { extractAmounts } from "./candidateExtractors/amounts.js";
+import { extractDatesAndFilingParty } from "./candidateExtractors/dates.js";
+import { extractGoverningLaw } from "./candidateExtractors/governingLaw.js";
+import { extractScope } from "./candidateExtractors/scope.js";
+import { extractIPRandL } from "./candidateExtractors/iprAndL.js";
+import { logDebug, logWarn } from "./logger.js";
 
 function normalizeHeading(h?: string): string {
   return (h ?? "").trim().toLowerCase();
@@ -49,18 +32,16 @@ function isPreferredHeadingForGoverningLaw(roleHint?: string): boolean {
  */
 export function mergeCandidates(candidates: Candidate[]): Candidate[] {
   // INPUT LOG
-  if (DEBUG) {
-    console.log(">>> mergeCandidates INPUT:");
-    candidates.forEach((c, i) => {
-      const schema = c.schemaField ?? "null";
-      const normKey = c.schemaField
-        ? `${c.schemaField}::${normalizeValue(c.rawValue, c.schemaField)}`
-        : "(passthrough)";
-      console.log(
-        `[${i}] field=${schema} page=${c.pageNumber} y=${c.yPosition} roleHint="${c.roleHint ?? ""}" normalized="${c.normalized ?? ""}" raw="${c.rawValue}" key=${normKey}`
-      );
-    });
-  }
+  logDebug(">>> mergeCandidates INPUT:");
+  candidates.forEach((c, i) => {
+    const schema = c.schemaField ?? "null";
+    const normKey = c.schemaField
+      ? `${c.schemaField}::${normalizeBySchema(c.rawValue, c.schemaField)}`
+      : "(passthrough)";
+    logDebug(
+      `[${i}] field=${schema} page=${c.pageNumber} y=${c.yPosition} roleHint="${c.roleHint ?? ""}" normalized="${c.normalized ?? ""}" raw="${c.rawValue}" key=${normKey}`
+    );
+  });
 
   const indexByKey = new Map<string, number>();
   const out: Candidate[] = [];
@@ -73,23 +54,24 @@ export function mergeCandidates(candidates: Candidate[]): Candidate[] {
       continue;
     }
 
-    const norm = normalizeValue(c.rawValue, c.schemaField);
+    const norm = normalizeBySchema(c.rawValue, c.schemaField);
     const key = `${c.schemaField}::${norm}`;
     const existingIdx = indexByKey.get(key);
 
     if (existingIdx == null) {
       const next: Candidate = { ...c };
-      if (!next.normalized && c.schemaField?.toLowerCase().includes("date")) {
+      // ✅ Only lowercase for the check, never mutate schemaField
+      if (!next.normalized && c.schemaField && c.schemaField.toLowerCase().includes("date")) {
         const d = new Date(c.rawValue);
-        if (!isNaN(d.getTime())) next.normalized = d.toISOString().slice(0, 10);
+        if (!isNaN(d.getTime())) {
+          next.normalized = d.toISOString().slice(0, 10);
+        }
       }
       indexByKey.set(key, out.length);
       out.push(next);
-      if (DEBUG) {
-        console.log(
-          `ADD key=${key} @outIdx=${out.length - 1} field=${c.schemaField} page=${c.pageNumber} y=${c.yPosition} roleHint="${c.roleHint ?? ""}" raw="${c.rawValue}"`
-        );
-      }
+      logDebug(
+        `ADD key=${key} @outIdx=${out.length - 1} field=${c.schemaField} page=${c.pageNumber} y=${c.yPosition} roleHint="${c.roleHint ?? ""}" raw="${c.rawValue}"`
+      );
       continue;
     }
 
@@ -101,44 +83,34 @@ export function mergeCandidates(candidates: Candidate[]): Candidate[] {
       const existingPreferred = isPreferredHeadingForGoverningLaw(existing.roleHint);
       const incomingPreferred = isPreferredHeadingForGoverningLaw(c.roleHint);
 
-      if (DEBUG) {
-        console.log(
-          `DUP key=${key} existingIdx=${existingIdx} ` +
-          `existing(roleHint="${existing.roleHint ?? ""}", preferred=${existingPreferred}, page=${existing.pageNumber}, y=${existing.yPosition}) ` +
-          `incoming(roleHint="${c.roleHint ?? ""}", preferred=${incomingPreferred}, page=${c.pageNumber}, y=${c.yPosition})`
-        );
-      }
+      logDebug(
+        `DUP key=${key} existingIdx=${existingIdx} ` +
+        `existing(roleHint="${existing.roleHint ?? ""}", preferred=${existingPreferred}, page=${existing.pageNumber}, y=${existing.yPosition}) ` +
+        `incoming(roleHint="${c.roleHint ?? ""}", preferred=${incomingPreferred}, page=${c.pageNumber}, y=${c.yPosition})`
+      );
 
       if (!existingPreferred && incomingPreferred) {
         shouldReplace = true;
-        if (DEBUG) {
-          console.log(
-            `REPLACE_DECISION: governingLaw incoming is preferred-heading, existing is not. key=${key}`
-          );
-        }
+        logDebug(
+          `REPLACE_DECISION: governingLaw incoming is preferred-heading, existing is not. key=${key}`
+        );
       } else {
-        if (DEBUG) {
-          console.log(
-            `KEEP_DECISION: governingLaw prefers first occurrence or both preferred; merging metadata only. key=${key}`
-          );
-        }
-      }
-    } else {
-      if (DEBUG) {
-        console.log(
-          `DUP key=${key} field=${c.schemaField} -> KEEP first occurrence; merging metadata only. ` +
-          `existing(roleHint="${existing.roleHint ?? ""}") incoming(roleHint="${c.roleHint ?? ""}")`
+        logDebug(
+          `KEEP_DECISION: governingLaw prefers first occurrence or both preferred; merging metadata only. key=${key}`
         );
       }
+    } else {
+      logDebug(
+        `DUP key=${key} field=${c.schemaField} -> KEEP first occurrence; merging metadata only. ` +
+        `existing(roleHint="${existing.roleHint ?? ""}") incoming(roleHint="${c.roleHint ?? ""}")`
+      );
     }
 
     if (shouldReplace) {
       out[existingIdx] = { ...existing, ...c };
-      if (DEBUG) {
-        console.log(
-          `REPLACED key=${key} @outIdx=${existingIdx} with incoming (page=${c.pageNumber}, y=${c.yPosition}, roleHint="${c.roleHint ?? ""}")`
-        );
-      }
+      logDebug(
+        `REPLACED key=${key} @outIdx=${existingIdx} with incoming (page=${c.pageNumber}, y=${c.yPosition}, roleHint="${c.roleHint ?? ""}")`
+      );
     } else {
       const mergedLabels = Array.from(
         new Set([...(existing.candidates ?? []), ...(c.candidates ?? [])])
@@ -148,39 +120,26 @@ export function mergeCandidates(candidates: Candidate[]): Candidate[] {
       if (!existing.displayValue && c.displayValue) existing.displayValue = c.displayValue;
       if (!existing.roleHint && c.roleHint) existing.roleHint = c.roleHint;
 
-      if (DEBUG) {
-        console.log(
-          `MERGED_METADATA key=${key} @outIdx=${existingIdx} ` +
-          `normalized="${existing.normalized ?? ""}" displayValue="${existing.displayValue ?? ""}" roleHint="${existing.roleHint ?? ""}"`
-        );
-      }
+      logDebug(
+        `MERGED_METADATA key=${key} @outIdx=${existingIdx} ` +
+        `normalized="${existing.normalized ?? ""}" displayValue="${existing.displayValue ?? ""}" roleHint="${existing.roleHint ?? ""}"`
+      );
     }
   }
 
   // OUTPUT LOG
-  if (DEBUG) {
-    console.log(">>> mergeCandidates OUTPUT:");
-    out.forEach((c, i) => {
-      const schema = c.schemaField ?? "null";
-      const normKey = c.schemaField
-        ? `${c.schemaField}::${normalizeValue(c.rawValue, c.schemaField)}`
-        : "(passthrough)";
-      console.log(
-        `[${i}] field=${schema} page=${c.pageNumber} y=${c.yPosition} roleHint="${c.roleHint ?? ""}" normalized="${c.normalized ?? ""}" raw="${c.rawValue}" key=${normKey}`
-      );
-    });
-  }
+  logDebug(">>> mergeCandidates OUTPUT:");
+  out.forEach((c, i) => {
+    const schema = c.schemaField ?? "null";
+    const normKey = c.schemaField
+      ? `${c.schemaField}::${normalizeBySchema(c.rawValue, c.schemaField)}`
+      : "(passthrough)";
+    logDebug(
+      `[${i}] field=${schema} page=${c.pageNumber} y=${c.yPosition} roleHint="${c.roleHint ?? ""}" normalized="${c.normalized ?? ""}" raw="${c.rawValue}" key=${normKey}`
+    );
+  });
 
   return out;
-}
-
-export function isDateLike(field: string | null): boolean {
-  return !!field && field.toLowerCase().includes("date");
-}
-
-export function parseIsoDate(raw: string): string | undefined {
-  const d = new Date(raw);
-  return isNaN(d.getTime()) ? undefined : d.toISOString().slice(0, 10);
 }
 
 // Sort by document order using page + yPosition (or docIndex if present)
@@ -199,16 +158,16 @@ export function sortCandidatesByDocumentOrder(cands: Candidate[]): Candidate[] {
 // Debug helper: log all raw lines from prebuilt-read
 export function logAllReadFields(readResult: any) {
   if (!readResult) {
-    console.log("No read result");
+    logWarn("logAllReadFields: No read result");
     return;
   }
 
   // PDF / image path: pages[].lines populated
   if (readResult.pages?.some((p: any) => (p.lines ?? []).length > 0)) {
     readResult.pages.forEach((page: any, idx: number) => {
-      console.log(`--- Page ${idx + 1} ---`);
+      logDebug(`logAllReadFields: --- Page ${idx + 1} ---`);
       (page.lines ?? []).forEach((line: any) => {
-        console.log(`Line: "${line.content}"`);
+        logDebug(`Line: "${line.content}"`);
       });
     });
     return;
@@ -216,20 +175,20 @@ export function logAllReadFields(readResult: any) {
 
   // DOCX path: fall back to paragraphs
   if (readResult.paragraphs?.length) {
-    console.log("--- Paragraphs ---");
+    logDebug("logAllReadFields: --- Paragraphs ---");
     readResult.paragraphs.forEach((p: any, idx: number) => {
       const page = p.boundingRegions?.[0]?.pageNumber ?? "?";
-      console.log(`[p${idx}] (page ${page}) "${p.content}"`);
+      logDebug(`[p${idx}] (page ${page}) "${p.content}"`);
     });
     return;
   }
 
   // Fallback: just dump content
   if (readResult.content) {
-    console.log("--- Content ---");
-    console.log(readResult.content);
+    logDebug("logAllReadFields: --- Content ---");
+    logDebug(readResult.content);
   } else {
-    console.log("No lines, paragraphs, or content found");
+    logWarn("logAllReadFields: No lines, paragraphs, or content found");
   }
 }
 
@@ -237,301 +196,36 @@ export function logAllReadFields(readResult: any) {
  * Derive structured candidates from prebuilt-read output.
  */
 export function deriveCandidatesFromRead(readResult: any): Candidate[] {
-  const candidates: Candidate[] = [];
-  if (!readResult) return candidates;
+  if (!readResult) return [];
 
   const anchors: TextAnchor[] = getTextAnchors(readResult);
 
-  // --- Parties ---
-  for (const anchor of anchors) {
-    const partyRegex = /between\s+(.+?)\s+and\s+([^.,]+)(?:[.,]|$)/i;
-    const match = anchor.text.match(partyRegex);
-    if (match) {
-      const clean = (s: string) =>
-        s
-          .replace(/\s*,?\s*effective as of.*$/i, "")
-          .replace(/\s*,?\s*dated.*$/i, "")
-          .trim();
+  // First extract actors
+  const actorCandidates = extractActors(anchors);
 
-      let partyA = clean(match[1]);
-      let partyB = clean(match[2]);
+  // Pull out inventor, partyA, partyB from actorCandidates
+  const inventorName = actorCandidates.find(c => c.schemaField === "inventor")?.rawValue ?? "";
+  const partyA = actorCandidates.find(c => c.schemaField === "partyA")?.rawValue ?? "";
+  const partyB = actorCandidates.find(c => c.schemaField === "partyB")?.rawValue ?? "";
 
-      const labelRegex = /\(the\s+["“]?([A-Za-z]+)["”]?\)/i;
-      const labelA = partyA.match(labelRegex)?.[1];
-      const labelB = partyB.match(labelRegex)?.[1];
+  const candidates: Candidate[] = [
+    ...actorCandidates,
+    ...extractFeeStructure(anchors),
+    ...extractAmounts(anchors),
+    ...extractDatesAndFilingParty(anchors, { inventorName, partyA, partyB }),
+    ...extractGoverningLaw(anchors),
+    ...extractScope(anchors),
+    ...extractIPRandL(anchors),
+  ];
 
-      partyA = partyA.replace(labelRegex, "").trim();
-      partyB = partyB.replace(labelRegex, "").trim();
-
-      if (partyA && partyB) {
-        if (labelA || labelB) {
-          candidates.push({
-            rawValue: partyA,
-            schemaField: "partyA",
-            candidates: ["partyA"],
-            roleHint: labelA ?? anchor.roleHint ?? "PartyA",
-            pageNumber: anchor.page,
-            yPosition: anchor.y,
-          });
-          candidates.push({
-            rawValue: partyB,
-            schemaField: "partyB",
-            candidates: ["partyB"],
-            roleHint: labelB ?? anchor.roleHint ?? "PartyB",
-            pageNumber: anchor.page,
-            yPosition: anchor.y,
-          });
-        } else {
-          candidates.push({
-            rawValue: partyA,
-            schemaField: null,
-            candidates: ["partyA", "partyB"],
-            roleHint: anchor.roleHint ?? "Parties",
-            pageNumber: anchor.page,
-            yPosition: anchor.y,
-          });
-          candidates.push({
-            rawValue: partyB,
-            schemaField: null,
-            candidates: ["partyA", "partyB"],
-            roleHint: anchor.roleHint ?? "Parties",
-            pageNumber: anchor.page,
-            yPosition: anchor.y,
-          });
-        }
-        if (DEBUG) console.log(">>> Parties detected:", { partyA, partyB, labelA, labelB });
-        break;
-      }
-    }
-  }
-
-  // --- Fee Structure ---
-  for (const anchor of anchors) {
-    const lower = anchor.text.toLowerCase();
-    for (const [norm, keywords] of Object.entries(CONTRACT_KEYWORDS.amounts.feeStructure)) {
-      const match = keywords.find(k => lower.includes(k));
-      if (match) {
-        const regex = new RegExp(`\\b${match}\\b`, "i");
-        const rawMatch = anchor.text.match(regex)?.[0] ?? match;
-
-        candidates.push({
-          rawValue: rawMatch,
-          schemaField: "feeStructure",
-          candidates: ["feeStructure"],
-          normalized: normalizeValue(rawMatch, "feeStructure"),
-          pageNumber: anchor.page,
-          yPosition: anchor.y,
-          roleHint: anchor.roleHint,
-        });
-
-        if (DEBUG) console.log(">>> Fee structure detected:", { norm, rawMatch });
-        break;
-      }
-    }
-  }
-
-  // --- Amounts ---
-  const amountRegex = /\$(\d+(?:,\d{3})*(?:\.\d{2})?)/g;
-  const isFeeCue = (t: string) =>
-    CONTRACT_KEYWORDS.amounts.feeContext.some(k => t.includes(k));
-  const isRetainerCue = (t: string) =>
-    CONTRACT_KEYWORDS.amounts.retainerCues.some(k => t.includes(k));
-
-  let seenFee = false;
-  let seenRetainer = false;
-
-  for (let i = 0; i < anchors.length; i++) {
-    const curr = anchors[i].text;
-    const prev = anchors[i - 1]?.text ?? "";
-    const next = anchors[i + 1]?.text ?? "";
-
-    const currLower = curr.toLowerCase();
-    const prevLower = prev.toLowerCase();
-    const nextLower = next.toLowerCase();
-
-    let m: RegExpExecArray | null;
-    while ((m = amountRegex.exec(curr)) !== null) {
-      const raw = `$${m[1]}`;
-
-      const hasFeeCue =
-        isFeeCue(currLower) || isFeeCue(prevLower) || isFeeCue(nextLower);
-      const hasRetainerCue =
-        isRetainerCue(currLower) || isRetainerCue(prevLower) || isRetainerCue(nextLower);
-
-      let schemaField: "feeAmount" | "retainerAmount" | null = null;
-      let options: string[] = [];
-
-      if (hasFeeCue && !hasRetainerCue) {
-        schemaField = "feeAmount";
-        options = ["feeAmount"];
-        seenFee = true;
-      } else if (hasRetainerCue && !hasFeeCue) {
-        schemaField = "retainerAmount";
-        options = ["retainerAmount"];
-        seenRetainer = true;
-      } else {
-        schemaField = null;
-        options = ["feeAmount", "retainerAmount"];
-        if (seenFee && !seenRetainer) {
-          options = ["retainerAmount"];
-        } else if (seenRetainer && !seenFee) {
-          options = ["feeAmount"];
-        }
-      }
-
-      candidates.push({
-        rawValue: raw,
-        schemaField,
-        candidates: options,
-        pageNumber: anchors[i].page,
-        yPosition: anchors[i].y,
-        roleHint: anchors[i].roleHint,
-      });
-
-      if (DEBUG) console.log(">>> Amount detected:", { raw, schemaField, options });
-    }
-  }
-
-  // --- Dates ---
-  const monthDateRegex = CONTRACT_KEYWORDS.dates.monthDateRegex;
-
-  const emitDate = (
-    rawDate: string,
-    schemaField: "effectiveDate" | "expirationDate" | "executionDate",
-    anchor: TextAnchor
-  ) => {
-    const iso = parseIsoDate(rawDate);
-    candidates.push({
-      rawValue: rawDate,
-      schemaField,
-      candidates: [schemaField],
-      normalized: iso,
-      displayValue: iso
-        ? new Date(rawDate).toLocaleDateString("en-US", {
-          month: "short",
-          day: "numeric",
-          year: "numeric",
-        })
-        : rawDate,
-      pageNumber: anchor.page,
-      yPosition: anchor.y,
-      roleHint: anchor.roleHint,
-    });
-    if (DEBUG) console.log(`>>> Date emitted: ${schemaField} = ${rawDate}`);
-  };
-
-  // Inline dates
-  for (const anchor of anchors) {
-    let dm: RegExpExecArray | null;
-    while ((dm = monthDateRegex.exec(anchor.text)) !== null) {
-      const rawDate = dm[0];
-      const lower = anchor.text.toLowerCase();
-
-      if (CONTRACT_KEYWORDS.dates.effective.some(k => lower.includes(k))) {
-        emitDate(rawDate, "effectiveDate", anchor);
-      } else if (CONTRACT_KEYWORDS.dates.expiration.some(k => lower.includes(k))) {
-        emitDate(rawDate, "expirationDate", anchor);
-      } else if (CONTRACT_KEYWORDS.dates.execution.some(k => lower.includes(k))) {
-        emitDate(rawDate, "executionDate", anchor);
-      } else {
-        // No cues → ambiguous
-        candidates.push({
-          rawValue: rawDate,
-          schemaField: null,
-          candidates: ["effectiveDate", "expirationDate"],
-          pageNumber: anchor.page,
-          yPosition: anchor.y,
-          roleHint: anchor.roleHint,
-        });
-        if (DEBUG) console.log(`>>> Ambiguous date emitted: ${rawDate}`);
-      }
-    }
-  }
-
-  // Execution date from signature block (extra guard)
-  const sigStartIdx = anchors.findIndex(a => /signatures/i.test(a.text));
-  const sigBlock = sigStartIdx >= 0 ? anchors.slice(sigStartIdx) : anchors.slice(-20);
-
-  for (let i = 0; i < sigBlock.length; i++) {
-    const curr = sigBlock[i];
-    const next = sigBlock[i + 1];
-    const windowText = `${curr.text} ${next ? next.text : ""}`;
-    const windowLower = windowText.toLowerCase();
-
-    if (CONTRACT_KEYWORDS.dates.execution.some(k => windowLower.includes(k))) {
-      const dateMatch = windowText.match(monthDateRegex);
-      if (dateMatch) {
-        emitDate(dateMatch[0], "executionDate", curr);
-        break;
-      }
-    }
-  }
-
-  // --- Governing Law ---
-  for (const anchor of anchors) {
-    const lower = anchor.text.toLowerCase();
-    if (CONTRACT_KEYWORDS.governingLaw.cues.some(k => lower.includes(k))) {
-      const match = anchor.text.match(/laws of\s+([A-Za-z\s]+)/i);
-      if (match) {
-        candidates.push({
-          rawValue: match[1].trim(),
-          schemaField: "governingLaw",
-          candidates: ["governingLaw"],
-          pageNumber: anchor.page,
-          yPosition: anchor.y,
-          roleHint: anchor.roleHint,
-        });
-        if (DEBUG) console.log(`>>> Governing law detected: ${match[1].trim()}`);
-      }
-    }
-  }
-
-  // --- Scope of Representation ---
-  const scopeHeadingRegex = /^\s*scope of representation\s*$/i;
-  const scopeFragments = anchors.filter(
-    a =>
-      !scopeHeadingRegex.test(a.text.toLowerCase()) &&
-      CONTRACT_KEYWORDS.scope.cues.some(k => a.text.toLowerCase().includes(k))
-  );
-
-  if (scopeFragments.length) {
-    const fullScope = scopeFragments
-      .map(f => f.text)
-      .join(" ")
-      .replace(/\s+/g, " ")
-      .trim();
-    const firstSentence = fullScope.match(/[^.]{1,200}\./)?.[0]?.trim();
-    const preview = firstSentence ?? fullScope;
-    candidates.push({
-      rawValue: fullScope,
-      displayValue: preview.length > 200 ? `${preview.slice(0, 200)}…` : preview,
-      schemaField: "scopeOfRepresentation",
-      candidates: ["scopeOfRepresentation"],
-      pageNumber: scopeFragments[0].page,
-      yPosition: scopeFragments[0].y,
-      roleHint: scopeFragments[0].roleHint,
-    });
-    if (DEBUG) console.log(">>> Scope of representation detected");
-  }
-
-  // --- Final instrumentation ---
-  if (DEBUG) {
-    console.log(">>> deriveCandidatesFromRead OUTPUT:");
-    candidates.forEach((c, i) => {
-      console.log(
-        `[${i}] field=${c.schemaField} page=${c.pageNumber} y=${c.yPosition} roleHint="${c.roleHint ?? ""}" raw="${c.rawValue}"`
-      );
-    });
-  }
+  logDebug(">>> deriveCandidatesFromRead OUTPUT:");
+  candidates.forEach((c, i) => {
+    logDebug(
+      `[${i}] field=${c.schemaField} page=${c.pageNumber} y=${c.yPosition} roleHint="${c.roleHint ?? ""}" raw="${c.rawValue}"`
+    );
+  });
 
   return candidates;
-}
-
-export interface TextAnchor {
-  text: string;
-  page: number;
-  y: number;
-  roleHint?: string;
 }
 
 export function getTextAnchors(readResult: any): TextAnchor[] {
@@ -572,7 +266,7 @@ export function getTextAnchors(readResult: any): TextAnchor[] {
 
   // Case A: PDF/image
   if (readResult.pages?.some((p: any) => (p.lines ?? []).length > 0)) {
-    if (DEBUG) console.log(">>> getTextAnchors: PDF/image branch");
+    logDebug(">>> getTextAnchors: PDF/image branch");
     for (const page of readResult.pages) {
       let buffer = "";
       let bufferY = 0;
@@ -586,13 +280,13 @@ export function getTextAnchors(readResult: any): TextAnchor[] {
         if (heading) {
           if (buffer) {
             anchors.push({ text: buffer, page: page.pageNumber, y: bufferY, roleHint: currentHeading });
-            if (DEBUG) console.log(`PDF EMIT body: page=${page.pageNumber} y=${bufferY} roleHint="${currentHeading ?? ""}" text="${buffer}"`);
+            logDebug(`PDF EMIT body: page=${page.pageNumber} y=${bufferY} roleHint="${currentHeading ?? ""}" text="${buffer}"`);
             buffer = "";
           }
           currentHeading = content;
           const y = getY(line.boundingBox, lineIdx);
           anchors.push({ text: content, page: page.pageNumber, y, roleHint: currentHeading });
-          if (DEBUG) console.log(`PDF HEADING: page=${page.pageNumber} y=${y} heading="${currentHeading}"`);
+          logDebug(`PDF HEADING: page=${page.pageNumber} y=${y} heading="${currentHeading}"`);
           continue;
         }
 
@@ -605,24 +299,24 @@ export function getTextAnchors(readResult: any): TextAnchor[] {
 
         if (/[.?!]$/.test(content)) {
           anchors.push({ text: buffer, page: page.pageNumber, y: bufferY, roleHint: currentHeading });
-          if (DEBUG) console.log(`PDF EMIT sentence: page=${page.pageNumber} y=${bufferY} roleHint="${currentHeading ?? ""}" text="${buffer}"`);
+          logDebug(`PDF EMIT sentence: page=${page.pageNumber} y=${bufferY} roleHint="${currentHeading ?? ""}" text="${buffer}"`);
           buffer = "";
         }
       }
 
       if (buffer) {
         anchors.push({ text: buffer, page: page.pageNumber, y: bufferY, roleHint: currentHeading });
-        if (DEBUG) console.log(`PDF EMIT tail: page=${page.pageNumber} y=${bufferY} roleHint="${currentHeading ?? ""}" text="${buffer}"`);
+        logDebug(`PDF EMIT tail: page=${page.pageNumber} y=${bufferY} roleHint="${currentHeading ?? ""}" text="${buffer}"`);
         buffer = "";
       }
     }
-    if (DEBUG) console.log(`>>> getTextAnchors OUTPUT (PDF): count=${anchors.length}`);
+    logDebug(`>>> getTextAnchors OUTPUT (PDF): count=${anchors.length}`);
     return anchors;
   }
 
   // Case B: DOCX
   if (readResult.paragraphs?.length) {
-    if (DEBUG) console.log(">>> getTextAnchors: DOCX branch");
+    logDebug(">>> getTextAnchors: DOCX branch");
     let currentHeading: string | undefined;
 
     readResult.paragraphs.forEach((p: any, idx: number) => {
@@ -632,13 +326,13 @@ export function getTextAnchors(readResult: any): TextAnchor[] {
       if (!text) return;
 
       const wasHeading = isHeading(text);
-      if (DEBUG) console.log(`DOCX PARA[${idx}] page=${pageNum} wasHeading=${wasHeading} text="${text}"`);
+      logDebug(`DOCX PARA[${idx}] page=${pageNum} wasHeading=${wasHeading} text="${text}"`);
 
       if (wasHeading) {
         currentHeading = text;
         const y = idx * 100;
         anchors.push({ text, page: pageNum, y, roleHint: currentHeading });
-        if (DEBUG) console.log(`  -> SET currentHeading="${currentHeading}" EMIT heading: page=${pageNum} y=${y}`);
+        logDebug(`  -> SET currentHeading="${currentHeading}" EMIT heading: page=${pageNum} y=${y}`);
         return;
       }
 
@@ -651,17 +345,17 @@ export function getTextAnchors(readResult: any): TextAnchor[] {
         const s = parts[j];
         const y = idx * 100 + j;
         anchors.push({ text: s, page: pageNum, y, roleHint: currentHeading });
-        if (DEBUG) console.log(`  EMIT sentence: page=${pageNum} y=${y} roleHint="${currentHeading ?? ""}" text="${s}"`);
+        logDebug(`  EMIT sentence: page=${pageNum} y=${y} roleHint="${currentHeading ?? ""}" text="${s}"`);
       }
     });
 
-    if (DEBUG) console.log(`>>> getTextAnchors OUTPUT (DOCX): count=${anchors.length}`);
+    logDebug(`>>> getTextAnchors OUTPUT (DOCX): count=${anchors.length}`);
     return anchors;
   }
 
   // Case C: fallback
   if (readResult.content) {
-    if (DEBUG) console.log(">>> getTextAnchors: Fallback branch");
+    logDebug(">>> getTextAnchors: Fallback branch");
     let currentHeading: string | undefined;
     String(readResult.content)
       .split(/\r?\n/)
@@ -672,14 +366,78 @@ export function getTextAnchors(readResult: any): TextAnchor[] {
         if (wasHeading) {
           currentHeading = line;
           anchors.push({ text: line, page: 1, y: idx, roleHint: currentHeading });
-          if (DEBUG) console.log(`FALLBACK HEADING: page=1 y=${idx} heading="${currentHeading}"`);
+          logDebug(`FALLBACK HEADING: page=1 y=${idx} heading="${currentHeading}"`);
         } else {
           anchors.push({ text: line, page: 1, y: idx, roleHint: currentHeading });
-          if (DEBUG) console.log(`FALLBACK EMIT: page=1 y=${idx} roleHint="${currentHeading ?? ""}" text="${line}"`);
+          logDebug(`FALLBACK EMIT: page=1 y=${idx} roleHint="${currentHeading ?? ""}" text="${line}"`);
         }
       });
-    if (DEBUG) console.log(`>>> getTextAnchors OUTPUT (Fallback): count=${anchors.length}`);
+    logDebug(`>>> getTextAnchors OUTPUT (Fallback): count=${anchors.length}`);
   }
 
   return anchors;
+}
+
+/**
+ * Given the original document buffer and extracted candidates,
+ * produce a placeholderized copy of the document and enrich candidates
+ * with a `placeholder` property.
+ */
+export function placeholderizeDocument(
+  buffer: Buffer,
+  candidates: Candidate[]
+): { placeholderBuffer: Buffer; enrichedCandidates: Candidate[] } {
+  let text = buffer.toString("utf8"); // ⚠️ basic text extraction; replace with docx/pdf parser if needed
+
+  const enrichedCandidates = candidates.map((c) => {
+    const schema = c.schemaField ?? "";
+    let placeholder: string | undefined;
+
+    if (schema) {
+      if (PLACEHOLDER_KEYWORDS.has(schema)) {
+        placeholder = `{{${schema}}}`;
+
+        logDebug(`DEBUG: Considering [${schema}] with raw="${c.rawValue}"`);
+
+        if (c.rawValue) {
+          // 🔹 Skip replacement if rawValue already looks like a placeholder
+          if (PLACEHOLDER_REGEX.test(c.rawValue)) {
+            logDebug(
+              `DEBUG: Skipping replacement for [${schema}] because rawValue="${c.rawValue}" is already a placeholder`
+            );
+          } else {
+            const safeRaw = escapeRegExp(c.rawValue.trim());
+            const regex = new RegExp(safeRaw, "m");
+            text = text.replace(regex, placeholder);
+
+            logDebug(
+              `DEBUG: Placeholderized [${schema}] -> raw="${c.rawValue}" => placeholder="${placeholder}"`
+            );
+          }
+        }
+      } else {
+        // 🔹 Guard log: schema present but not in keyword set
+        logWarn(
+          `WARN: Candidate with schemaField="${schema}" is not in PLACEHOLDER_KEYWORDS. raw="${c.rawValue}"`
+        );
+      }
+    }
+
+    return {
+      ...c,
+      placeholder,
+      normalized: c.normalized
+        ? normalizeBySchema(c.normalized, c.schemaField)
+        : c.normalized,
+      schemaField: c.schemaField,
+    };
+  });
+
+  const placeholderBuffer = Buffer.from(text, "utf8");
+  return { placeholderBuffer, enrichedCandidates };
+}
+
+// Utility to escape regex special chars in raw text
+function escapeRegExp(str: string): string {
+  return str.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }

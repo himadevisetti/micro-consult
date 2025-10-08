@@ -92,3 +92,18 @@ export function formatDateMMDDYYYY(date: Date): string {
 
   return `${month}/${day}/${year}`;
 }
+
+/**
+ * Returns true if the schema field name looks like a date field.
+ */
+export function isDateLike(field: string | null): boolean {
+  return !!field && field.toLowerCase().includes("date");
+}
+
+/**
+ * Parses a raw string into ISO "YYYY-MM-DD" format if valid.
+ */
+export function parseIsoDate(raw: string): string | undefined {
+  const d = new Date(raw);
+  return isNaN(d.getTime()) ? undefined : d.toISOString().slice(0, 10);
+}

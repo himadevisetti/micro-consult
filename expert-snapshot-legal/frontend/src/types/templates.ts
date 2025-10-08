@@ -8,4 +8,5 @@ export type TemplateVariable = {
   roleHint?: string;             // optional role context (e.g. "Client", "Provider")
   candidates?: string[];         // optional list of suggested schema fields
   confidence?: number;           // optional confidence score (0–1) from backend
+  placeholder?: string;          // placeholder mapping (e.g. {{partyA}})
 };
