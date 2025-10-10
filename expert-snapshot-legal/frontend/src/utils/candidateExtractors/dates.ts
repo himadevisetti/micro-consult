@@ -98,47 +98,71 @@ export function extractDatesAndFilingParty(
     }
   }
 
-  // Resolve filing party only if inventor is present (IPR&L docs)
-  const { inventorName, partyA, partyB } = context;
+  // Resolve filing party (IPR&L docs)
+  const { inventorNames = [], partyA, partyB } = context;
+  const sigTextLower = signatories.join(" ").toLowerCase();
 
-  if (inventorName) {
-    const sigTextLower = signatories.join(" ").toLowerCase();
+  let emitted = false;
 
-    let filingParty: string | undefined;
+  // Step 1: inventors
+  if (inventorNames.length > 0) {
+    const matchedInventors = inventorNames.filter(inv =>
+      sigTextLower.includes(inv.toLowerCase())
+    );
+    if (matchedInventors.length > 0) {
+      matchedInventors.forEach((inv, idx) => {
+        const schemaField =
+          matchedInventors.length > 1 ? `filingParty${idx + 1}` : "filingParty";
 
-    if (sigTextLower.includes(inventorName.toLowerCase())) {
-      filingParty = inventorName;
-    } else if (partyA && sigTextLower.includes(partyA.toLowerCase())) {
-      // provider is partyA → client is partyB
-      filingParty = partyB;
-    } else if (partyB && sigTextLower.includes(partyB.toLowerCase())) {
-      // provider is partyB → client is partyA
-      filingParty = partyA;
+        candidates.push({
+          rawValue: inv,
+          schemaField,
+          candidates: [schemaField], // align candidates with schemaField
+          pageNumber: sigBlock[0]?.page,
+          yPosition: sigBlock[0]?.y,
+          roleHint: "Filing Party",
+        });
+        logDebug("filingParty.detected.inventor", { filingParty: inv, signatories });
+      });
+      emitted = true;
     }
+  }
 
-    if (filingParty) {
+  // Step 2: fall back to partyA/partyB if no inventors emitted
+  if (!emitted) {
+    if (partyA && sigTextLower.includes(partyA.toLowerCase())) {
       candidates.push({
-        rawValue: filingParty,
+        rawValue: partyA,
         schemaField: "filingParty",
-        candidates: ["filingParty"],
+        candidates: ["filingParty"], // already consistent
         pageNumber: sigBlock[0]?.page,
         yPosition: sigBlock[0]?.y,
-        roleHint: "Signatory",
+        roleHint: "Filing Party",
       });
-      logDebug(">>> Filing Party resolved (inventor present):", {
-        filingParty,
-        signatories,
+      logDebug("filingParty.detected.partyA", { filingParty: partyA, signatories });
+      emitted = true;
+    } else if (partyB && sigTextLower.includes(partyB.toLowerCase())) {
+      candidates.push({
+        rawValue: partyB,
+        schemaField: "filingParty",
+        candidates: ["filingParty"], // already consistent
+        pageNumber: sigBlock[0]?.page,
+        yPosition: sigBlock[0]?.y,
+        roleHint: "Filing Party",
       });
-    } else {
-      logDebug(">>> Filing Party could not be resolved (inventor present):", {
-        signatories,
-        inventorName,
-        partyA,
-        partyB,
-      });
+      logDebug("filingParty.detected.partyB", { filingParty: partyB, signatories });
+      emitted = true;
     }
-  } else {
-    logDebug(">>> Filing Party logic skipped (no inventor present)");
+  }
+
+  // Step 3: log unresolved
+  if (!emitted) {
+    logDebug("filingParty.unresolved", {
+      signatories,
+      inventorNames,
+      partyA,
+      partyB,
+    });
   }
 
   return candidates;

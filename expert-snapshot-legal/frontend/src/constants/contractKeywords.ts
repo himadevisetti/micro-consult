@@ -167,26 +167,27 @@ export const CONTRACT_KEYWORDS = {
 };
 
 // Recognized placeholder schema fields
-export const PLACEHOLDER_KEYWORDS: Set<string> = new Set([
-  "partyA",
-  "partyB",
-  "client",
-  "provider",
-  "inventor",
-  "effectiveDate",
-  "executionDate",
-  "expirationDate",
-  "contractDuration",
-  "feeAmount",
-  "retainerAmount",
-  "filingParty",
-  "ipType",
-  "licenseScope",
-  "inventionAssignment",
-  "scope",
-  "feeStructure",
-  "governingLaw",
-]);
+export const PLACEHOLDER_KEYWORDS: Record<string, string> = {
+  partya: "PartyA",
+  partyb: "PartyB",
+  client: "Client",
+  provider: "Provider",
+  inventor: "Inventor",
+  effectivedate: "EffectiveDate",
+  executiondate: "ExecutionDate",
+  expirationdate: "ExpirationDate",
+  contractduration: "ContractDuration",
+  feeamount: "FeeAmount",
+  retaineramount: "RetainerAmount",
+  filingparty: "FilingParty",
+  iptype: "IPType",
+  licensescope: "LicenseScope",
+  inventionassignment: "InventionAssignment",
+  scope: "Scope",
+  feestructure: "FeeStructure",
+  governinglaw: "GoverningLaw",
+};
+
 
 // Regex to detect {{placeholders}}
 export const PLACEHOLDER_REGEX = /\{\{([a-zA-Z0-9_]+)\}\}/g;

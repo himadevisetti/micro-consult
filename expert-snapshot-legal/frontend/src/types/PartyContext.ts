@@ -1,7 +1,6 @@
 // src/types/PartyContext.ts
 export interface PartyContext {
-  inventorName: string;
+  inventorNames: string[];   // plural, array of names
   partyA: string;
   partyB: string;
 }
-

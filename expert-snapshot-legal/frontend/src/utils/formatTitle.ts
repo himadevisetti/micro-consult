@@ -1,4 +1,5 @@
 import { FormType, getFormTypeLabel } from '../types/FormType.js';
+import he from "he";
 
 export function formatRetainerTitle(formType: FormType): string {
   const label = getFormTypeLabel(formType);
@@ -11,5 +12,8 @@ export function formatRetainerTitle(formType: FormType): string {
 
 export function extractTitleFromHtml(html: string): string | null {
   const match = html.match(/<h2[^>]*>(.*?)<\/h2>/i);
-  return match ? match[1].trim() : null;
+  if (!match) return null;
+
+  // Decode HTML entities (&amp;, &lt;, &gt;, etc.)
+  return he.decode(match[1].trim());
 }

@@ -201,15 +201,6 @@ async function startDevServer() {
             .map(c => ({ field: c.schemaField, placeholder: c.placeholder })),
         });
 
-        // Cleanup tmp file
-        fs.unlink(file.path, (err) => {
-          if (err) {
-            logDebug("upload.cleanupFailed", { tmpFile: file.path, error: err.message });
-          } else {
-            logDebug("upload.cleanupSuccess", { tmpFile: file.path });
-          }
-        });
-
         return res.json({
           templateId,
           name: file.originalname,

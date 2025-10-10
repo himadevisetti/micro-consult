@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { TemplateVariable } from '../types/templates';
 import { NormalizedMapping } from '../types/confirmMapping';
-import { FIELD_LABELS } from '../constants/contractKeywords';
+import { formatFieldLabel, toPlaceholder } from '../utils/formatters';
 import { logDebug, logWarn } from "../utils/logger.js";
 import styles from '../styles/StandardRetainerForm.module.css';
 
@@ -34,6 +34,7 @@ export default function FieldMappingReview({ templateName, candidates, onConfirm
     rows: initial.map((m, i) => ({
       index: i,
       schemaField: m.schemaField,
+      candidates: m.candidates?.join(", ") ?? "[]",
       hasRawValue: !!m.rawValue && m.rawValue.trim().length > 0,
       placeholder: m.placeholder,
       confirmed: m.confirmed,
@@ -42,7 +43,9 @@ export default function FieldMappingReview({ templateName, candidates, onConfirm
 
   const handleChange = (index: number, field: string | null) => {
     const prev = mapping[index];
-    const computedPlaceholder = field ? `{{${field}}}` : prev.placeholder;
+
+    // Derive placeholder only if a schemaField is chosen, else preserve previous
+    const computedPlaceholder = field ? toPlaceholder(field) ?? prev.placeholder : prev.placeholder;
 
     logDebug("fieldMapping.userSelection", {
       index,
@@ -193,7 +196,6 @@ export default function FieldMappingReview({ templateName, candidates, onConfirm
               {/* ✅ Always show FIELD_LABELS in Mapped Field column */}
               <td className={styles.mappedFieldCol}>
                 {m.candidates && m.candidates.length > 1 ? (
-                  // Multiple candidates → dropdown with labels
                   <select
                     value={m.schemaField ?? ''}
                     onChange={(e) => handleChange(idx, e.target.value || null)}
@@ -202,15 +204,14 @@ export default function FieldMappingReview({ templateName, candidates, onConfirm
                     <option value="">Select…</option>
                     {m.candidates.map((c, i) => (
                       <option key={i} value={c}>
-                        {FIELD_LABELS[c] ?? c}
+                        {formatFieldLabel(c)}
                       </option>
                     ))}
                   </select>
                 ) : (
-                  // Single candidate OR zero candidates → editable input showing label if available
                   (() => {
                     const key = m.schemaField ?? m.candidates?.[0] ?? '';
-                    const label = FIELD_LABELS[key] ?? key;
+                    const label = formatFieldLabel(key);
 
                     return (
                       <input

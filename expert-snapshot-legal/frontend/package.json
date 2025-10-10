@@ -26,6 +26,7 @@
     "date-fns": "^4.1.0",
     "docx": "^9.5.1",
     "express": "^4.21.2",
+    "he": "^1.2.0",
     "html2pdf.js": "^0.10.3",
     "http-errors": "2.0.0",
     "multer": "^2.0.2",
@@ -43,6 +44,7 @@
   },
   "devDependencies": {
     "@types/cheerio": "^0.22.35",
+    "@types/he": "^1.2.3",
     "@types/multer": "^2.0.0",
     "@types/node": "^24.1.0",
     "@types/pdf-parse": "^1.1.5",

@@ -27,6 +27,15 @@ function isPreferredHeadingForGoverningLaw(roleHint?: string): boolean {
   return h === "governing law" || h === "jurisdiction";
 }
 
+export function isPreferredHeadingForInventionAssignment(roleHint?: string): boolean {
+  const h = normalizeHeading(roleHint);
+  return (
+    h === "invention assignment" ||
+    h === "assignment of inventions" ||
+    h === "assignment of intellectual property"
+  );
+}
+
 /**
  * Merge candidates, deduping by schemaField + normalized value.
  */
@@ -77,7 +86,7 @@ export function mergeCandidates(candidates: Candidate[]): Candidate[] {
 
     const existing = out[existingIdx];
 
-    // Preferred-heading logic for governingLaw with fallback
+    // Preferred-heading logic
     let shouldReplace = false;
     if (c.schemaField === "governingLaw") {
       const existingPreferred = isPreferredHeadingForGoverningLaw(existing.roleHint);
@@ -97,6 +106,26 @@ export function mergeCandidates(candidates: Candidate[]): Candidate[] {
       } else {
         logDebug(
           `KEEP_DECISION: governingLaw prefers first occurrence or both preferred; merging metadata only. key=${key}`
+        );
+      }
+    } else if (c.schemaField?.toLowerCase().startsWith("inventionassignment")) {
+      const existingPreferred = isPreferredHeadingForInventionAssignment(existing.roleHint);
+      const incomingPreferred = isPreferredHeadingForInventionAssignment(c.roleHint);
+
+      logDebug(
+        `DUP key=${key} existingIdx=${existingIdx} ` +
+        `existing(roleHint="${existing.roleHint ?? ""}", preferred=${existingPreferred}, page=${existing.pageNumber}, y=${existing.yPosition}) ` +
+        `incoming(roleHint="${c.roleHint ?? ""}", preferred=${incomingPreferred}, page=${c.pageNumber}, y=${c.yPosition})`
+      );
+
+      if (!existingPreferred && incomingPreferred) {
+        shouldReplace = true;
+        logDebug(
+          `REPLACE_DECISION: inventionAssignment incoming is preferred-heading, existing is not. key=${key}`
+        );
+      } else {
+        logDebug(
+          `KEEP_DECISION: inventionAssignment prefers first occurrence or both preferred; merging metadata only. key=${key}`
         );
       }
     } else {
@@ -204,18 +233,33 @@ export function deriveCandidatesFromRead(readResult: any): Candidate[] {
   const actorCandidates = extractActors(anchors);
 
   // Pull out inventor, partyA, partyB from actorCandidates
-  const inventorName = actorCandidates.find(c => c.schemaField === "inventor")?.rawValue ?? "";
-  const partyA = actorCandidates.find(c => c.schemaField === "partyA")?.rawValue ?? "";
-  const partyB = actorCandidates.find(c => c.schemaField === "partyB")?.rawValue ?? "";
+  const inventorNames = actorCandidates
+    .filter(c => c.schemaField?.toLowerCase().startsWith("inventor"))
+    .map(c => c.rawValue)
+    .filter(Boolean);
+
+  const ambiguousParties = actorCandidates.filter(
+    c => c.schemaField === null && c.candidates?.includes("partyA")
+  );
+
+  let partyA = actorCandidates.find(c => c.schemaField?.toLowerCase() === "partya")?.rawValue ?? "";
+  let partyB = actorCandidates.find(c => c.schemaField?.toLowerCase() === "partyb")?.rawValue ?? "";
+
+  if (!partyA && ambiguousParties.length > 0) {
+    partyA = ambiguousParties[0].rawValue;
+  }
+  if (!partyB && ambiguousParties.length > 1) {
+    partyB = ambiguousParties[1].rawValue;
+  }
 
   const candidates: Candidate[] = [
     ...actorCandidates,
     ...extractFeeStructure(anchors),
     ...extractAmounts(anchors),
-    ...extractDatesAndFilingParty(anchors, { inventorName, partyA, partyB }),
+    ...extractDatesAndFilingParty(anchors, { inventorNames, partyA, partyB }),
     ...extractGoverningLaw(anchors),
     ...extractScope(anchors),
-    ...extractIPRandL(anchors),
+    ...extractIPRandL(anchors, { inventorNames, partyA, partyB }),
   ];
 
   logDebug(">>> deriveCandidatesFromRead OUTPUT:");
@@ -387,40 +431,55 @@ export function placeholderizeDocument(
   buffer: Buffer,
   candidates: Candidate[]
 ): { placeholderBuffer: Buffer; enrichedCandidates: Candidate[] } {
-  let text = buffer.toString("utf8"); // ⚠️ basic text extraction; replace with docx/pdf parser if needed
+  let text = buffer.toString("utf8");
 
   const enrichedCandidates = candidates.map((c) => {
-    const schema = c.schemaField ?? "";
     let placeholder: string | undefined;
 
-    if (schema) {
-      if (PLACEHOLDER_KEYWORDS.has(schema)) {
-        placeholder = `{{${schema}}}`;
+    // Only build a placeholder when schemaField is explicitly set.
+    const sourceRaw = c.schemaField ?? null;
+    const source = sourceRaw?.trim() || null;
 
-        logDebug(`DEBUG: Considering [${schema}] with raw="${c.rawValue}"`);
+    if (source) {
+      const digits = (source.match(/\d+$/) || [])[0];
+      const base = source.replace(/\d+$/, "").toLowerCase();
+      const keyword = PLACEHOLDER_KEYWORDS[base];
 
-        if (c.rawValue) {
-          // 🔹 Skip replacement if rawValue already looks like a placeholder
-          if (PLACEHOLDER_REGEX.test(c.rawValue)) {
-            logDebug(
-              `DEBUG: Skipping replacement for [${schema}] because rawValue="${c.rawValue}" is already a placeholder`
-            );
-          } else {
-            const safeRaw = escapeRegExp(c.rawValue.trim());
-            const regex = new RegExp(safeRaw, "m");
-            text = text.replace(regex, placeholder);
+      logDebug("placeholderizeDocument.result", {
+        schemaField: c.schemaField,
+        candidates: c.candidates,
+        base,
+        keyword,
+        digits,
+        raw: c.rawValue,
+      });
 
-            logDebug(
-              `DEBUG: Placeholderized [${schema}] -> raw="${c.rawValue}" => placeholder="${placeholder}"`
-            );
-          }
+      if (keyword) {
+        placeholder = digits ? `{{${keyword}${digits}}}` : `{{${keyword}}}`;
+
+        if (c.rawValue && !PLACEHOLDER_REGEX.test(c.rawValue)) {
+          const safeRaw = escapeRegExp(c.rawValue.trim());
+          const regex = new RegExp(safeRaw, "m");
+          text = text.replace(regex, placeholder);
+          logDebug("placeholderizeDocument.replace", {
+            source,
+            raw: c.rawValue,
+            placeholder,
+          });
         }
       } else {
-        // 🔹 Guard log: schema present but not in keyword set
-        logWarn(
-          `WARN: Candidate with schemaField="${schema}" is not in PLACEHOLDER_KEYWORDS. raw="${c.rawValue}"`
-        );
+        logWarn("placeholderizeDocument.noKeyword", {
+          source,
+          base,
+          raw: c.rawValue,
+        });
       }
+    } else {
+      // Ambiguous row (no schemaField yet). Do not auto-assign a placeholder.
+      logDebug("placeholderizeDocument.ambiguousNoSchema", {
+        candidates: c.candidates,
+        raw: c.rawValue,
+      });
     }
 
     return {
@@ -429,7 +488,6 @@ export function placeholderizeDocument(
       normalized: c.normalized
         ? normalizeBySchema(c.normalized, c.schemaField)
         : c.normalized,
-      schemaField: c.schemaField,
     };
   });
 
