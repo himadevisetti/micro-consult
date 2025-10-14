@@ -18,13 +18,23 @@ export function formatFieldLabel(schemaField: string): string {
  * Convert a schemaField into a canonical placeholder token for manifests/templates.
  * Always uses PascalCase from PLACEHOLDER_KEYWORDS, preserving numeric suffixes.
  */
-export function toPlaceholder(schemaField: string | null | undefined): string | undefined {
-  if (!schemaField) return undefined;
+export function toPlaceholder(schemaField: string | null | undefined): string {
+  if (!schemaField || !schemaField.trim()) {
+    return "{{Field}}"; // generic fallback
+  }
 
-  const digits = (schemaField.match(/\d+$/) || [])[0];
+  // Extract trailing digits (e.g. Inventor1 → "1")
+  const digits = (schemaField.match(/\d+$/) || [])[0] ?? "";
   const base = schemaField.replace(/\d+$/, "").toLowerCase();
-  const token = (PLACEHOLDER_KEYWORDS as Record<string, string>)[base];
 
-  if (!token) return undefined;
+  // Look up canonical token, fallback to capitalized schemaField
+  const token =
+    (PLACEHOLDER_KEYWORDS as Record<string, string>)[base] ??
+    capitalize(schemaField.replace(/\d+$/, ""));
+
   return digits ? `{{${token}${digits}}}` : `{{${token}}}`;
+}
+
+function capitalize(s: string): string {
+  return s.charAt(0).toUpperCase() + s.slice(1);
 }

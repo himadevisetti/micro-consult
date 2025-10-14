@@ -9,4 +9,9 @@ export type TemplateVariable = {
   candidates?: string[];         // optional list of suggested schema fields
   confidence?: number;           // optional confidence score (0–1) from backend
   placeholder?: string;          // placeholder mapping (e.g. {{partyA}})
+
+  // NEW optional fields for richer UI/placeholderization
+  sourceText?: string;           // full block for expand/collapse in UI
+  primaryMatch?: string;         // anchor actually used for placeholderization
+  isExpandable?: boolean;        // only true for clause‑type fields
 };

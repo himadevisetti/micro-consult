@@ -8,7 +8,7 @@ import {
 
 import { Candidate } from "../types/Candidate";
 import { TextAnchor } from "../types/TextAnchor";
-import { normalizeBySchema } from "../utils/normalizeValue.js";
+import { normalizeHeading, normalizeBySchema } from "../utils/normalizeValue.js";
 import { extractActors } from "./candidateExtractors/actors.js";
 import { extractFeeStructure } from "./candidateExtractors/fees.js";
 import { extractAmounts } from "./candidateExtractors/amounts.js";
@@ -16,24 +16,13 @@ import { extractDatesAndFilingParty } from "./candidateExtractors/dates.js";
 import { extractGoverningLaw } from "./candidateExtractors/governingLaw.js";
 import { extractScope } from "./candidateExtractors/scope.js";
 import { extractIPRandL } from "./candidateExtractors/iprAndL.js";
+import JSZip from "jszip";
 import { logDebug, logWarn } from "./logger.js";
 
-function normalizeHeading(h?: string): string {
-  return (h ?? "").trim().toLowerCase();
-}
-
-function isPreferredHeadingForGoverningLaw(roleHint?: string): boolean {
+export function isPreferredHeading(schemaField: string, roleHint?: string): boolean {
   const h = normalizeHeading(roleHint);
-  return h === "governing law" || h === "jurisdiction";
-}
-
-export function isPreferredHeadingForInventionAssignment(roleHint?: string): boolean {
-  const h = normalizeHeading(roleHint);
-  return (
-    h === "invention assignment" ||
-    h === "assignment of inventions" ||
-    h === "assignment of intellectual property"
-  );
+  const variants = (CONTRACT_KEYWORDS.headings.byField as Record<string, string[]>)[schemaField] ?? [];
+  return variants.map(normalizeHeading).includes(h);
 }
 
 /**
@@ -86,11 +75,11 @@ export function mergeCandidates(candidates: Candidate[]): Candidate[] {
 
     const existing = out[existingIdx];
 
-    // Preferred-heading logic
+    // Preferred-heading logic (generic across all schema fields)
     let shouldReplace = false;
-    if (c.schemaField === "governingLaw") {
-      const existingPreferred = isPreferredHeadingForGoverningLaw(existing.roleHint);
-      const incomingPreferred = isPreferredHeadingForGoverningLaw(c.roleHint);
+    {
+      const existingPreferred = isPreferredHeading(c.schemaField, existing.roleHint);
+      const incomingPreferred = isPreferredHeading(c.schemaField, c.roleHint);
 
       logDebug(
         `DUP key=${key} existingIdx=${existingIdx} ` +
@@ -101,38 +90,13 @@ export function mergeCandidates(candidates: Candidate[]): Candidate[] {
       if (!existingPreferred && incomingPreferred) {
         shouldReplace = true;
         logDebug(
-          `REPLACE_DECISION: governingLaw incoming is preferred-heading, existing is not. key=${key}`
+          `REPLACE_DECISION: ${c.schemaField} incoming is preferred-heading, existing is not. key=${key}`
         );
       } else {
         logDebug(
-          `KEEP_DECISION: governingLaw prefers first occurrence or both preferred; merging metadata only. key=${key}`
+          `KEEP_DECISION: ${c.schemaField} prefers first occurrence or both preferred; merging metadata only. key=${key}`
         );
       }
-    } else if (c.schemaField?.toLowerCase().startsWith("inventionassignment")) {
-      const existingPreferred = isPreferredHeadingForInventionAssignment(existing.roleHint);
-      const incomingPreferred = isPreferredHeadingForInventionAssignment(c.roleHint);
-
-      logDebug(
-        `DUP key=${key} existingIdx=${existingIdx} ` +
-        `existing(roleHint="${existing.roleHint ?? ""}", preferred=${existingPreferred}, page=${existing.pageNumber}, y=${existing.yPosition}) ` +
-        `incoming(roleHint="${c.roleHint ?? ""}", preferred=${incomingPreferred}, page=${c.pageNumber}, y=${c.yPosition})`
-      );
-
-      if (!existingPreferred && incomingPreferred) {
-        shouldReplace = true;
-        logDebug(
-          `REPLACE_DECISION: inventionAssignment incoming is preferred-heading, existing is not. key=${key}`
-        );
-      } else {
-        logDebug(
-          `KEEP_DECISION: inventionAssignment prefers first occurrence or both preferred; merging metadata only. key=${key}`
-        );
-      }
-    } else {
-      logDebug(
-        `DUP key=${key} field=${c.schemaField} -> KEEP first occurrence; merging metadata only. ` +
-        `existing(roleHint="${existing.roleHint ?? ""}") incoming(roleHint="${c.roleHint ?? ""}")`
-      );
     }
 
     if (shouldReplace) {
@@ -174,12 +138,25 @@ export function mergeCandidates(candidates: Candidate[]): Candidate[] {
 // Sort by document order using page + yPosition (or docIndex if present)
 export function sortCandidatesByDocumentOrder(cands: Candidate[]): Candidate[] {
   return [...cands].sort((a, b) => {
+    // --- Handle pageNumber undefined cases ---
+    if (a.pageNumber == null && b.pageNumber == null) return 0;
+    if (a.pageNumber == null) return 1; // unanchored goes last
+    if (b.pageNumber == null) return -1;
+
     if (a.pageNumber !== b.pageNumber) {
       return a.pageNumber - b.pageNumber;
     }
+
+    // --- Optional docIndex tie-breaker ---
     if ((a as any).docIndex != null && (b as any).docIndex != null) {
       return (a as any).docIndex - (b as any).docIndex;
     }
+
+    // --- Handle yPosition undefined cases ---
+    if (a.yPosition == null && b.yPosition == null) return 0;
+    if (a.yPosition == null) return 1;
+    if (b.yPosition == null) return -1;
+
     return a.yPosition - b.yPosition;
   });
 }
@@ -224,26 +201,37 @@ export function logAllReadFields(readResult: any) {
 /**
  * Derive structured candidates from prebuilt-read output.
  */
-export function deriveCandidatesFromRead(readResult: any): Candidate[] {
-  if (!readResult) return [];
+export function deriveCandidatesFromRead(
+  readResult: any
+): { candidates: Candidate[] } {
+  if (!readResult) {
+    logDebug(">>> deriveCandidatesFromRead.emptyInput");
+    return { candidates: [] };
+  }
 
+  // Still build anchors internally for the extractors
   const anchors: TextAnchor[] = getTextAnchors(readResult);
 
-  // First extract actors
+  // First extract all actors (partyA, partyB, inventors)
   const actorCandidates = extractActors(anchors);
 
-  // Pull out inventor, partyA, partyB from actorCandidates
+  // Pull out inventor names (handles both "Inventor" and "InventorN")
   const inventorNames = actorCandidates
-    .filter(c => c.schemaField?.toLowerCase().startsWith("inventor"))
+    .filter(c => c.schemaField && c.schemaField.toLowerCase().startsWith("inventor"))
     .map(c => c.rawValue)
     .filter(Boolean);
 
+  // Handle ambiguous parties
   const ambiguousParties = actorCandidates.filter(
     c => c.schemaField === null && c.candidates?.includes("partyA")
   );
 
-  let partyA = actorCandidates.find(c => c.schemaField?.toLowerCase() === "partya")?.rawValue ?? "";
-  let partyB = actorCandidates.find(c => c.schemaField?.toLowerCase() === "partyb")?.rawValue ?? "";
+  let partyA =
+    actorCandidates.find(c => c.schemaField?.toLowerCase() === "partya")
+      ?.rawValue ?? "";
+  let partyB =
+    actorCandidates.find(c => c.schemaField?.toLowerCase() === "partyb")
+      ?.rawValue ?? "";
 
   if (!partyA && ambiguousParties.length > 0) {
     partyA = ambiguousParties[0].rawValue;
@@ -252,6 +240,7 @@ export function deriveCandidatesFromRead(readResult: any): Candidate[] {
     partyB = ambiguousParties[1].rawValue;
   }
 
+  // Merge all candidates
   const candidates: Candidate[] = [
     ...actorCandidates,
     ...extractFeeStructure(anchors),
@@ -262,48 +251,89 @@ export function deriveCandidatesFromRead(readResult: any): Candidate[] {
     ...extractIPRandL(anchors, { inventorNames, partyA, partyB }),
   ];
 
-  logDebug(">>> deriveCandidatesFromRead OUTPUT:");
-  candidates.forEach((c, i) => {
-    logDebug(
-      `[${i}] field=${c.schemaField} page=${c.pageNumber} y=${c.yPosition} roleHint="${c.roleHint ?? ""}" raw="${c.rawValue}"`
-    );
+  logDebug(">>> deriveCandidatesFromRead.output", {
+    candidateCount: candidates.length,
+    sample: candidates.slice(0, 10).map((c, i) => ({
+      i,
+      field: c.schemaField,
+      page: c.pageNumber,
+      y: c.yPosition,
+      roleHint: c.roleHint ?? "",
+      raw: c.rawValue,
+    })),
   });
 
-  return candidates;
+  return { candidates };
 }
 
 export function getTextAnchors(readResult: any): TextAnchor[] {
   const anchors: TextAnchor[] = [];
   if (!readResult) return anchors;
 
-  const HEADING_KEYWORDS = CONTRACT_KEYWORDS.headings.clauseKeywords;
-
   const norm = (s: string) =>
     s.replace(/\u00A0/g, " ") // normalize NBSP
       .trim()
       .replace(/\s+/g, " ");
 
-  const isHeading = (raw: string): boolean => {
-    let text = norm(raw).replace(/[:\-–]\s*$/, ""); // strip trailing colon/dash
-    if (!text) return false;
+  // Flatten all heading variants into one normalized set
+  const ALL_HEADING_VARIANTS = Object.values(CONTRACT_KEYWORDS.headings.byField)
+    .flat()
+    .map(normalizeHeading);
 
-    const lower = text.toLowerCase();
-    if (HEADING_KEYWORDS.some(k => lower.includes(k))) return true;
+  // Conservative, keyword-first heading detector with explicit reasons.
+  const isHeading = (raw: string): { is: boolean; reason: string } => {
+    const text = norm(raw).replace(/[:\-–]\s*$/, "");
+    if (!text) return { is: false, reason: "empty" };
 
-    // heuristic fallback (short, title-like, no sentence end)
-    if (/[.?!]$/.test(text)) return false;
-    const words = text.split(" ");
-    if (words.length > 8) return false;
-    if (/^[A-Z0-9][A-Z0-9\s&:–-]+$/.test(text)) return true;
-    if (/^[A-Z][A-Za-z0-9\s&:–-]+$/.test(text)) return true;
+    const hNorm = normalizeHeading(text);
 
-    return false;
+    // 1) Explicit clause keywords win
+    if (ALL_HEADING_VARIANTS.includes(hNorm)) {
+      return { is: true, reason: "keyword" };
+    }
+
+    // 2) If it ends with sentence punctuation -> body
+    if (/[.?!]$/.test(text)) {
+      return { is: false, reason: "sentencePunct" };
+    }
+
+    // 3) If it looks sentence-like (contains common verbs, currency, dates, long length) -> body
+    const words = text.split(/\s+/);
+    const hasVerb = /\b(is|are|was|were|shall|will|includes?|pertains?|constitutes|agrees?|licensed?|executed)\b/i.test(
+      text
+    );
+    const hasCurrencyOrNumber = /[$]\s*\d|USD|\b\d{4}\b/.test(text);
+    const tooLong = words.length > 12 || text.length > 80;
+    if (hasVerb || hasCurrencyOrNumber || tooLong) {
+      return {
+        is: false,
+        reason: `sentenceLike: verb=${hasVerb} moneyOrNum=${hasCurrencyOrNumber} long=${tooLong}`,
+      };
+    }
+
+    // 4) Conservative fallback: short ALL-CAPS or short Title-Case tokens only
+    const isAllCapsShort = /^[A-Z\s&]+$/.test(text) && words.length <= 4;
+    const isTitleCaseShort =
+      /^[A-Z][A-Za-z0-9\s&:–-]+$/.test(text) && words.length <= 4;
+    if (isAllCapsShort || isTitleCaseShort) {
+      return {
+        is: true,
+        reason: isAllCapsShort
+          ? "fallbackAllCapsShort"
+          : "fallbackTitleCaseShort",
+      };
+    }
+
+    // Otherwise body
+    return { is: false, reason: "defaultBody" };
   };
 
   const getY = (bb?: number[], fallback = 0): number => {
     if (Array.isArray(bb) && bb.length >= 8) {
-      const ys = [bb[1], bb[3], bb[5], bb[7]].filter((v) => typeof v === "number");
-      if (ys.length) return Math.min(...ys as number[]);
+      const ys = [bb[1], bb[3], bb[5], bb[7]].filter(
+        (v) => typeof v === "number"
+      );
+      if (ys.length) return Math.min(...(ys as number[]));
     }
     return fallback;
   };
@@ -321,16 +351,31 @@ export function getTextAnchors(readResult: any): TextAnchor[] {
         if (!content) continue;
 
         const heading = isHeading(content);
-        if (heading) {
+        if (heading.is) {
           if (buffer) {
-            anchors.push({ text: buffer, page: page.pageNumber, y: bufferY, roleHint: currentHeading });
-            logDebug(`PDF EMIT body: page=${page.pageNumber} y=${bufferY} roleHint="${currentHeading ?? ""}" text="${buffer}"`);
+            anchors.push({
+              text: buffer,
+              page: page.pageNumber,
+              y: bufferY,
+              roleHint: currentHeading,
+            });
+            logDebug(
+              `PDF EMIT body: page=${page.pageNumber} y=${bufferY} roleHint="${currentHeading ?? ""
+              }" text="${buffer}"`
+            );
             buffer = "";
           }
           currentHeading = content;
           const y = getY(line.boundingBox, lineIdx);
-          anchors.push({ text: content, page: page.pageNumber, y, roleHint: currentHeading });
-          logDebug(`PDF HEADING: page=${page.pageNumber} y=${y} heading="${currentHeading}"`);
+          anchors.push({
+            text: content,
+            page: page.pageNumber,
+            y,
+            roleHint: currentHeading,
+          });
+          logDebug(
+            `PDF HEADING: page=${page.pageNumber} y=${y} heading="${currentHeading}"`
+          );
           continue;
         }
 
@@ -342,15 +387,31 @@ export function getTextAnchors(readResult: any): TextAnchor[] {
         }
 
         if (/[.?!]$/.test(content)) {
-          anchors.push({ text: buffer, page: page.pageNumber, y: bufferY, roleHint: currentHeading });
-          logDebug(`PDF EMIT sentence: page=${page.pageNumber} y=${bufferY} roleHint="${currentHeading ?? ""}" text="${buffer}"`);
+          anchors.push({
+            text: buffer,
+            page: page.pageNumber,
+            y: bufferY,
+            roleHint: currentHeading,
+          });
+          logDebug(
+            `PDF EMIT sentence: page=${page.pageNumber} y=${bufferY} roleHint="${currentHeading ?? ""
+            }" text="${buffer}"`
+          );
           buffer = "";
         }
       }
 
       if (buffer) {
-        anchors.push({ text: buffer, page: page.pageNumber, y: bufferY, roleHint: currentHeading });
-        logDebug(`PDF EMIT tail: page=${page.pageNumber} y=${bufferY} roleHint="${currentHeading ?? ""}" text="${buffer}"`);
+        anchors.push({
+          text: buffer,
+          page: page.pageNumber,
+          y: bufferY,
+          roleHint: currentHeading,
+        });
+        logDebug(
+          `PDF EMIT tail: page=${page.pageNumber} y=${bufferY} roleHint="${currentHeading ?? ""
+          }" text="${buffer}"`
+        );
         buffer = "";
       }
     }
@@ -369,10 +430,28 @@ export function getTextAnchors(readResult: any): TextAnchor[] {
       const text = norm(rawPara);
       if (!text) return;
 
-      const wasHeading = isHeading(text);
-      logDebug(`DOCX PARA[${idx}] page=${pageNum} wasHeading=${wasHeading} text="${text}"`);
+      const h = isHeading(text);
+      const words = text.split(/\s+/);
+      const looksSentence =
+        /[.?!]/.test(text) ||
+        /\b(is|are|was|were|shall|will|includes?|pertains?|constitutes|agrees?|licensed?|executed)\b/i.test(text) ||
+        /[$]\s*\d|USD|\b\d{4}\b/.test(text) ||
+        words.length > 12 ||
+        text.length > 80;
+
+      // Never downgrade explicit keyword headings or conservative ALL-CAPS fallback.
+      // Only downgrade non-keyword fallback headings that look sentence-like.
+      const shouldDowngrade =
+        h.is && h.reason !== "keyword" && h.reason !== "fallbackAllCapsShort" && looksSentence;
+
+      const wasHeading = h.is && !shouldDowngrade;
+
+      logDebug(
+        `DOCX PARA[${idx}] page=${pageNum} wasHeading=${wasHeading} reason="${h.reason}" text="${text}"`
+      );
 
       if (wasHeading) {
+        // Genuine heading
         currentHeading = text;
         const y = idx * 100;
         anchors.push({ text, page: pageNum, y, roleHint: currentHeading });
@@ -380,6 +459,7 @@ export function getTextAnchors(readResult: any): TextAnchor[] {
         return;
       }
 
+      // Body: split into sentences and emit under currentHeading
       const parts = text
         .split(/(?<=[.?!])\s+(?=[A-Z])/)
         .map(norm)
@@ -389,7 +469,9 @@ export function getTextAnchors(readResult: any): TextAnchor[] {
         const s = parts[j];
         const y = idx * 100 + j;
         anchors.push({ text: s, page: pageNum, y, roleHint: currentHeading });
-        logDebug(`  EMIT sentence: page=${pageNum} y=${y} roleHint="${currentHeading ?? ""}" text="${s}"`);
+        logDebug(
+          `  EMIT sentence: page=${pageNum} y=${y} roleHint="${currentHeading ?? ""}" text="${s}"`
+        );
       }
     });
 
@@ -406,17 +488,20 @@ export function getTextAnchors(readResult: any): TextAnchor[] {
       .map(norm)
       .filter(Boolean)
       .forEach((line, idx) => {
-        const wasHeading = isHeading(line);
-        if (wasHeading) {
+        const h = isHeading(line);
+        if (h.is) {
           currentHeading = line;
           anchors.push({ text: line, page: 1, y: idx, roleHint: currentHeading });
           logDebug(`FALLBACK HEADING: page=1 y=${idx} heading="${currentHeading}"`);
         } else {
           anchors.push({ text: line, page: 1, y: idx, roleHint: currentHeading });
-          logDebug(`FALLBACK EMIT: page=1 y=${idx} roleHint="${currentHeading ?? ""}" text="${line}"`);
+          logDebug(
+            `FALLBACK EMIT: page=1 y=${idx} roleHint="${currentHeading ?? ""}" text="${line}"`
+          );
         }
       });
     logDebug(`>>> getTextAnchors OUTPUT (Fallback): count=${anchors.length}`);
+    return anchors;
   }
 
   return anchors;
@@ -427,75 +512,110 @@ export function getTextAnchors(readResult: any): TextAnchor[] {
  * produce a placeholderized copy of the document and enrich candidates
  * with a `placeholder` property.
  */
-export function placeholderizeDocument(
+export async function placeholderizeDocument(
+  buffer: Buffer,
+  candidates: Candidate[],
+  ext: string
+): Promise<{ placeholderBuffer: Buffer; enrichedCandidates?: Candidate[] }> {
+  if (ext.toLowerCase() === "pdf") {
+    // No‑op for PDFs
+    return { placeholderBuffer: buffer };
+  }
+
+  // DOCX branch delegates to the actual implementation
+  return placeholderizeDocx(buffer, candidates);
+}
+
+async function placeholderizeDocx(
   buffer: Buffer,
   candidates: Candidate[]
-): { placeholderBuffer: Buffer; enrichedCandidates: Candidate[] } {
-  let text = buffer.toString("utf8");
+): Promise<{ placeholderBuffer: Buffer; enrichedCandidates: Candidate[] }> {
+  const zip = await JSZip.loadAsync(buffer);
+
+  const docXmlPath = "word/document.xml";
+  const fileEntry = zip.file(docXmlPath);
+  if (!fileEntry) {
+    throw new Error("DOCX missing document.xml");
+  }
+  let docXml: string = await fileEntry.async("string");
 
   const enrichedCandidates = candidates.map((c) => {
     let placeholder: string | undefined;
 
-    // Only build a placeholder when schemaField is explicitly set.
-    const sourceRaw = c.schemaField ?? null;
-    const source = sourceRaw?.trim() || null;
-
-    if (source) {
-      const digits = (source.match(/\d+$/) || [])[0];
-      const base = source.replace(/\d+$/, "").toLowerCase();
+    if (c.schemaField) {
+      const digits = (c.schemaField.match(/\d+$/) || [])[0];
+      const base = c.schemaField.replace(/\d+$/, "").toLowerCase();
       const keyword = PLACEHOLDER_KEYWORDS[base];
-
-      logDebug("placeholderizeDocument.result", {
-        schemaField: c.schemaField,
-        candidates: c.candidates,
-        base,
-        keyword,
-        digits,
-        raw: c.rawValue,
-      });
+      const matchText = (c as any).primaryMatch ?? c.rawValue;
 
       if (keyword) {
         placeholder = digits ? `{{${keyword}${digits}}}` : `{{${keyword}}}`;
 
-        if (c.rawValue && !PLACEHOLDER_REGEX.test(c.rawValue)) {
-          const safeRaw = escapeRegExp(c.rawValue.trim());
-          const regex = new RegExp(safeRaw, "m");
-          text = text.replace(regex, placeholder);
-          logDebug("placeholderizeDocument.replace", {
-            source,
-            raw: c.rawValue,
-            placeholder,
-          });
+        if (matchText && !PLACEHOLDER_REGEX.test(matchText)) {
+          const normalizedMatch = matchText.trim().replace(/\s+/g, " ");
+          const safeMatch = escapeRegExp(normalizedMatch);
+
+          if (c.roleHint === "Parties") {
+            // Parties: limit to a single replacement (prefer scoped, else first occurrence only)
+            if (c.sourceText) {
+              const safeScope = escapeRegExp(c.sourceText.trim().replace(/\s+/g, " "));
+              const scopeRegex = new RegExp(safeScope, "m");
+              const scopeMatch = docXml.match(scopeRegex);
+
+              if (scopeMatch) {
+                const scopeText = scopeMatch[0];
+                const oneValueRegex = new RegExp(safeMatch); // no 'g' → replace only first
+                const replacedScope = scopeText.replace(oneValueRegex, placeholder);
+                docXml = docXml.replace(scopeRegex, replacedScope);
+              } else {
+                const oneValueRegex = new RegExp(safeMatch);
+                docXml = docXml.replace(oneValueRegex, placeholder);
+              }
+            } else {
+              const oneValueRegex = new RegExp(safeMatch);
+              docXml = docXml.replace(oneValueRegex, placeholder);
+            }
+          } else {
+            // Non-Parties: scoped if possible, else global
+            const valueRegex = new RegExp(safeMatch, "g");
+
+            if (c.sourceText) {
+              const safeScope = escapeRegExp(c.sourceText.trim().replace(/\s+/g, " "));
+              const scopeRegex = new RegExp(safeScope, "m");
+              const scopeMatch = docXml.match(scopeRegex);
+
+              if (scopeMatch) {
+                const scopeText = scopeMatch[0];
+                const replacedScope = scopeText.replace(valueRegex, placeholder);
+                docXml = docXml.replace(scopeRegex, replacedScope);
+              } else {
+                docXml = docXml.replace(valueRegex, placeholder);
+              }
+            } else {
+              docXml = docXml.replace(valueRegex, placeholder);
+            }
+          }
         }
-      } else {
-        logWarn("placeholderizeDocument.noKeyword", {
-          source,
-          base,
-          raw: c.rawValue,
-        });
       }
-    } else {
-      // Ambiguous row (no schemaField yet). Do not auto-assign a placeholder.
-      logDebug("placeholderizeDocument.ambiguousNoSchema", {
-        candidates: c.candidates,
-        raw: c.rawValue,
-      });
     }
 
-    return {
-      ...c,
-      placeholder,
-      normalized: c.normalized
-        ? normalizeBySchema(c.normalized, c.schemaField)
-        : c.normalized,
-    };
+    return { ...c, placeholder };
   });
 
-  const placeholderBuffer = Buffer.from(text, "utf8");
+  zip.file(docXmlPath, docXml);
+  const placeholderBuffer = await zip.generateAsync({ type: "nodebuffer" });
+
+  // Single summary log
+  logDebug(">>> placeholderizeDocument.done", {
+    candidateCount: enrichedCandidates.length,
+    placeholders: enrichedCandidates
+      .filter((c) => c.placeholder)
+      .map((c) => ({ field: c.schemaField, placeholder: c.placeholder })),
+  });
+
   return { placeholderBuffer, enrichedCandidates };
 }
 
-// Utility to escape regex special chars in raw text
 function escapeRegExp(str: string): string {
   return str.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }

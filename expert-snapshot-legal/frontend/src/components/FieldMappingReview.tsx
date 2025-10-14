@@ -119,7 +119,7 @@ export default function FieldMappingReview({ templateName, candidates, onConfirm
         raw: m.rawValue,
         normalized: m.normalized,
         schemaField: m.schemaField,
-        placeholder: m.placeholder,
+        placeholder: m.placeholder ? m.placeholder : toPlaceholder(m.schemaField),
       };
     });
 
@@ -127,6 +127,7 @@ export default function FieldMappingReview({ templateName, candidates, onConfirm
     logDebug("confirmMapping.payloadBuilt", {
       count: normalized.length,
       fields: normalized.map(m => m.schemaField),
+      placeholders: normalized.map(m => m.placeholder),
     });
 
     onConfirm(normalized);
@@ -168,15 +169,18 @@ export default function FieldMappingReview({ templateName, candidates, onConfirm
                   <>
                     <span>
                       {expandedIndex === idx
-                        ? m.rawValue
+                        ? (m.isExpandable ? (m.sourceText ?? m.rawValue) : m.rawValue)
                         : m.displayValue ?? m.normalized ?? m.rawValue}
                     </span>
                     {(() => {
+                      const fullText = m.sourceText ?? m.rawValue;
                       const shouldShowToggle =
+                        m.isExpandable &&                // only for expandable fields
                         m.displayValue &&
-                        m.rawValue &&
-                        m.rawValue.trim() !== m.displayValue.trim() &&
-                        m.rawValue.length > m.displayValue.length + 10;
+                        fullText &&
+                        fullText.trim() !== m.displayValue.trim() &&
+                        fullText.length > m.displayValue.length + 10;
+
                       return shouldShowToggle ? (
                         <button
                           type="button"
@@ -185,7 +189,7 @@ export default function FieldMappingReview({ templateName, candidates, onConfirm
                             setExpandedIndex(expandedIndex === idx ? null : idx)
                           }
                         >
-                          {expandedIndex === idx ? 'Hide' : 'View full'}
+                          {expandedIndex === idx ? "Hide" : "View full"}
                         </button>
                       ) : null;
                     })()}

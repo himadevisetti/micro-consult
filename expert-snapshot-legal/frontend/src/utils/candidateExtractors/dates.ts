@@ -4,6 +4,7 @@ import { PartyContext } from "../../types/PartyContext";
 import { CONTRACT_KEYWORDS } from "../../constants/contractKeywords.js";
 import { parseIsoDate } from "../formatDate.js";
 import { logDebug } from "../logger.js";
+import { normalizeHeading } from "../normalizeValue.js";
 
 export function extractDatesAndFilingParty(
   anchors: TextAnchor[],
@@ -33,11 +34,18 @@ export function extractDatesAndFilingParty(
       pageNumber: anchor.page,
       yPosition: anchor.y,
       roleHint: anchor.roleHint,
+      sourceText: anchor.text,
     });
-    logDebug(">>> Date emitted:", { schemaField, rawDate });
+    logDebug(">>> date.emitted", {
+      schemaField,
+      rawDate,
+      page: anchor.page,
+      y: anchor.y,
+      sourcePreview: anchor.text.slice(0, 80),
+    });
   };
 
-  // Inline dates
+  // --- Inline dates ---
   for (const anchor of anchors) {
     let dm: RegExpExecArray | null;
     while ((dm = monthDateRegex.exec(anchor.text)) !== null) {
@@ -58,31 +66,45 @@ export function extractDatesAndFilingParty(
           pageNumber: anchor.page,
           yPosition: anchor.y,
           roleHint: anchor.roleHint,
+          sourceText: anchor.text,
         });
-        logDebug(">>> Ambiguous date emitted:", { rawDate });
+        logDebug(">>> date.ambiguous", {
+          rawDate,
+          page: anchor.page,
+          y: anchor.y,
+          sourcePreview: anchor.text.slice(0, 80),
+        });
       }
     }
   }
 
-  // Execution date and Filing Party from signature block
-  const sigStartIdx = anchors.findIndex(a => /signatures/i.test(a.text));
+  // --- Signature block detection ---
+  const SIGNATURE_HEADINGS = CONTRACT_KEYWORDS.headings.byField.signatures.map(normalizeHeading);
+  const IGNORE_SIGNATURE_LINES = CONTRACT_KEYWORDS.signatures.ignore.map(normalizeHeading);
+
+  const sigStartIdx = anchors.findIndex(a =>
+    SIGNATURE_HEADINGS.includes(normalizeHeading(a.text))
+  );
   const sigBlock = sigStartIdx >= 0 ? anchors.slice(sigStartIdx) : anchors.slice(-20);
 
-  // Collect signatory lines (filter out boilerplate and dates)
-  const signatories: string[] = [];
+  // Collect signatory anchors
+  const signatoryAnchors: TextAnchor[] = [];
   for (let i = 0; i < sigBlock.length; i++) {
     const curr = sigBlock[i];
     const next = sigBlock[i + 1];
     const windowText = `${curr.text} ${next ? next.text : ""}`;
     const windowLower = windowText.toLowerCase();
 
-    // Execution Date
+    // Execution Date inside signature block
     if (CONTRACT_KEYWORDS.dates.execution.some(k => windowLower.includes(k))) {
       const dateMatch = windowText.match(monthDateRegex);
       if (dateMatch) {
         emitDate(dateMatch[0], "executionDate", curr);
-        logDebug(">>> Execution date detected in signature block:", {
+        logDebug(">>> executionDate.signatureBlock", {
           match: dateMatch[0],
+          page: curr.page,
+          y: curr.y,
+          sourcePreview: curr.text.slice(0, 80),
         });
       }
     }
@@ -90,17 +112,18 @@ export function extractDatesAndFilingParty(
     const text = curr.text.trim();
     if (
       text &&
-      !/signatures/i.test(text) &&
+      !SIGNATURE_HEADINGS.includes(normalizeHeading(text)) &&
       !monthDateRegex.test(text) &&
-      !/^in witness whereof/i.test(text)
+      !IGNORE_SIGNATURE_LINES.includes(normalizeHeading(text)) &&
+      !/^_+$/.test(text)
     ) {
-      signatories.push(text);
+      signatoryAnchors.push(curr);
     }
   }
 
-  // Resolve filing party (IPR&L docs)
+  // --- Filing Party resolution (derived, no positional anchors) ---
   const { inventorNames = [], partyA, partyB } = context;
-  const sigTextLower = signatories.join(" ").toLowerCase();
+  const sigTextLower = signatoryAnchors.map(a => a.text).join(" ").toLowerCase();
 
   let emitted = false;
 
@@ -117,51 +140,65 @@ export function extractDatesAndFilingParty(
         candidates.push({
           rawValue: inv,
           schemaField,
-          candidates: [schemaField], // align candidates with schemaField
-          pageNumber: sigBlock[0]?.page,
-          yPosition: sigBlock[0]?.y,
+          candidates: [schemaField],
           roleHint: "Filing Party",
+          sourceText: undefined,
         });
-        logDebug("filingParty.detected.inventor", { filingParty: inv, signatories });
       });
       emitted = true;
     }
   }
 
-  // Step 2: fall back to partyA/partyB if no inventors emitted
+  // Step 2: fall back to partyA/partyB
   if (!emitted) {
     if (partyA && sigTextLower.includes(partyA.toLowerCase())) {
       candidates.push({
         rawValue: partyA,
         schemaField: "filingParty",
-        candidates: ["filingParty"], // already consistent
-        pageNumber: sigBlock[0]?.page,
-        yPosition: sigBlock[0]?.y,
+        candidates: ["filingParty"],
+        pageNumber: undefined,
+        yPosition: undefined,
         roleHint: "Filing Party",
+        sourceText: undefined,
       });
-      logDebug("filingParty.detected.partyA", { filingParty: partyA, signatories });
       emitted = true;
     } else if (partyB && sigTextLower.includes(partyB.toLowerCase())) {
       candidates.push({
         rawValue: partyB,
         schemaField: "filingParty",
-        candidates: ["filingParty"], // already consistent
-        pageNumber: sigBlock[0]?.page,
-        yPosition: sigBlock[0]?.y,
+        candidates: ["filingParty"],
         roleHint: "Filing Party",
+        sourceText: undefined,
       });
-      logDebug("filingParty.detected.partyB", { filingParty: partyB, signatories });
       emitted = true;
     }
   }
 
-  // Step 3: log unresolved
   if (!emitted) {
-    logDebug("filingParty.unresolved", {
-      signatories,
+    logDebug(">>> filingParty.unresolved", {
+      signatories: signatoryAnchors.map(s => s.text),
       inventorNames,
       partyA,
       partyB,
+    });
+  }
+
+  // Emit signatory candidates after Filing Party
+  if (signatoryAnchors.length > 0) {
+    signatoryAnchors.forEach((anchor, idx) => {
+      const schemaField =
+        signatoryAnchors.length > 1 ? `signatory${idx + 1}` : "signatory";
+
+      candidates.push({
+        rawValue: anchor.text.trim(),
+        schemaField,
+        candidates: [schemaField],
+        pageNumber: anchor.page,
+        yPosition: anchor.y,
+        roleHint: "Signatory",
+        sourceText: anchor.text,
+        primaryMatch: anchor.text,
+      });
     });
   }
 

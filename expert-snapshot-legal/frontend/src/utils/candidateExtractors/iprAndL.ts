@@ -3,6 +3,7 @@ import { TextAnchor } from "../../types/TextAnchor";
 import { PartyContext } from "../../types/PartyContext";
 import { CONTRACT_KEYWORDS } from "../../constants/contractKeywords.js";
 import { logDebug } from "../logger.js";
+import { normalizeHeading } from "../normalizeValue.js";
 
 export function extractIPRandL(
   anchors: TextAnchor[],
@@ -11,40 +12,70 @@ export function extractIPRandL(
   const candidates: Candidate[] = [];
 
   // --- IP Type ---
-  for (const anchor of anchors) {
-    const lower = anchor.text.toLowerCase();
-    const type = CONTRACT_KEYWORDS.ip.typeCues.find(k => lower.includes(k));
-    if (type) {
-      candidates.push({
-        rawValue: type,
-        schemaField: "ipType",
-        candidates: ["ipType"],
-        pageNumber: anchor.page,
-        yPosition: anchor.y,
-        roleHint: "IP Type",
-      });
-      logDebug("ip.typeDetected", { type, page: anchor.page, y: anchor.y });
+  const IPTYPE_HEADINGS = CONTRACT_KEYWORDS.headings.byField.ipValidity?.map(normalizeHeading) ?? [];
+  const ipStartIdx = anchors.findIndex(a =>
+    IPTYPE_HEADINGS.includes(normalizeHeading(a.text))
+  );
+  if (ipStartIdx >= 0) {
+    const ipEndIdx = findSectionEnd(anchors, ipStartIdx);
+    const ipAnchors = anchors.slice(ipStartIdx + 1, ipEndIdx);
+
+    for (const anchor of ipAnchors) {
+      const lower = anchor.text.toLowerCase();
+      const type = CONTRACT_KEYWORDS.ip.typeCues.find(k => lower.includes(k));
+      if (type) {
+        candidates.push({
+          rawValue: type,
+          schemaField: "ipType",
+          candidates: ["ipType"],
+          pageNumber: anchor.page,
+          yPosition: anchor.y,
+          roleHint: anchor.roleHint,
+          sourceText: anchor.text,
+        });
+        logDebug(">>> ip.typeDetected", {
+          type,
+          page: anchor.page,
+          y: anchor.y,
+          sourcePreview: anchor.text.slice(0, 80),
+        });
+      }
     }
   }
 
   // --- License Scope ---
-  for (const anchor of anchors) {
-    const lower = anchor.text.toLowerCase();
-    const scope = CONTRACT_KEYWORDS.ip.licenseScopeCues.find(k => lower.includes(k));
-    if (scope) {
-      candidates.push({
-        rawValue: scope,
-        schemaField: "licenseScope",
-        candidates: ["licenseScope"],
-        pageNumber: anchor.page,
-        yPosition: anchor.y,
-        roleHint: "License Scope",
-      });
-      logDebug("ip.licenseScopeDetected", { scope, page: anchor.page, y: anchor.y });
+  const LICENSE_HEADINGS = CONTRACT_KEYWORDS.headings.byField.licenseTerms?.map(normalizeHeading) ?? [];
+  const licStartIdx = anchors.findIndex(a =>
+    LICENSE_HEADINGS.includes(normalizeHeading(a.text))
+  );
+  if (licStartIdx >= 0) {
+    const licEndIdx = findSectionEnd(anchors, licStartIdx);
+    const licAnchors = anchors.slice(licStartIdx + 1, licEndIdx);
+
+    for (const anchor of licAnchors) {
+      const lower = anchor.text.toLowerCase();
+      const scope = CONTRACT_KEYWORDS.ip.licenseScopeCues.find(k => lower.includes(k));
+      if (scope) {
+        candidates.push({
+          rawValue: scope,
+          schemaField: "licenseScope",
+          candidates: ["licenseScope"],
+          pageNumber: anchor.page,
+          yPosition: anchor.y,
+          roleHint: anchor.roleHint,
+          sourceText: anchor.text,
+        });
+        logDebug(">>> ip.licenseScopeDetected", {
+          scope,
+          page: anchor.page,
+          y: anchor.y,
+          sourcePreview: anchor.text.slice(0, 80),
+        });
+      }
     }
   }
 
-  // --- Invention Assignment (global priority: Step1 → Step2 → Step3) ---
+  // --- Invention Assignment ---
   type Hit = {
     assignee: string;
     page: number;
@@ -53,15 +84,18 @@ export function extractIPRandL(
     roleHint?: string;
   };
 
-  const iaAnchors = anchors.filter(a =>
-    a.roleHint?.toLowerCase().includes("invention assignment")
+  const IA_HEADINGS = CONTRACT_KEYWORDS.headings.byField.inventionAssignment.map(normalizeHeading);
+  const iaStartIdx = anchors.findIndex(a =>
+    IA_HEADINGS.includes(normalizeHeading(a.text))
   );
+  const iaEndIdx = iaStartIdx >= 0 ? findSectionEnd(anchors, iaStartIdx) : anchors.length;
+  const iaAnchors = iaStartIdx >= 0 ? anchors.slice(iaStartIdx + 1, iaEndIdx) : [];
 
   const step1Hits: Hit[] = [];
   const step2Hits: Hit[] = [];
   const step3Hits: Hit[] = [];
 
-  // Step 1
+  // Step 1: explicit party/inventor names
   for (const anchor of iaAnchors) {
     const text = anchor.text.trim();
     const lower = text.toLowerCase();
@@ -85,11 +119,9 @@ export function extractIPRandL(
       })
     );
   }
-  if (step1Hits.length) {
-    logDebug("ip.iaStep1.fired", { count: step1Hits.length });
-  }
+  if (step1Hits.length) logDebug(">>> ip.iaStep1.fired", { count: step1Hits.length });
 
-  // Step 2
+  // Step 2: role labels
   if (step1Hits.length === 0) {
     for (const anchor of iaAnchors) {
       const text = anchor.text.trim();
@@ -135,12 +167,10 @@ export function extractIPRandL(
         });
       }
     }
-    if (step2Hits.length) {
-      logDebug("ip.iaStep2.fired", { count: step2Hits.length });
-    }
+    if (step2Hits.length) logDebug(">>> ip.iaStep2.fired", { count: step2Hits.length });
   }
 
-  // Step 3
+  // Step 3: fallback cues
   if (step1Hits.length === 0 && step2Hits.length === 0) {
     for (const anchor of iaAnchors) {
       const text = anchor.text.trim();
@@ -166,16 +196,12 @@ export function extractIPRandL(
         }
       }
     }
-    if (step3Hits.length) {
-      logDebug("ip.iaStep3.fired", { count: step3Hits.length });
-    } else {
-      logDebug("ip.iaStep3.noToCapture", { anchors: iaAnchors.length });
-    }
+    if (step3Hits.length) logDebug(">>> ip.iaStep3.fired", { count: step3Hits.length });
+    else logDebug(">>> ip.iaStep3.noToCapture", { anchors: iaAnchors.length });
   }
 
-  // Step 5: choose, dedupe, emit
+  // Deduplicate and emit
   const chosen = step1Hits.length ? step1Hits : (step2Hits.length ? step2Hits : step3Hits);
-
   const seen = new Set<string>();
   const uniqueHits: Hit[] = [];
   for (const h of chosen) {
@@ -187,26 +213,42 @@ export function extractIPRandL(
 
   uniqueHits.forEach((h, idx) => {
     const schemaField =
-      uniqueHits.length > 1
-        ? `inventionAssignment${idx + 1}`
-        : "inventionAssignment";
+      uniqueHits.length > 1 ? `inventionAssignment${idx + 1}` : "inventionAssignment";
 
     candidates.push({
       rawValue: h.assignee,
       schemaField,
-      candidates: [schemaField], // align candidates with schemaField
+      candidates: [schemaField],
       pageNumber: h.page,
       yPosition: h.y,
       roleHint: h.roleHint,
+      sourceText: h.text,
     });
 
-    logDebug("ip.inventionAssignmentDetected", {
+    logDebug(">>> ip.inventionAssignmentDetected", {
       assignee: h.assignee,
       schemaField,
       page: h.page,
       y: h.y,
+      sourcePreview: h.text.slice(0, 80),
     });
   });
 
-  return candidates;
+  return candidates; // ✅ always return
+}
+
+// --- helper ---
+function findSectionEnd(anchors: TextAnchor[], startIdx: number): number {
+  for (let i = startIdx + 1; i < anchors.length; i++) {
+    const norm = normalizeHeading(anchors[i].text);
+    if (
+      Object.values(CONTRACT_KEYWORDS.headings.byField)
+        .flat()
+        .map(normalizeHeading)
+        .includes(norm)
+    ) {
+      return i; // stop at the next heading
+    }
+  }
+  return anchors.length; // default: run to end of document
 }

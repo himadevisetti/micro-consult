@@ -17,6 +17,12 @@ import {
   placeholderizeDocument,
 } from "./src/utils/candidateUtils.js";
 import { NormalizedMapping } from './src/types/confirmMapping.js';
+import {
+  saveCandidates,
+  loadCandidates,
+  deleteCandidates,
+} from "./src/infrastructure/sessionStore.js";
+import { mergeMappingWithCandidates } from "./src/server/adapters/mergeMappingWithCandidates.js";
 import { logDebug } from "./src/utils/logger.js";
 
 // load .env at startup
@@ -24,6 +30,10 @@ dotenv.config();
 
 // then override with .env.local if present
 dotenv.config({ path: ".env.local", override: true });
+
+// Log effective TTL
+const ttlMs = parseInt(process.env.CANDIDATE_TTL_MS || "", 10) || 60 * 60 * 1000;
+console.log(`[startup] Candidate TTL set to ${ttlMs} ms (${Math.round(ttlMs / 1000 / 60)} minutes)`);
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const isDev = process.env.NODE_ENV !== 'production';
@@ -172,39 +182,20 @@ async function startDevServer() {
         logAllReadFields(readResult);
 
         // Extract candidates
-        const readCandidates = deriveCandidatesFromRead(readResult);
+        const { candidates: readCandidates } = deriveCandidatesFromRead(readResult);
 
         // Merge + sort
         const mergedCandidates = mergeCandidates(readCandidates);
         const orderedCandidates = sortCandidatesByDocumentOrder(mergedCandidates);
 
-        // Placeholderize + enrich
-        const { placeholderBuffer, enrichedCandidates } = placeholderizeDocument(
-          buffer,
-          orderedCandidates
-        );
+        // Save candidates in session store keyed by templateId
+        await saveCandidates(`candidates:${templateId}`, orderedCandidates);
 
-        // Save placeholderized copy
-        const customerTemplatePath = path.join(storageBasePath, customerId, "templates");
-        fs.mkdirSync(customerTemplatePath, { recursive: true });
-        const templatePath = path.join(customerTemplatePath, file.originalname);
-        fs.writeFileSync(templatePath, placeholderBuffer);
-
-        logDebug("upload.filesSaved", {
-          seedPath,
-          templatePath,
-        });
-
-        logDebug("upload.placeholdersGenerated", {
-          placeholders: enrichedCandidates
-            .filter(c => c.placeholder)
-            .map(c => ({ field: c.schemaField, placeholder: c.placeholder })),
-        });
-
+        // Return the extracted candidates for UI mapping
         return res.json({
           templateId,
           name: file.originalname,
-          candidates: enrichedCandidates,
+          candidates: orderedCandidates,
         });
       } catch (err: unknown) {
         if (err instanceof Error) {
@@ -225,7 +216,10 @@ async function startDevServer() {
         if (file?.path) {
           fs.unlink(file.path, (unlinkErr) => {
             if (unlinkErr) {
-              logDebug("upload.cleanupFailed", { tmpFile: file.path, error: unlinkErr.message });
+              logDebug("upload.cleanupFailed", {
+                tmpFile: file.path,
+                error: unlinkErr.message,
+              });
             } else {
               logDebug("upload.cleanupSuccess", { tmpFile: file.path });
             }
@@ -248,7 +242,7 @@ async function startDevServer() {
           .json({ success: false, error: "No mapping provided" });
       }
 
-      // 🔹 Validate required fields: raw, schemaField, placeholder
+      // 🔹 Validate required fields
       const valid = mapping.every(
         (m) =>
           typeof m.raw === "string" &&
@@ -258,7 +252,6 @@ async function startDevServer() {
           typeof m.placeholder === "string" &&
           m.placeholder.trim() !== ""
       );
-
       if (!valid) {
         return res
           .status(400)
@@ -278,9 +271,9 @@ async function startDevServer() {
       };
 
       try {
+        // 1. Save manifest
         const customerManifestPath = getCustomerManifestPath(customerId);
         await fs.promises.mkdir(customerManifestPath, { recursive: true });
-
         const manifestPath = path.join(
           customerManifestPath,
           `${templateId}.manifest.json`
@@ -296,22 +289,71 @@ async function startDevServer() {
           customerId,
         });
 
-        logDebug("confirmMapping.placeholders", {
-          placeholders: manifest.variables.map((v) => ({
-            field: v.schemaField,
-            placeholder: v.placeholder,
-          })),
+        // 2. Load original seed file
+        const customerSeedPath = path.join(storageBasePath, customerId, "_seed");
+        const seedFilePathDocx = path.join(customerSeedPath, `${templateId}.docx`);
+        const seedFilePathPdf = path.join(customerSeedPath, `${templateId}.pdf`);
+        const seedFilePath = fs.existsSync(seedFilePathDocx)
+          ? seedFilePathDocx
+          : seedFilePathPdf;
+        const buffer = await fs.promises.readFile(seedFilePath);
+        const ext = path.extname(seedFilePath).toLowerCase();
+
+        // 3. Load stored candidates from sessionStore
+        const stored = await loadCandidates(`candidates:${templateId}`);
+        if (!stored) {
+          return res.status(400).json({
+            success: false,
+            error: "No stored candidates found for this templateId",
+          });
+        }
+
+        // 4. Merge NormalizedMapping[] into stored candidates
+        const enrichedCandidates = mergeMappingWithCandidates(mapping, stored);
+
+        // 5. Placeholderize with enriched candidates
+        const { placeholderBuffer } = await placeholderizeDocument(
+          buffer,
+          enrichedCandidates,
+          ext
+        );
+
+        // 6. Save placeholderized copy
+        const customerTemplatePath = path.join(
+          storageBasePath,
+          customerId,
+          "templates"
+        );
+        await fs.promises.mkdir(customerTemplatePath, { recursive: true });
+        const templatePath = path.join(
+          customerTemplatePath,
+          `${templateId}${ext}`
+        );
+        await fs.promises.writeFile(templatePath, placeholderBuffer);
+
+        // 7. Clean up session store
+        await deleteCandidates(`candidates:${templateId}`);
+
+        logDebug("confirmMapping.placeholderized", {
+          templatePath,
+          placeholders: enrichedCandidates
+            .filter((c) => c.placeholder)
+            .map((c) => ({ field: c.schemaField, placeholder: c.placeholder })),
         });
 
-        return res.json({ success: true });
+        return res.json({
+          success: true,
+          placeholders: enrichedCandidates,
+        });
       } catch (err) {
         logDebug("confirmMapping.error", {
           error: err instanceof Error ? err.message : String(err),
           stack: err instanceof Error ? err.stack : undefined,
         });
-        return res
-          .status(500)
-          .json({ success: false, error: "Failed to save manifest" });
+        return res.status(500).json({
+          success: false,
+          error: "Failed to save manifest/placeholderize",
+        });
       }
     }
   );

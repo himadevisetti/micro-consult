@@ -6,33 +6,65 @@
  * updated without touching parsing logic.
  */
 
+/**
+ * Centralized domain vocabulary for contract candidate extraction.
+ * All keyword families, headings, and whitelists live here so they can be
+ * updated without touching parsing logic.
+ */
+
 export const CONTRACT_KEYWORDS = {
   headings: {
-    clauseKeywords: [
-      "standard retainer agreement",
-      "parties",
-      "scope of representation",
-      "scope of work",
-      "position and duties",
-      "responsibilities",
-      "description of services",
-      "services",
-      "engagement",
-      "client responsibilities",
-      "communication expectations",
-      "fee structure",
-      "retainer",
-      "costs & expenses",
-      "confidentiality",
-      "termination",
-      "governing law",
-      "jurisdiction",
-      "entire agreement",
-      "signatures",
-      // IPR&L‑specific
-      "license terms",
-      "ip validity",
-      "invention assignment",
+    byField: {
+      parties: [
+        "parties",
+        "the parties",
+        "between",
+        "inventors",
+        "inventor",
+        "inventor(s)",
+        "named inventors"
+      ],
+      scope: [
+        "scope of representation",
+        "scope of work",
+        "ip description",
+        "intellectual property description",
+        "position and duties",
+        "responsibilities",
+        "description of services",
+        "job description",
+        "services",
+        "engagement",
+      ],
+      fees: [
+        "fees & engagement terms",
+        "fee structure",
+        "retainer",
+        "costs & expenses",
+        "compensation",
+      ],
+      confidentiality: ["confidentiality", "nondisclosure"],
+      governingLaw: ["governing law", "jurisdiction"],
+      inventionAssignment: [
+        "invention assignment",
+        "assignment of inventions",
+        "assignment of intellectual property",
+      ],
+      licenseTerms: ["license terms"],
+      ipValidity: ["ip validity"],
+      entireAgreement: ["entire agreement", "entire agreement & amendments"],
+      signatures: ["signatures"],
+      standardRetainer: ["standard retainer agreement"],
+    },
+  },
+
+  signatures: {
+    ignore: [
+      "in witness whereof",
+      "signed",
+      "executed",
+      "witness",
+      // add any other boilerplate phrases you want to skip
     ],
   },
 
@@ -73,7 +105,6 @@ export const CONTRACT_KEYWORDS = {
       "deposit",
       "advance",
     ],
-    retainerCues: ["retainer", "deposit", "advance"],
   },
 
   parties: {
@@ -86,61 +117,6 @@ export const CONTRACT_KEYWORDS = {
       "firm",
       "inventor",
       "filing party", // signature block role
-    ],
-    inventorCues: [
-      "inventor",
-      "created by",
-      "invented by",
-      "originated by",
-      "conceived by",
-    ],
-  },
-
-  governingLaw: {
-    cues: [
-      "governing law",
-      "jurisdiction",
-      "laws of",
-      "construed in accordance",
-    ],
-  },
-
-  scope: {
-    headings: [
-      "scope of representation",
-      "scope of work",
-      "position and duties",
-      "responsibilities",
-      "description of services",
-      "job description",
-      "services",
-      "engagement",
-      "intellectual property description",
-    ],
-    cues: [
-      "represent",
-      "representation",
-      "engage",
-      "engagement",
-      "services",
-      "scope",
-      "responsibilities",
-      "duties",
-      "work to be performed",
-      "scope of work",
-      "description of services",
-      "intellectual property description",
-      "ip description",
-      "position",
-      "role",
-      "functions",
-      "obligations",
-      "tasks",
-      "assignments",
-      "job description",
-      "services to be rendered",
-      "consulting services",
-      "work responsibilities",
     ],
   },
 
@@ -158,7 +134,7 @@ export const CONTRACT_KEYWORDS = {
       "invention assignment",
       "hereby assigns",
     ],
-    // descriptionCues removed — unified under scope.cues
+    // descriptionCues removed — unified under scope.byField
   },
 
   textAnchors: {
@@ -186,8 +162,8 @@ export const PLACEHOLDER_KEYWORDS: Record<string, string> = {
   scope: "Scope",
   feestructure: "FeeStructure",
   governinglaw: "GoverningLaw",
+  signatory: "Signatory",
 };
-
 
 // Regex to detect {{placeholders}}
 export const PLACEHOLDER_REGEX = /\{\{([a-zA-Z0-9_]+)\}\}/g;
@@ -212,4 +188,5 @@ export const FIELD_LABELS: Record<string, string> = {
   inventionAssignment: "Invention Assignment",
   governingLaw: "Governing Law",
   feeStructure: "Fee Structure",
+  signatory: "Signatory",
 };

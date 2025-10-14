@@ -14,6 +14,16 @@ export function normalizeValue(val: unknown): string {
   return (val as string | undefined) ?? '';
 }
 
+// Canonical heading normalization used across anchors, extractors, and merging
+export function normalizeHeading(h?: string): string {
+  return (h ?? "")
+    .replace(/\u00A0/g, " ") // NBSP -> space
+    .replace(/&/g, "and")    // unify ampersand
+    .trim()
+    .replace(/\s+/g, " ")    // collapse spaces
+    .toLowerCase();
+}
+
 export function normalizeBySchema(raw: string, schemaField: string | null): string {
   if (!raw) return raw;
 
