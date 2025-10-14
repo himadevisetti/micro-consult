@@ -1,3 +1,5 @@
+// src/types/Candidate.ts
+
 export interface Candidate {
   rawValue: string;              // legacy: often the anchor text, but ambiguous
   schemaField: string | null;
@@ -9,9 +11,5 @@ export interface Candidate {
   yPosition?: number;
   placeholder?: string;
   sourceText?: string;           // full block for UI expand/collapse
-
-  // NEW FIELDS
-  matchValues?: string[];        // one or more exact anchor strings for placeholderization
-  primaryMatch?: string;         // convenience: the anchor we actually replace
   isExpandable?: boolean;        // only true for clause‑type fields
 }

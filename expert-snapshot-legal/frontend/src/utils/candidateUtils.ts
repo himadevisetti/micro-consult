@@ -546,7 +546,7 @@ async function placeholderizeDocx(
       const digits = (c.schemaField.match(/\d+$/) || [])[0];
       const base = c.schemaField.replace(/\d+$/, "").toLowerCase();
       const keyword = PLACEHOLDER_KEYWORDS[base];
-      const matchText = (c as any).primaryMatch ?? c.rawValue;
+      const matchText = c.rawValue;
 
       if (keyword) {
         placeholder = digits ? `{{${keyword}${digits}}}` : `{{${keyword}}}`;

@@ -197,7 +197,6 @@ export function extractDatesAndFilingParty(
         yPosition: anchor.y,
         roleHint: "Signatory",
         sourceText: anchor.text,
-        primaryMatch: anchor.text,
       });
     });
   }
