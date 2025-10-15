@@ -4,17 +4,22 @@ const isBrowser = typeof window !== "undefined";
 
 function isDebug(): boolean {
   if (isBrowser) {
-    if (process.env.NEXT_PUBLIC_DEBUG_LOGS) {
-      return process.env.NEXT_PUBLIC_DEBUG_LOGS === "true";
+    // Vite convention: use VITE_* vars
+    if (typeof import.meta !== "undefined" && (import.meta as any).env?.VITE_DEBUG_LOGS) {
+      return (import.meta as any).env.VITE_DEBUG_LOGS === "true";
     }
-    if (process.env.REACT_APP_DEBUG) {
+    // CRA convention (if ever bundled that way)
+    if (typeof process !== "undefined" && process.env?.REACT_APP_DEBUG) {
       return process.env.REACT_APP_DEBUG === "true";
     }
-    if ((import.meta as any)?.env?.VITE_DEBUG) {
-      return (import.meta as any).env.VITE_DEBUG === "true";
+    // Next.js convention (if ever bundled that way)
+    if (typeof process !== "undefined" && process.env?.NEXT_PUBLIC_DEBUG_LOGS) {
+      return process.env.NEXT_PUBLIC_DEBUG_LOGS === "true";
     }
-    return true; // default to true in browser if nothing set
+    // Default: enable debug in browser if nothing set
+    return true;
   } else {
+    // Server-side: safe to use process.env
     return (
       process.env.NEXT_PUBLIC_DEBUG_LOGS === "true" ||
       process.env.DEBUG === "true" ||
@@ -25,19 +30,16 @@ function isDebug(): boolean {
 
 export function logDebug(...args: any[]) {
   if (isDebug()) {
-    // eslint-disable-next-line no-console
     console.log(...args);
   }
 }
 
 export function logWarn(...args: any[]) {
   if (isDebug()) {
-    // eslint-disable-next-line no-console
     console.warn(...args);
   }
 }
 
 export function logError(...args: any[]) {
-  // eslint-disable-next-line no-console
   console.error(...args);
 }
