@@ -12,6 +12,7 @@ import {
 import { loadCandidates, deleteCandidates } from "../../infrastructure/sessionStore.js";
 import { mergeMappingWithCandidates } from "../adapters/mergeMappingWithCandidates.js";
 import { placeholderizeDocument } from "../../utils/candidates/placeholderization.js";
+import { enrichMapping } from "../utils/manifestEnrichment.js";
 
 const router = Router();
 
@@ -44,20 +45,38 @@ router.post(
         .json({ success: false, error: "Invalid mapping format" });
     }
 
-    const manifest = {
-      templateId,
-      customerId,
-      createdAt: new Date().toISOString(),
-      variables: mapping.map((m) => ({
-        raw: m.raw,
-        normalized: m.normalized,
-        schemaField: m.schemaField,
-        placeholder: m.placeholder,
-      })),
-    };
-
     try {
-      // 1. Save manifest
+      // 1. Load original seed file
+      const customerSeedPath = path.join(storageBasePath, customerId, "_seed");
+      const seedFilePathDocx = path.join(customerSeedPath, `${templateId}.docx`);
+      const seedFilePathPdf = path.join(customerSeedPath, `${templateId}.pdf`);
+      const seedFilePath = fs.existsSync(seedFilePathDocx)
+        ? seedFilePathDocx
+        : seedFilePathPdf;
+      const buffer = await fs.promises.readFile(seedFilePath);
+      const ext = path.extname(seedFilePath).toLowerCase();
+
+      // 2. Load stored candidates from sessionStore
+      const stored = await loadCandidates(`candidates:${templateId}`);
+      if (!stored) {
+        return res.status(400).json({
+          success: false,
+          error: "No stored candidates found for this templateId",
+        });
+      }
+
+      // 3. Merge NormalizedMapping[] into stored candidates
+      const enrichedCandidates = mergeMappingWithCandidates(mapping, stored);
+
+      // 4. Build manifest from enriched candidates
+      const manifest = {
+        templateId,
+        customerId,
+        createdAt: new Date().toISOString(),
+        variables: enrichedCandidates.map(enrichMapping),
+      };
+
+      // 5. Save manifest
       const customerManifestPath = getCustomerManifestPath(customerId);
       await fs.promises.mkdir(customerManifestPath, { recursive: true });
       const manifestPath = path.join(
@@ -75,36 +94,14 @@ router.post(
         customerId,
       });
 
-      // 2. Load original seed file
-      const customerSeedPath = path.join(storageBasePath, customerId, "_seed");
-      const seedFilePathDocx = path.join(customerSeedPath, `${templateId}.docx`);
-      const seedFilePathPdf = path.join(customerSeedPath, `${templateId}.pdf`);
-      const seedFilePath = fs.existsSync(seedFilePathDocx)
-        ? seedFilePathDocx
-        : seedFilePathPdf;
-      const buffer = await fs.promises.readFile(seedFilePath);
-      const ext = path.extname(seedFilePath).toLowerCase();
-
-      // 3. Load stored candidates from sessionStore
-      const stored = await loadCandidates(`candidates:${templateId}`);
-      if (!stored) {
-        return res.status(400).json({
-          success: false,
-          error: "No stored candidates found for this templateId",
-        });
-      }
-
-      // 4. Merge NormalizedMapping[] into stored candidates
-      const enrichedCandidates = mergeMappingWithCandidates(mapping, stored);
-
-      // 5. Placeholderize with enriched candidates
+      // 6. Placeholderize with enriched candidates
       const { placeholderBuffer } = await placeholderizeDocument(
         buffer,
         enrichedCandidates,
         ext
       );
 
-      // 6. Save placeholderized copy
+      // 7. Save placeholderized copy
       const customerTemplatePath = path.join(
         storageBasePath,
         customerId,
@@ -117,7 +114,7 @@ router.post(
       );
       await fs.promises.writeFile(templatePath, placeholderBuffer);
 
-      // 7. Clean up session store
+      // 8. Clean up session store
       await deleteCandidates(`candidates:${templateId}`);
 
       logDebug("confirmMapping.placeholderized", {
@@ -145,4 +142,3 @@ router.post(
 );
 
 export default router;
-

@@ -190,3 +190,8 @@ export const FIELD_LABELS: Record<string, string> = {
   feeStructure: "Fee Structure",
   signatory: "Signatory",
 };
+
+export const ENUM_OPTIONS: Record<string, string[]> = {
+  feeStructure: ["Contingency", "Hourly", "Flat Fee"],
+  licenseScope: ["Worldwide", "Exclusive", "Non-exclusive"],
+};

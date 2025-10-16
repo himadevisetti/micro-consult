@@ -9,23 +9,20 @@ export function mergeMappingWithCandidates(
     let m =
       normalized.find(
         (nm) => nm.raw === c.rawValue && nm.schemaField === c.schemaField
-      ) || null;
+      ) ||
+      normalized.find((nm) => nm.raw === c.rawValue) ||
+      normalized.find((nm) => nm.schemaField === c.schemaField) ||
+      null;
 
-    if (!m) {
-      m = normalized.find((nm) => nm.raw === c.rawValue) || null;
-    }
-
-    if (!m) {
-      m = normalized.find((nm) => nm.schemaField === c.schemaField) || null;
-    }
-
-    return m
-      ? {
-        ...c,
-        schemaField: m.schemaField,
+    if (m) {
+      return {
+        ...c,                        // keep all candidate metadata
+        schemaField: m.schemaField,  // override with confirmed mapping
         placeholder: m.placeholder,
         normalized: m.normalized,
-      }
-      : c;
+      };
+    }
+
+    return c;
   });
 }
