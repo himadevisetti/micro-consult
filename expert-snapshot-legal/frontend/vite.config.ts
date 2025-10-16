@@ -1,7 +1,8 @@
+// vite.config.ts
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import stringPlugin from 'vite-plugin-string';
-import path from 'path'; // ✅ Added for alias resolution
+import path from 'path';
 
 export default defineConfig({
   root: '.',
@@ -22,7 +23,7 @@ export default defineConfig({
 
   resolve: {
     alias: {
-      '@': path.resolve(__dirname, 'src'), // ✅ Enables "@/types/FormType" and similar imports
+      '@': path.resolve(__dirname, 'src'),
     },
   },
 

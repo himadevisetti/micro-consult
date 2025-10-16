@@ -11,11 +11,11 @@ import {
 } from "../config.js";
 import { loadCandidates, deleteCandidates } from "../../infrastructure/sessionStore.js";
 import { mergeMappingWithCandidates } from "../adapters/mergeMappingWithCandidates.js";
-import { placeholderizeDocument } from "../../utils/candidateUtils.js";
+import { placeholderizeDocument } from "../../utils/candidates/placeholderization.js";
 
 const router = Router();
 
-// ✅ Confirm mapping route
+// Confirm mapping route
 router.post(
   "/templates/:customerId/:templateId/confirm-mapping",
   async (req, res) => {

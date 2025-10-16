@@ -119,9 +119,8 @@ export function extractIPRandL(
       })
     );
   }
-  if (step1Hits.length) logDebug(">>> ip.iaStep1.fired", { count: step1Hits.length });
 
-  // Step 2: role labels
+  // Step 2: role labels (only if step1 empty)
   if (step1Hits.length === 0) {
     for (const anchor of iaAnchors) {
       const text = anchor.text.trim();
@@ -167,10 +166,9 @@ export function extractIPRandL(
         });
       }
     }
-    if (step2Hits.length) logDebug(">>> ip.iaStep2.fired", { count: step2Hits.length });
   }
 
-  // Step 3: fallback cues
+  // Step 3: fallback cues (only if step1 & step2 empty)
   if (step1Hits.length === 0 && step2Hits.length === 0) {
     for (const anchor of iaAnchors) {
       const text = anchor.text.trim();
@@ -196,8 +194,6 @@ export function extractIPRandL(
         }
       }
     }
-    if (step3Hits.length) logDebug(">>> ip.iaStep3.fired", { count: step3Hits.length });
-    else logDebug(">>> ip.iaStep3.noToCapture", { anchors: iaAnchors.length });
   }
 
   // Deduplicate and emit
@@ -234,7 +230,7 @@ export function extractIPRandL(
     });
   });
 
-  return candidates; // ✅ always return
+  return candidates;
 }
 
 // --- helper ---

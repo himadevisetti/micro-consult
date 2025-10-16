@@ -11,7 +11,7 @@ import {
 
 const router = Router();
 
-// ✅ Return list of templates for a customer
+// Return list of templates for a customer
 router.get("/templates/:customerId", (req, res) => {
   const { customerId } = req.params;
 
@@ -47,14 +47,22 @@ router.get("/templates/:customerId", (req, res) => {
         };
       });
 
+    const manifestCount = templates.filter(t => t.hasManifest).length;
+    const missingManifestCount = templates.length - manifestCount;
+
     logDebug("getTemplates.success", {
       customerId,
       templateCount: templates.length,
-      templates: templates.map((t) => ({
-        id: t.id,
-        hasManifest: t.hasManifest,
-      })),
+      manifestCount,
+      missingManifestCount,
     });
+
+    if (process.env.DEBUG_TRACE === "true") {
+      logDebug("getTemplates.success.detail", {
+        customerId,
+        missingTemplates: templates.filter(t => !t.hasManifest).map(t => t.id),
+      });
+    }
 
     return res.json({ templates });
   });

@@ -100,12 +100,6 @@ export function extractDatesAndFilingParty(
       const dateMatch = windowText.match(monthDateRegex);
       if (dateMatch) {
         emitDate(dateMatch[0], "executionDate", curr);
-        logDebug(">>> executionDate.signatureBlock", {
-          match: dateMatch[0],
-          page: curr.page,
-          y: curr.y,
-          sourcePreview: curr.text.slice(0, 80),
-        });
       }
     }
 

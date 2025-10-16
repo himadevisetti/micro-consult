@@ -32,19 +32,14 @@ async function startDevServer() {
   // Serve styles if needed (dev only)
   app.use("/src/styles", express.static(path.resolve(__dirname, "src/styles")));
 
-  // PDF export route
+  // API routes
   app.use("/api", exportPdfRoute);
-
-  // Return list of templates for a customer
   app.use("/api", listTemplatesRoute);
-
-  // Upload a new template for a customer
   app.use("/api", uploadTemplateRoute);
-
-  // Confirm mapping for a template
   app.use("/api", confirmMappingRoute);
 
   if (isDev) {
+    // ✅ Vite in middleware mode handles HMR + frontend assets
     const vite = await createViteServer({
       server: { middlewareMode: true },
       root: frontendSourcePath,
@@ -74,7 +69,6 @@ async function startDevServer() {
       azureEndpoint: process.env.AZURE_FORM_RECOGNIZER_ENDPOINT,
     });
   });
-
 }
 
 startDevServer();

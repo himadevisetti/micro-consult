@@ -3,19 +3,15 @@ import { Router, Request } from "express";
 import fs from "fs";
 import path from "path";
 import multer from "multer";
-
 import { logDebug } from "../../utils/logger.js";
 import {
   allowedExtensions,
   storageBasePath,
   formRecClient,
 } from "../config.js";
-import {
-  mergeCandidates,
-  sortCandidatesByDocumentOrder,
-  logAllReadFields,
-  deriveCandidatesFromRead,
-} from "../../utils/candidateUtils.js";
+import { mergeCandidates } from "../../utils/candidates/mergeCandidates.js";
+import { sortCandidatesByDocumentOrder } from "../../utils/candidates/sortCandidatesByDocumentOrder.js";
+import { deriveCandidatesFromRead } from "../../utils/candidates/deriveCandidatesFromRead.js";
 import { saveCandidates } from "../../infrastructure/sessionStore.js";
 
 const router = Router();
@@ -27,7 +23,7 @@ interface MulterRequest extends Request {
   file?: Express.Multer.File;
 }
 
-// ✅ Upload template route
+// Upload template route
 router.post(
   "/templates/:customerId/upload",
   upload.single("file"),
@@ -68,7 +64,6 @@ router.post(
       logDebug("upload.prebuiltRead", {
         preview: readResult.content?.slice(0, 500),
       });
-      logAllReadFields(readResult);
 
       // Extract candidates
       const { candidates: readCandidates } = deriveCandidatesFromRead(readResult);

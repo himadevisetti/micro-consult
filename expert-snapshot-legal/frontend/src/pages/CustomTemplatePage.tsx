@@ -1,5 +1,5 @@
 import { useNavigate, useLocation } from 'react-router-dom';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import homeStyles from '../styles/HomePage.module.css';
 import formStyles from '../styles/StandardRetainerForm.module.css';
 import { FormType, RetainerTypeLabel } from '@/types/FormType';
@@ -20,8 +20,9 @@ const CustomTemplatePage = () => {
   const [showModal, setShowModal] = useState(false);
 
   const [showSuccess, setShowSuccess] = useState(false);
+  const hasFetched = useRef(false);
 
-  // ✅ consume success flag once and clear it
+  // consume success flag once and clear it
   useEffect(() => {
     if (location.state?.success) {
       setShowSuccess(true);
@@ -34,7 +35,7 @@ const CustomTemplatePage = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // ✅ auto-dismiss after 10s
+  // auto-dismiss after 10s
   useEffect(() => {
     if (showSuccess) {
       const timer = setTimeout(() => setShowSuccess(false), 10000);
@@ -43,7 +44,11 @@ const CustomTemplatePage = () => {
   }, [showSuccess]);
 
   useEffect(() => {
-    const customerId = 'customer-001';
+    // guard to prevent double‑fetch in StrictMode
+    if (hasFetched.current) return;
+    hasFetched.current = true;
+
+    const customerId = "customer-001";
     const timer = setTimeout(() => setShowSpinner(true), 200);
 
     fetch(`/api/templates/${customerId}`)
@@ -130,7 +135,7 @@ const CustomTemplatePage = () => {
         </div>
       </section>
 
-      {/* ✅ Success banner below the section, using formStyles */}
+      {/* Success banner below the section, using formStyles */}
       <div
         className={`${formStyles.successBanner} ${showSuccess ? formStyles.show : formStyles.hide
           }`}
