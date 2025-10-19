@@ -144,29 +144,29 @@ export const CONTRACT_KEYWORDS = {
 
 // Recognized placeholder schema fields
 export const PLACEHOLDER_KEYWORDS: Record<string, string> = {
-  partya: "PartyA",
-  partyb: "PartyB",
-  client: "Client",
-  provider: "Provider",
-  inventor: "Inventor",
-  effectivedate: "EffectiveDate",
-  executiondate: "ExecutionDate",
-  expirationdate: "ExpirationDate",
-  contractduration: "ContractDuration",
-  feeamount: "FeeAmount",
-  retaineramount: "RetainerAmount",
-  filingparty: "FilingParty",
-  iptype: "IPType",
-  licensescope: "LicenseScope",
-  inventionassignment: "InventionAssignment",
-  scope: "Scope",
-  feestructure: "FeeStructure",
-  governinglaw: "GoverningLaw",
-  signatory: "Signatory",
+  partya: "partyA",
+  partyb: "partyB",
+  client: "client",
+  provider: "provider",
+  inventor: "inventor",            // inventor1, inventor2 handled by digits
+  effectivedate: "effectiveDate",
+  executiondate: "executionDate",
+  expirationdate: "expirationDate",
+  contractduration: "contractDuration",
+  feeamount: "feeAmount",
+  retaineramount: "retainerAmount",
+  filingparty: "filingParty",
+  iptype: "ipType",
+  licensescope: "licenseScope",
+  inventionassignment: "inventionAssignment",
+  scope: "scope",
+  feestructure: "feeStructure",
+  governinglaw: "governingLaw",
+  signatory: "signatory",          // signatory1, signatory2 handled by digits
 };
 
-// Regex to detect {{placeholders}}
-export const PLACEHOLDER_REGEX = /\{\{([a-zA-Z0-9_]+)\}\}/g;
+// Regex to detect [[placeholders]]
+export const PLACEHOLDER_REGEX = /\[\[([a-zA-Z0-9_]+)\]\]/g;
 
 // User‑friendly labels for schema fields
 export const FIELD_LABELS: Record<string, string> = {

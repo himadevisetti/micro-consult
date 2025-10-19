@@ -38,19 +38,20 @@
 }
 
 .formRow {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
+  display: grid;
+  grid-template-columns: 180px 1fr;
+  align-items: start;
+  column-gap: 1rem;
   margin-bottom: 0.75rem;
 }
 
 .label {
-  min-width: 160px;
   font-weight: bold;
-  margin-right: 1rem;
-  margin-bottom: 0.5rem;
   color: var(--color-forest);
   font-family: var(--font-sans);
+  white-space: normal;
+  word-break: break-word;
+  margin-bottom: 0;
 }
 
 .input,

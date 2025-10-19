@@ -151,7 +151,7 @@ export function extractActors(anchors: TextAnchor[]): Candidate[] {
 
   const deduped = dedupeByRawValue(rawInventors);
   deduped.forEach((c, idx) => {
-    const schemaField = deduped.length === 1 ? "Inventor" : `Inventor${idx + 1}`;
+    const schemaField = deduped.length === 1 ? "inventor" : `inventor${idx + 1}`;
     candidates.push({
       ...c,
       schemaField,
@@ -167,8 +167,8 @@ export function extractActors(anchors: TextAnchor[]): Candidate[] {
 function toInventorCandidate(rawValue: string, anchor: TextAnchor): Candidate {
   return {
     rawValue,
-    schemaField: "Inventor", // temporary, replaced later
-    candidates: ["Inventor"],
+    schemaField: "inventor", // temporary, replaced later
+    candidates: ["inventor"],
     pageNumber: anchor.page,
     yPosition: anchor.y,
     roleHint: anchor.roleHint,

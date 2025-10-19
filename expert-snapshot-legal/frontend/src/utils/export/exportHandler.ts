@@ -1,5 +1,31 @@
 // src/utils/export/exportHandler.ts
 
+/**
+ * Hybrid export model (updated, unified pipeline):
+ *
+ * - Preview HTML:
+ *   Returned from backend `/generate` with format=html,
+ *   then rendered directly in the preview page.
+ *
+ * - DOCX (standard flows):
+ *   Generated client‑side with generateDOCX() for responsiveness.
+ *   This path is used for Retainer, Startup Advisory, Employment, etc.
+ *
+ * - DOCX (Custom Template Generate flow):
+ *   Now unified with backend `/generate` route.
+ *   The backend loads the seed DOCX, runs Docxtemplater substitution once,
+ *   and returns the merged DOCX. This ensures pixel‑perfect fidelity
+ *   and avoids duplicating substitution logic on the frontend.
+ *
+ * - PDF:
+ *   Generated server‑side via /api/export-pdf for fidelity (slower).
+ *
+ * This split is intentional:
+ *   • Keep fast paths on the frontend for responsiveness.
+ *   • Offload heavy PDF rendering and custom template substitution to the backend.
+ *   • Preserve fidelity for user‑uploaded templates via Docxtemplater.
+ */
+
 import { generateDOCX } from './generateDOCX.js';
 import { getFilename } from '../../utils/generateFilename.js';
 import { FormType, RetainerTypeLabel } from '@/types/FormType';
@@ -67,9 +93,30 @@ function resolveMetadata(formData: Record<string, any>, formType: FormType) {
       break;
 
     case FormType.CustomTemplate:
-      client = formData.clientName?.trim() || 'Client';
-      purpose = 'Custom legal document';
+    case FormType.CustomTemplateGenerate: {
+      const candidateKeys = [
+        'clientName',
+        'companyName',
+        'employeeName',
+        'providerName',
+        'advisorName',
+        'inventorName',
+        'partyA',
+        'partyB',
+      ];
+
+      let identifier = '';
+      for (const key of candidateKeys) {
+        if (formData[key]) {
+          identifier = String(formData[key]).trim();
+          break;
+        }
+      }
+
+      client = identifier || 'Document';
+      purpose = 'Custom document';
       break;
+    }
 
     default:
       client = formData.clientName?.trim() || 'Client';
@@ -84,14 +131,16 @@ export async function exportRetainer<T extends Record<string, any>>(
   type: 'pdf' | 'docx',
   formType: FormType,
   formData: T,
-  html?: string
+  html?: string,
+  customerId?: string,   // required only for CustomTemplateGenerate
+  templateId?: string    // required only for CustomTemplateGenerate
 ) {
-  const { client: resolvedClient, purpose: resolvedMatter, extraMetadata } =
+  const { client: resolvedClient, purpose: resolvedMatter } =
     resolveMetadata(formData, formType);
 
   const retainerType = RetainerTypeLabel[formType];
-  const normalizedFormType = slugifyFormType(formType); // e.g. 'ip-rights-licensing'
-  const today = new Date().toISOString(); // let getFilename handle date formatting
+  const normalizedFormType = slugifyFormType(formType);
+  const today = new Date().toISOString();
 
   const filename = getFilename(
     type === 'pdf' ? 'final' : 'draft',
@@ -103,52 +152,44 @@ export async function exportRetainer<T extends Record<string, any>>(
   let blob: Blob | null = null;
 
   try {
-    if (!html) throw new Error(`Missing HTML for ${type.toUpperCase()} export`);
-
     if (type === 'pdf') {
+      if (!html) throw new Error(`Missing HTML for PDF export`);
+      // Backend path: PDF rendering is heavy, handled server‑side
       const response = await fetch('/api/export-pdf', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ html, filename }),
       });
-
       if (!response.ok) throw new Error(`PDF export failed: ${response.statusText}`);
-
       const arrayBuffer = await response.arrayBuffer();
       blob = new Blob([arrayBuffer], { type: 'application/pdf' });
-    } else {
+    } else if (type === 'docx' && formType === FormType.CustomTemplateGenerate) {
+      if (!customerId || !templateId) {
+        throw new Error('Missing customerId or templateId for custom template export');
+      }
+      // 🔹 Unified backend path: call /generate with format=docx
+      const response = await fetch(
+        `/api/templates/${encodeURIComponent(customerId)}/${encodeURIComponent(templateId)}/generate`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ variables: formData, format: 'docx' }),
+        }
+      );
+      if (!response.ok) throw new Error(`Custom template DOCX export failed: ${response.statusText}`);
+      const arrayBuffer = await response.arrayBuffer();
+      blob = new Blob([arrayBuffer], {
+        type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      });
+    } else if (type === 'docx') {
+      if (!html) throw new Error(`Missing HTML for DOCX export`);
+      // Frontend path: DOCX generated locally for speed
       blob = await generateDOCX({ html, filename });
     }
   } catch (err) {
     console.error(`[Export Error] Failed to generate ${type.toUpperCase()} blob:`, err);
     alert('Export failed. Please try again or contact support.');
     return;
-  }
-
-  // Dev-only save to backend for debugging/QA
-  if (process.env.NODE_ENV === 'development' && blob && typeof blob.arrayBuffer === 'function') {
-    try {
-      const fileArrayBuffer = await blob.arrayBuffer();
-      const fileData = Array.from(new Uint8Array(fileArrayBuffer));
-
-      await fetch('/api/saveExport', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          filename,
-          fileData,
-          metadata: {
-            client: resolvedClient,
-            purpose: resolvedMatter,
-            template: retainerType,
-            formType: normalizedFormType,
-            ...extraMetadata,
-          },
-        }),
-      });
-    } catch (err) {
-      console.warn('Failed to save export:', err);
-    }
   }
 
   if (blob) {

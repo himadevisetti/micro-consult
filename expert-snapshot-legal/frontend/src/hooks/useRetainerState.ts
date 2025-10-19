@@ -76,13 +76,16 @@ export function useRetainerState<T extends Record<string, any>>(
     sessionStorage.setItem(sessionStorageKey, JSON.stringify(payload));
     console.log('Form submitted successfully:', payload);
 
-    navigate(`/preview/${formType}`, {
-      state: {
-        formData: payload,
-        previewHtml: html,
-        metadata,
-      },
-    });
+    // Only navigate for non-CustomTemplateGenerate flows
+    if (formType !== FormType.CustomTemplateGenerate) {
+      navigate(`/preview/${formType}`, {
+        state: {
+          formData: payload,
+          previewHtml: html,
+          metadata,
+        },
+      });
+    }
   };
 
   return {

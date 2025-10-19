@@ -9,6 +9,8 @@ import exportPdfRoute from "./src/server/routes/exportPdf.js";
 import listTemplatesRoute from "./src/server/routes/listTemplates.js";
 import uploadTemplateRoute from "./src/server/routes/uploadTemplate.js";
 import confirmMappingRoute from "./src/server/routes/confirmMapping.js";
+import getManifestRoute from './src/server/routes/getManifest.js';
+import generateDocumentRoute from './src/server/routes/generateDocument.js';
 import { logDebug } from "./src/utils/logger.js";
 
 // Shared config
@@ -37,9 +39,11 @@ async function startDevServer() {
   app.use("/api", listTemplatesRoute);
   app.use("/api", uploadTemplateRoute);
   app.use("/api", confirmMappingRoute);
+  app.use('/api', getManifestRoute);
+  app.use('/api', generateDocumentRoute);
 
   if (isDev) {
-    // ✅ Vite in middleware mode handles HMR + frontend assets
+    // Vite in middleware mode handles HMR + frontend assets
     const vite = await createViteServer({
       server: { middlewareMode: true },
       root: frontendSourcePath,

@@ -20,7 +20,7 @@ export function formatFieldLabel(schemaField: string): string {
  */
 export function toPlaceholder(schemaField: string | null | undefined): string {
   if (!schemaField || !schemaField.trim()) {
-    return "{{Field}}"; // generic fallback
+    return "[[Field]]"; // generic fallback
   }
 
   // Extract trailing digits (e.g. Inventor1 → "1")
@@ -32,7 +32,7 @@ export function toPlaceholder(schemaField: string | null | undefined): string {
     (PLACEHOLDER_KEYWORDS as Record<string, string>)[base] ??
     capitalize(schemaField.replace(/\d+$/, ""));
 
-  return digits ? `{{${token}${digits}}}` : `{{${token}}}`;
+  return digits ? `[[${token}${digits}]]` : `[[${token}]]`;
 }
 
 function capitalize(s: string): string {

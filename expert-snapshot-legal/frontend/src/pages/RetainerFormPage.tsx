@@ -1,5 +1,4 @@
 // src/pages/RetainerFormPage.tsx
-
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import StandardRetainerFlow from '../components/FormFlows/StandardRetainerFlow';
@@ -7,6 +6,7 @@ import IPRightsLicensingFlow from '../components/FormFlows/IPRightsLicensingFlow
 import StartupAdvisoryFlow from '../components/FormFlows/StartupAdvisoryFlow';
 import EmploymentAgreementFlow from '../components/FormFlows/EmploymentAgreementFlow';
 import CustomTemplateFlow from '../components/FormFlows/CustomTemplateFlow';
+import GenerateDocumentFlow from '../components/FormFlows/GenerateDocumentFlow';
 import PageLayout from '../components/PageLayout';
 import { FormType } from '@/types/FormType';
 import { formSchemas } from '../schemas/formSchemas';
@@ -14,7 +14,8 @@ import UploadTemplateFlow from '../components/FormFlows/UploadTemplateFlow';
 
 const RetainerFormPage = () => {
   const navigate = useNavigate();
-  const { type } = useParams(); // e.g. 'standard-retainer', 'ip-rights-licensing', 'startup-advisory', 'employment-agreement', 'custom-template'
+  // ⬇️ Grab both type and templateId from the URL
+  const { type, templateId } = useParams<{ type: string; templateId?: string }>();
 
   const isValidType = type && Object.values(FormType).includes(type as FormType);
   const formType = isValidType ? (type as FormType) : FormType.StandardRetainer;
@@ -44,17 +45,25 @@ const RetainerFormPage = () => {
         return <EmploymentAgreementFlow schema={formSchemas[FormType.EmploymentAgreement]} />;
 
       case FormType.CustomTemplate:
-        return <CustomTemplateFlow />;
+        return (
+          <CustomTemplateFlow
+            customerId="customer-001" // TODO: replace with session user
+          />
+        );
 
       case FormType.CustomTemplateUpload:
         return (
           <UploadTemplateFlow
-            customerId="customer-001"   // TODO: replace with session user
+            customerId="customer-001" // TODO: replace with session user
           />
         );
 
       case FormType.CustomTemplateGenerate:
-        return <div>Generate flow coming soon</div>;
+        return (
+          <GenerateDocumentFlow
+            customerId="customer-001" // TODO: replace with session user
+          />
+        );
 
       default:
         return null;
