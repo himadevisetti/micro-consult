@@ -17,6 +17,9 @@ export default function CustomTemplatePreviewPage() {
   const customerId = location.state?.customerId as string | undefined;
   const templateId = location.state?.templateId as string | undefined;
 
+  // Extract templateType from metadata
+  const templateType = (metadata?.templateType ?? "docx") as "docx" | "pdf";
+
   useEffect(() => {
     if (!formData || !previewHtml) {
       navigate(`/form/${formType}`, { replace: true });
@@ -42,9 +45,13 @@ export default function CustomTemplatePreviewPage() {
   };
 
   const onBackClick = () => {
-    navigate(`/form/${formType}`, {
+    navigate(`/form/${formType}/${templateId}`, {
       state: { formData, templateFile, metadata, customerId, templateId },
     });
+  };
+
+  const onTemplateClick = () => {
+    navigate('/form/custom-template');
   };
 
   const onRefresh = () => {
@@ -52,7 +59,12 @@ export default function CustomTemplatePreviewPage() {
   };
 
   return (
-    <PageLayout onHomeClick={onHomeClick} onBackClick={onBackClick} scrollable>
+    <PageLayout
+      onHomeClick={onHomeClick}
+      onBackClick={onBackClick}
+      onTemplateClick={onTemplateClick}
+      scrollable
+    >
       <CustomTemplatePreview
         html={previewHtml}
         onRefresh={onRefresh}
@@ -61,6 +73,7 @@ export default function CustomTemplatePreviewPage() {
         formType={formType}
         customerId={customerId}
         templateId={templateId}
+        templateType={templateType}
       />
     </PageLayout>
   );

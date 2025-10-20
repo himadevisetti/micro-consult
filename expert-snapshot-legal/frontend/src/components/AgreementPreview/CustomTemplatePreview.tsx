@@ -15,6 +15,7 @@ export interface CustomTemplatePreviewProps {
   formType: FormType;
   customerId?: string;
   templateId?: string;
+  templateType: "docx" | "pdf";
 }
 
 export default function CustomTemplatePreview({
@@ -25,6 +26,7 @@ export default function CustomTemplatePreview({
   formType,
   customerId,
   templateId,
+  templateType,
 }: CustomTemplatePreviewProps) {
   const previewRef = useRef<HTMLDivElement>(null);
 
@@ -45,7 +47,6 @@ export default function CustomTemplatePreview({
         templateId
       );
     } catch (err) {
-      // still log errors for visibility
       console.error("CustomTemplatePreview.export.error", { type, error: err });
     }
   };
@@ -58,7 +59,11 @@ export default function CustomTemplatePreview({
         <div dangerouslySetInnerHTML={{ __html: html }} />
       </div>
 
-      <DownloadToggle onDownload={(type) => handleExport(type)} />
+      <DownloadToggle
+        onDownload={(type) => handleExport(type)}
+        showDocx={templateType === "docx"}
+        showPdf={templateType === "pdf"}
+      />
     </div>
   );
 }

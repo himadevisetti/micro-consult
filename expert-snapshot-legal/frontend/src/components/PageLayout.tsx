@@ -1,5 +1,4 @@
 // src/components/PageLayout.tsx
-
 import React from 'react';
 import AppHeader from './AppHeader';
 import styles from '../styles/PageLayout.module.css';
@@ -10,6 +9,7 @@ interface PageLayoutProps {
   showHomeButton?: boolean;
   onHomeClick?: () => void;
   onBackClick?: () => void;
+  onTemplateClick?: () => void;
   scrollable?: boolean;
   mainHeading?: string;
 }
@@ -19,6 +19,7 @@ const PageLayout: React.FC<PageLayoutProps> = ({
   showHomeButton,
   onHomeClick,
   onBackClick,
+  onTemplateClick,
   scrollable = false,
   mainHeading,
 }) => {
@@ -26,6 +27,9 @@ const PageLayout: React.FC<PageLayoutProps> = ({
   const isHomePage = location.pathname === '/';
 
   const shouldShowHomeButton = showHomeButton ?? !isHomePage;
+
+  // detect if we are on Custom Template Preview page
+  const isCustomTemplatePreview = location.pathname.startsWith('/preview/custom-template-generate');
 
   return (
     <div
@@ -35,7 +39,8 @@ const PageLayout: React.FC<PageLayoutProps> = ({
         showHomeButton={shouldShowHomeButton}
         onHomeClick={onHomeClick}
         onBackClick={onBackClick}
-        mainHeading={mainHeading} // <-- forward to AppHeader
+        onTemplateClick={isCustomTemplatePreview ? onTemplateClick : undefined}
+        mainHeading={mainHeading}
       />
       <main
         className={`${styles.pageContent} ${!isHomePage ? styles.fullWidth : ''}`}

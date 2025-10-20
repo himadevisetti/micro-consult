@@ -6,12 +6,14 @@
   --color-gold: #d4af37;
   --color-creme: #f9f7f2;
   --color-creme-light: #fef6d3;
+  --color-white: #ffffff;
 
   /* Aliases (preferred app tokens) */
   --forest-green: var(--color-forest);
   --gold: var(--color-gold);
   --cream: var(--color-creme);
   --cream-light: var(--color-creme-light);
+  --white: var(--color-white);
 
   /* UI intent tokens */
   --hover-bg: var(--cream-light);

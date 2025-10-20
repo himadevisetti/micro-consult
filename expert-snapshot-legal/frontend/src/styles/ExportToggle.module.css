@@ -13,14 +13,28 @@
   font-family: var(--font-sans);
   border-radius: var(--radius-sm);
   cursor: pointer;
-  border: 2px solid var(--color-forest);
-  background-color: var(--color-creme-light);
-  color: var(--color-forest);
+  border: 2px solid var(--forest-green);
+  background-color: var(--forest-green);
+  color: var(--white);
   transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
 }
 
+/* Hover state */
 .downloadButton:hover {
-  background-color: var(--color-forest);
-  color: white;
-  border-color: var(--color-forest);
+  background-color: var(--cream-light);
+  color: var(--forest-green);
+  border-color: var(--forest-green);
+}
+
+/* Focus-visible state for keyboard navigation */
+.downloadButton:focus-visible {
+  outline: 3px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+
+/* Active (pressed) state for mouse/touch users */
+.downloadButton:active {
+  background-color: var(--success-green);
+  color: var(--white);
+  border-color: var(--success-green);
 }

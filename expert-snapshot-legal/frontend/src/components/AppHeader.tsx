@@ -7,6 +7,7 @@ interface AppHeaderProps {
   showHomeButton?: boolean;
   onHomeClick?: () => void;
   onBackClick?: () => void;
+  onTemplateClick?: () => void;
   mainHeading?: string;
 }
 
@@ -14,6 +15,7 @@ const AppHeader: React.FC<AppHeaderProps> = ({
   showHomeButton = false,
   onHomeClick,
   onBackClick,
+  onTemplateClick,
   mainHeading,
 }) => {
   return (
@@ -34,6 +36,17 @@ const AppHeader: React.FC<AppHeaderProps> = ({
             ⬅️ Back
           </button>
         )}
+
+        {onTemplateClick && (
+          <button
+            className={styles.homeButton}
+            onClick={onTemplateClick}
+            aria-label="Go to Custom Template"
+          >
+            📑 Template
+          </button>
+        )}
+
         <button
           className={`${styles.homeButton} ${showHomeButton ? styles.visible : styles.hidden}`}
           onClick={onHomeClick}

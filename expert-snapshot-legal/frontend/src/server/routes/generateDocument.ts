@@ -1,14 +1,11 @@
 // src/server/routes/generateDocument.ts
-//
-// Route for generating documents from templates.
-// Supports HTML preview, DOCX download, and (future) PDF conversion.
 
 import { Router } from "express";
 import fs from "fs";
 import path from "path";
 import { storageBasePath } from "../config.js";
 import { logDebug } from "../../utils/logger.js";
-import { transformVariables } from '../utils/transformVariables.js';
+import { transformVariables } from "../utils/transformVariables.js";
 import { generateDocxFromTemplate } from "../utils/generateDocxFromTemplate.js";
 import mammoth from "mammoth";
 
@@ -32,9 +29,23 @@ router.post(
 
     try {
       const templateDir = path.join(storageBasePath, customerId, "templates");
-      const docxPath = path.join(templateDir, `${templateId}.docx`);
 
-      if (!fs.existsSync(docxPath)) {
+      // Detect template type by checking which file exists
+      const docxPath = path.join(templateDir, `${templateId}.docx`);
+      const pdfPath = path.join(templateDir, `${templateId}.pdf`);
+
+      let templatePath: string | null = null;
+      let templateType: "docx" | "pdf" | null = null;
+
+      if (fs.existsSync(docxPath)) {
+        templatePath = docxPath;
+        templateType = "docx";
+      } else if (fs.existsSync(pdfPath)) {
+        templatePath = pdfPath;
+        templateType = "pdf";
+      }
+
+      if (!templatePath || !templateType) {
         return res
           .status(404)
           .json({ success: false, error: "Template not found" });
@@ -43,6 +54,7 @@ router.post(
       logDebug("generateDocument.start", {
         customerId,
         templateId,
+        templateType,
         format,
         variableCount: variables ? Object.keys(variables).length : 0,
       });
@@ -59,14 +71,18 @@ router.post(
         });
       }
 
-      // Load template and run substitution
-      const templateBuffer = fs.readFileSync(docxPath);
-      const mergedBuffer = generateDocxFromTemplate(
-        templateBuffer,
-        transformVariables(variables || {})
-      );
+      // For DOCX templates, run substitution
+      let mergedBuffer: Buffer | null = null;
+      if (templateType === "docx") {
+        const templateBuffer = fs.readFileSync(templatePath);
+        mergedBuffer = generateDocxFromTemplate(
+          templateBuffer,
+          transformVariables(variables || {})
+        );
+      }
 
-      if (format === "docx") {
+      // Handle downloads
+      if (format === "docx" && templateType === "docx") {
         res.setHeader(
           "Content-Disposition",
           `attachment; filename="${templateId}.docx"`
@@ -79,35 +95,48 @@ router.post(
       }
 
       if (format === "pdf") {
-        // TODO: integrate DOCX→PDF conversion here
-        res.setHeader(
-          "Content-Disposition",
-          `attachment; filename="${templateId}.pdf"`
-        );
-        res.setHeader("Content-Type", "application/pdf");
+        if (templateType === "pdf") {
+          // Stream static PDF template
+          res.setHeader(
+            "Content-Disposition",
+            `attachment; filename="${templateId}.pdf"`
+          );
+          res.setHeader("Content-Type", "application/pdf");
+          return fs.createReadStream(templatePath).pipe(res);
+        }
+        // TODO: integrate DOCX→PDF conversion
         return res.status(501).json({
           success: false,
-          error: "PDF generation not yet implemented",
+          error: "PDF generation not yet implemented for DOCX templates",
         });
       }
 
+      // Unified HTML preview branch
       if (format === "html") {
-        // Convert merged DOCX buffer to HTML for preview
-        const { value: html } = await mammoth.convertToHtml({
-          buffer: mergedBuffer,
-        });
-        return res.json({
-          previewHtml: html,
-          metadata: { templateId, customerId },
-        });
+        if (templateType === "docx") {
+          const { value: html } = await mammoth.convertToHtml({
+            buffer: mergedBuffer!,
+          });
+          return res.json({
+            previewHtml: html,
+            metadata: { templateId, customerId, templateType },
+          });
+        }
+        if (templateType === "pdf") {
+          // TODO: implement PDF→HTML or PDF→image preview
+          return res.status(501).json({
+            success: false,
+            error: "HTML preview not yet supported for PDF templates",
+            metadata: { templateId, customerId, templateType },
+          });
+        }
       }
 
       return res
         .status(400)
-        .json({ success: false, error: "Unsupported format" });
+        .json({ success: false, error: "Unsupported format or template type" });
     } catch (err: unknown) {
       if (err instanceof Error) {
-        // Standard JS error
         logDebug("generateDocument.error", {
           message: err.message,
           stack: err.stack,
@@ -117,7 +146,6 @@ router.post(
           .json({ success: false, error: err.message });
       }
 
-      // Docxtemplater sometimes throws objects with `properties`
       if (typeof err === "object" && err !== null && "properties" in err) {
         const e = err as { message?: string; properties?: any };
         logDebug("generateDocument.templateError", {
@@ -131,7 +159,6 @@ router.post(
         });
       }
 
-      // Fallback
       logDebug("generateDocument.unknownError", { err });
       return res
         .status(500)
