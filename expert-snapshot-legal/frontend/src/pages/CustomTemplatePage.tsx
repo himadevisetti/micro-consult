@@ -47,6 +47,14 @@ const CustomTemplatePage = ({ customerId }: CustomTemplatePageProps) => {
   }, [showSuccess]);
 
   useEffect(() => {
+    // Only run fetch if we are on a Custom Template route
+    const path = location.pathname;
+    const isCustomTemplateRoute =
+      path.startsWith(`/form/${FormType.CustomTemplate}`) ||
+      path.startsWith(`/form/${FormType.CustomTemplateUpload}`) ||
+      path.startsWith(`/form/${FormType.CustomTemplateGenerate}`);
+
+    if (!isCustomTemplateRoute) return;
     if (hasFetched.current) return;
     hasFetched.current = true;
 
@@ -66,7 +74,7 @@ const CustomTemplatePage = ({ customerId }: CustomTemplatePageProps) => {
       });
 
     return () => clearTimeout(timer);
-  }, [customerId]);
+  }, [customerId, location.pathname]);
 
   const readyTemplates = templates.filter((t) => t.hasManifest);
 
@@ -76,7 +84,6 @@ const CustomTemplatePage = ({ customerId }: CustomTemplatePageProps) => {
 
   const handleGenerateClick = () => {
     if (readyTemplates.length === 1) {
-      // navigate with FormType.CustomTemplateGenerate + templateId
       navigate(`/form/${FormType.CustomTemplateGenerate}/${readyTemplates[0].id}`);
     } else if (readyTemplates.length > 1) {
       setShowModal(true);

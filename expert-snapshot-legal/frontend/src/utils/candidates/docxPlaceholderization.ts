@@ -17,6 +17,7 @@ import {
   PLACEHOLDER_KEYWORDS,
   PLACEHOLDER_REGEX
 } from "../../constants/contractKeywords.js";
+import { escapeRegExp } from "../escapeRegExp.js";
 
 const TRACE = process.env.DEBUG_TRACE === "true";
 
@@ -118,10 +119,6 @@ export async function placeholderizeDocx(
   }
 
   return { placeholderBuffer, enrichedCandidates };
-}
-
-function escapeRegExp(str: string): string {
-  return str.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
 /**

@@ -658,14 +658,14 @@ select[multiple] {
 
 .closeButton {
   position: absolute;
-  top: 6px;
-  right: 6px;
+  top: 4px;
+  right: 4px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 1.5rem;
-  height: 1.5rem;
-  border: none;
+  width: 1.25rem;
+  height: 1.25rem;
+  border: 1px solid var(--success-green);
   border-radius: 50%;
   background-color: var(--cream-light);
   color: inherit;

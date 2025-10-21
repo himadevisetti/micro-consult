@@ -3,6 +3,7 @@ import { TextAnchor } from "../../types/TextAnchor";
 import { CONTRACT_KEYWORDS } from "../../constants/contractKeywords.js";
 import { normalizeBySchema, normalizeHeading } from "../normalizeValue.js";
 import { logDebug } from "../logger.js";
+import { collectSectionBody } from "../sectionUtils.js";
 
 /**
  * Fee Structure extraction:
@@ -16,31 +17,11 @@ export function extractFeeStructure(anchors: TextAnchor[]): Candidate[] {
   // Normalized heading list for Fees
   const FEES_HEADINGS = CONTRACT_KEYWORDS.headings.byField.fees.map(normalizeHeading);
 
-  // Find the start of the Fees section
-  const startIdx = anchors.findIndex(a =>
-    FEES_HEADINGS.includes(normalizeHeading(a.text))
-  );
-  if (startIdx === -1) {
-    return candidates; // no Fees section found
-  }
+  // Use helper to collect section body
+  const section = collectSectionBody(anchors, FEES_HEADINGS);
+  if (!section) return candidates;
 
-  // Find the end (next heading after Fees)
-  let endIdx = anchors.length;
-  for (let i = startIdx + 1; i < anchors.length; i++) {
-    const norm = normalizeHeading(anchors[i].text);
-    if (
-      Object.values(CONTRACT_KEYWORDS.headings.byField)
-        .flat()
-        .map(normalizeHeading)
-        .includes(norm)
-    ) {
-      endIdx = i;
-      break;
-    }
-  }
-
-  // Collect body anchors between start and end
-  const bodyAnchors = anchors.slice(startIdx + 1, endIdx);
+  const { bodyAnchors } = section;
 
   for (const anchor of bodyAnchors) {
     const lower = anchor.text.toLowerCase();
@@ -58,7 +39,7 @@ export function extractFeeStructure(anchors: TextAnchor[]): Candidate[] {
           normalized: normalizeBySchema(rawMatch, "feeStructure"),
           pageNumber: anchor.page,
           yPosition: anchor.y,
-          roleHint: anchor.roleHint, // ✅ propagate from getTextAnchors
+          roleHint: anchor.roleHint,
           sourceText: anchor.text,
         });
 

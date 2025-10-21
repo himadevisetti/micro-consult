@@ -78,13 +78,14 @@ export function extractDatesAndFilingParty(
     }
   }
 
-  // --- Signature block detection ---
+  // --- Signature block detection (custom helper restored) ---
   const SIGNATURE_HEADINGS = CONTRACT_KEYWORDS.headings.byField.signatures.map(normalizeHeading);
   const IGNORE_SIGNATURE_LINES = CONTRACT_KEYWORDS.signatures.ignore.map(normalizeHeading);
 
   const sigStartIdx = anchors.findIndex(a =>
     SIGNATURE_HEADINGS.includes(normalizeHeading(a.text))
   );
+  // ✅ custom: grab everything from "Signatures" to EOF, or last 20 anchors
   const sigBlock = sigStartIdx >= 0 ? anchors.slice(sigStartIdx) : anchors.slice(-20);
 
   // Collect signatory anchors
@@ -115,7 +116,7 @@ export function extractDatesAndFilingParty(
     }
   }
 
-  // --- Filing Party resolution (derived, no positional anchors) ---
+  // --- Filing Party resolution ---
   const { inventorNames = [], partyA, partyB } = context;
   const sigTextLower = signatoryAnchors.map(a => a.text).join(" ").toLowerCase();
 
@@ -150,8 +151,6 @@ export function extractDatesAndFilingParty(
         rawValue: partyA,
         schemaField: "filingParty",
         candidates: ["filingParty"],
-        pageNumber: undefined,
-        yPosition: undefined,
         roleHint: "Filing Party",
         sourceText: undefined,
       });

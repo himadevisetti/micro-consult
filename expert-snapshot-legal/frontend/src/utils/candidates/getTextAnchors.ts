@@ -64,13 +64,25 @@ export function getTextAnchors(readResult: any): TextAnchor[] {
         const heading = isHeading(content);
         if (heading.is) {
           if (buffer) {
-            anchors.push({ text: buffer, page: page.pageNumber, y: bufferY, roleHint: currentHeading });
+            anchors.push({
+              text: buffer,
+              page: page.pageNumber,
+              y: bufferY,
+              roleHint: currentHeading,
+              wasHeading: false,
+            });
             if (TRACE) logDebug(`PDF EMIT body: page=${page.pageNumber} y=${bufferY} roleHint="${currentHeading ?? ""}" text="${buffer}"`);
             buffer = "";
           }
           currentHeading = content;
           const y = getY(line.boundingBox, lineIdx);
-          anchors.push({ text: content, page: page.pageNumber, y, roleHint: currentHeading });
+          anchors.push({
+            text: content,
+            page: page.pageNumber,
+            y,
+            roleHint: currentHeading,
+            wasHeading: true,
+          });
           if (TRACE) logDebug(`PDF HEADING: page=${page.pageNumber} y=${y} heading="${currentHeading}"`);
           continue;
         }
@@ -83,14 +95,26 @@ export function getTextAnchors(readResult: any): TextAnchor[] {
         }
 
         if (/[.?!]$/.test(content)) {
-          anchors.push({ text: buffer, page: page.pageNumber, y: bufferY, roleHint: currentHeading });
+          anchors.push({
+            text: buffer,
+            page: page.pageNumber,
+            y: bufferY,
+            roleHint: currentHeading,
+            wasHeading: false,
+          });
           if (TRACE) logDebug(`PDF EMIT sentence: page=${page.pageNumber} y=${bufferY} roleHint="${currentHeading ?? ""}" text="${buffer}"`);
           buffer = "";
         }
       }
 
       if (buffer) {
-        anchors.push({ text: buffer, page: page.pageNumber, y: bufferY, roleHint: currentHeading });
+        anchors.push({
+          text: buffer,
+          page: page.pageNumber,
+          y: bufferY,
+          roleHint: currentHeading,
+          wasHeading: false,
+        });
         if (TRACE) logDebug(`PDF EMIT tail: page=${page.pageNumber} y=${bufferY} roleHint="${currentHeading ?? ""}" text="${buffer}"`);
         buffer = "";
       }
@@ -127,7 +151,13 @@ export function getTextAnchors(readResult: any): TextAnchor[] {
       if (wasHeading) {
         currentHeading = text;
         const y = idx * 100;
-        anchors.push({ text, page: pageNum, y, roleHint: currentHeading });
+        anchors.push({
+          text,
+          page: pageNum,
+          y,
+          roleHint: currentHeading,
+          wasHeading: true,
+        });
         if (TRACE) logDebug(`  -> SET currentHeading="${currentHeading}" EMIT heading: page=${pageNum} y=${y}`);
         return;
       }
@@ -136,7 +166,13 @@ export function getTextAnchors(readResult: any): TextAnchor[] {
       for (let j = 0; j < parts.length; j++) {
         const s = parts[j];
         const y = idx * 100 + j;
-        anchors.push({ text: s, page: pageNum, y, roleHint: currentHeading });
+        anchors.push({
+          text: s,
+          page: pageNum,
+          y,
+          roleHint: currentHeading,
+          wasHeading: false,
+        });
         if (TRACE) logDebug(`  EMIT sentence: page=${pageNum} y=${y} roleHint="${currentHeading ?? ""}" text="${s}"`);
       }
     });
@@ -157,10 +193,22 @@ export function getTextAnchors(readResult: any): TextAnchor[] {
         const h = isHeading(line);
         if (h.is) {
           currentHeading = line;
-          anchors.push({ text: line, page: 1, y: idx, roleHint: currentHeading });
+          anchors.push({
+            text: line,
+            page: 1,
+            y: idx,
+            roleHint: currentHeading,
+            wasHeading: true,
+          });
           if (TRACE) logDebug(`FALLBACK HEADING: page=1 y=${idx} heading="${currentHeading}"`);
         } else {
-          anchors.push({ text: line, page: 1, y: idx, roleHint: currentHeading });
+          anchors.push({
+            text: line,
+            page: 1,
+            y: idx,
+            roleHint: currentHeading,
+            wasHeading: false,
+          });
           if (TRACE) logDebug(`FALLBACK EMIT: page=1 y=${idx} roleHint="${currentHeading ?? ""}" text="${line}"`);
         }
       });

@@ -3,6 +3,7 @@ import { TextAnchor } from "../../types/TextAnchor";
 import { CONTRACT_KEYWORDS } from "../../constants/contractKeywords.js";
 import { logDebug } from "../logger.js";
 import { normalizeHeading } from "../normalizeValue.js";
+import { collectSectionBody } from "../sectionUtils.js";
 
 export function extractActors(anchors: TextAnchor[]): Candidate[] {
   const candidates: Candidate[] = [];
@@ -10,31 +11,13 @@ export function extractActors(anchors: TextAnchor[]): Candidate[] {
   // Normalized heading list for Parties/Actors (includes Inventors variants)
   const ACTOR_HEADINGS = (CONTRACT_KEYWORDS.headings.byField.parties || []).map(normalizeHeading);
 
-  // Find the start of the Parties/Actors section
-  const startIdx = anchors.findIndex(a =>
-    ACTOR_HEADINGS.includes(normalizeHeading(a.text))
-  );
-  if (startIdx === -1) {
+  // Use helper to collect section body
+  const section = collectSectionBody(anchors, ACTOR_HEADINGS);
+  if (!section) {
     return candidates; // no Parties/Actors section found
   }
 
-  // Find the end (next heading after Parties/Actors section)
-  let endIdx = anchors.length;
-  for (let i = startIdx + 1; i < anchors.length; i++) {
-    const norm = normalizeHeading(anchors[i].text);
-    if (
-      Object.values(CONTRACT_KEYWORDS.headings.byField)
-        .flat()
-        .map(normalizeHeading)
-        .includes(norm)
-    ) {
-      endIdx = i;
-      break;
-    }
-  }
-
-  // Collect body anchors between start and end
-  const bodyAnchors = anchors.slice(startIdx + 1, endIdx);
+  const { bodyAnchors } = section;
 
   // --- Parties extraction ---
   for (const anchor of bodyAnchors) {

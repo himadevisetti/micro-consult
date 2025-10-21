@@ -25,16 +25,18 @@ export const CONTRACT_KEYWORDS = {
         "named inventors"
       ],
       scope: [
+        // canonical
         "scope of representation",
         "scope of work",
-        "ip description",
-        "intellectual property description",
+        "scope of license",
+        "scope of use",
+        "scope of services",
+        // ambiguous (only used as fallback with cue check)
         "position and duties",
         "responsibilities",
         "description of services",
         "job description",
-        "services",
-        "engagement",
+        "services"
       ],
       fees: [
         "fees & engagement terms",
@@ -42,6 +44,7 @@ export const CONTRACT_KEYWORDS = {
         "retainer",
         "costs & expenses",
         "compensation",
+        "engagement"
       ],
       confidentiality: ["confidentiality", "nondisclosure"],
       governingLaw: ["governing law", "jurisdiction"],
@@ -51,7 +54,11 @@ export const CONTRACT_KEYWORDS = {
         "assignment of intellectual property",
       ],
       licenseTerms: ["license terms"],
-      ipValidity: ["ip validity"],
+      ipValidity: [
+        "ip validity",
+        "ip description",
+        "intellectual property description",
+      ],
       entireAgreement: ["entire agreement", "entire agreement & amendments"],
       signatures: ["signatures"],
       standardRetainer: ["standard retainer agreement"],
@@ -192,6 +199,7 @@ export const FIELD_LABELS: Record<string, string> = {
 };
 
 export const ENUM_OPTIONS: Record<string, string[]> = {
-  feeStructure: ["Contingency", "Hourly", "Flat Fee"],
+  feeStructure: ["Contingency", "Hourly", "Flat"],
   licenseScope: ["Worldwide", "Exclusive", "Non-exclusive"],
+  ipType: ["Patent", "Trademark", "Copyright", "Trade Secret"],
 };

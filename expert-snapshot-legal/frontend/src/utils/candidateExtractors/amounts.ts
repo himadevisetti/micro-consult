@@ -3,34 +3,27 @@ import { TextAnchor } from "../../types/TextAnchor";
 import { CONTRACT_KEYWORDS } from "../../constants/contractKeywords.js";
 import { logDebug } from "../logger.js";
 import { normalizeHeading } from "../normalizeValue.js";
+import { collectSectionBody } from "../sectionUtils.js";
 
 export function extractAmounts(anchors: TextAnchor[]): Candidate[] {
   const candidates: Candidate[] = [];
-
   const amountRegex = /\$\s?\d[\d,]*(?:\.\d{2})?/g;
 
-  // Scope: only look under the Fees heading
+  // Normalized heading list for Fees
   const FEES_HEADINGS = CONTRACT_KEYWORDS.headings.byField.fees.map(normalizeHeading);
-  const startIdx = anchors.findIndex(a =>
-    FEES_HEADINGS.includes(normalizeHeading(a.text))
-  );
-  if (startIdx === -1) return candidates;
 
-  let endIdx = anchors.length;
-  for (let i = startIdx + 1; i < anchors.length; i++) {
-    const norm = normalizeHeading(anchors[i].text);
-    if (
-      Object.values(CONTRACT_KEYWORDS.headings.byField)
-        .flat()
-        .map(normalizeHeading)
-        .includes(norm)
-    ) {
-      endIdx = i;
-      break;
-    }
+  // Use helper to collect section body
+  const section = collectSectionBody(anchors, FEES_HEADINGS);
+  if (!section) {
+    logDebug(">>> amounts.notEmitted", { reason: "No Fees heading found" });
+    return candidates;
   }
+  logDebug(">>> amounts.sectionFound", {
+    start: anchors[section.startIdx]?.text,
+    bodyCount: section.bodyAnchors.length,
+  });
 
-  const bodyAnchors = anchors.slice(startIdx + 1, endIdx);
+  const { bodyAnchors } = section;
 
   for (let i = 0; i < bodyAnchors.length; i++) {
     const curr = bodyAnchors[i].text;
@@ -45,14 +38,12 @@ export function extractAmounts(anchors: TextAnchor[]): Candidate[] {
     while ((m = amountRegex.exec(curr)) !== null) {
       const raw = m[0];
 
-      const hasFeeCue =
-        CONTRACT_KEYWORDS.amounts.feeContext.some(k =>
-          currLower.includes(k) || prevLower.includes(k) || nextLower.includes(k)
-        );
-      const hasRetainerCue =
-        ["retainer", "deposit", "advance"].some(k =>
-          currLower.includes(k) || prevLower.includes(k) || nextLower.includes(k)
-        );
+      const hasFeeCue = CONTRACT_KEYWORDS.amounts.feeContext.some(k =>
+        currLower.includes(k) || prevLower.includes(k) || nextLower.includes(k)
+      );
+      const hasRetainerCue = ["retainer", "deposit", "advance"].some(k =>
+        currLower.includes(k) || prevLower.includes(k) || nextLower.includes(k)
+      );
 
       let schemaField: "feeAmount" | "retainerAmount" | null = null;
       let options: string[] = [];

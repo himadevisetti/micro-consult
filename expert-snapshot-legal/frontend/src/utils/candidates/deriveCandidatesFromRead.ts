@@ -9,7 +9,9 @@ import { extractAmounts } from "../candidateExtractors/amounts.js";
 import { extractDatesAndFilingParty } from "../candidateExtractors/dates.js";
 import { extractGoverningLaw } from "../candidateExtractors/governingLaw.js";
 import { extractScope } from "../candidateExtractors/scope.js";
-import { extractIPRandL } from "../candidateExtractors/iprAndL.js";
+import { extractIPType } from "../candidateExtractors/ipType.js";
+import { extractLicenseScope } from "../candidateExtractors/licenseScope.js";
+import { extractInventionAssignment } from "../candidateExtractors/inventionAssignment.js";
 import { logDebug } from "../logger.js";
 
 const TRACE = process.env.DEBUG_TRACE === "true";
@@ -64,7 +66,9 @@ export function deriveCandidatesFromRead(
     ...extractDatesAndFilingParty(anchors, { inventorNames, partyA, partyB }),
     ...extractGoverningLaw(anchors),
     ...extractScope(anchors),
-    ...extractIPRandL(anchors, { inventorNames, partyA, partyB }),
+    ...extractIPType(anchors),
+    ...extractLicenseScope(anchors),
+    ...extractInventionAssignment(anchors, { inventorNames, partyA, partyB }),
   ];
 
   if (TRACE) {

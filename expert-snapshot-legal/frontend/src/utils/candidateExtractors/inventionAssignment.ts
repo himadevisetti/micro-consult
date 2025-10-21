@@ -2,94 +2,28 @@ import { Candidate } from "../../types/Candidate";
 import { TextAnchor } from "../../types/TextAnchor";
 import { PartyContext } from "../../types/PartyContext";
 import { CONTRACT_KEYWORDS } from "../../constants/contractKeywords.js";
-import { logDebug } from "../logger.js";
 import { normalizeHeading } from "../normalizeValue.js";
+import { collectSectionBody } from "../sectionUtils.js";
+import { logDebug } from "../logger.js";
 
-export function extractIPRandL(
+type Hit = {
+  assignee: string;
+  page: number;
+  y: number;
+  text: string;
+  roleHint?: string;
+};
+
+export function extractInventionAssignment(
   anchors: TextAnchor[],
   context: PartyContext
 ): Candidate[] {
   const candidates: Candidate[] = [];
 
-  // --- IP Type ---
-  const IPTYPE_HEADINGS = CONTRACT_KEYWORDS.headings.byField.ipValidity?.map(normalizeHeading) ?? [];
-  const ipStartIdx = anchors.findIndex(a =>
-    IPTYPE_HEADINGS.includes(normalizeHeading(a.text))
-  );
-  if (ipStartIdx >= 0) {
-    const ipEndIdx = findSectionEnd(anchors, ipStartIdx);
-    const ipAnchors = anchors.slice(ipStartIdx + 1, ipEndIdx);
-
-    for (const anchor of ipAnchors) {
-      const lower = anchor.text.toLowerCase();
-      const type = CONTRACT_KEYWORDS.ip.typeCues.find(k => lower.includes(k));
-      if (type) {
-        candidates.push({
-          rawValue: type,
-          schemaField: "ipType",
-          candidates: ["ipType"],
-          pageNumber: anchor.page,
-          yPosition: anchor.y,
-          roleHint: anchor.roleHint,
-          sourceText: anchor.text,
-        });
-        logDebug(">>> ip.typeDetected", {
-          type,
-          page: anchor.page,
-          y: anchor.y,
-          sourcePreview: anchor.text.slice(0, 80),
-        });
-      }
-    }
-  }
-
-  // --- License Scope ---
-  const LICENSE_HEADINGS = CONTRACT_KEYWORDS.headings.byField.licenseTerms?.map(normalizeHeading) ?? [];
-  const licStartIdx = anchors.findIndex(a =>
-    LICENSE_HEADINGS.includes(normalizeHeading(a.text))
-  );
-  if (licStartIdx >= 0) {
-    const licEndIdx = findSectionEnd(anchors, licStartIdx);
-    const licAnchors = anchors.slice(licStartIdx + 1, licEndIdx);
-
-    for (const anchor of licAnchors) {
-      const lower = anchor.text.toLowerCase();
-      const scope = CONTRACT_KEYWORDS.ip.licenseScopeCues.find(k => lower.includes(k));
-      if (scope) {
-        candidates.push({
-          rawValue: scope,
-          schemaField: "licenseScope",
-          candidates: ["licenseScope"],
-          pageNumber: anchor.page,
-          yPosition: anchor.y,
-          roleHint: anchor.roleHint,
-          sourceText: anchor.text,
-        });
-        logDebug(">>> ip.licenseScopeDetected", {
-          scope,
-          page: anchor.page,
-          y: anchor.y,
-          sourcePreview: anchor.text.slice(0, 80),
-        });
-      }
-    }
-  }
-
-  // --- Invention Assignment ---
-  type Hit = {
-    assignee: string;
-    page: number;
-    y: number;
-    text: string;
-    roleHint?: string;
-  };
-
+  // Locate invention assignment section
   const IA_HEADINGS = CONTRACT_KEYWORDS.headings.byField.inventionAssignment.map(normalizeHeading);
-  const iaStartIdx = anchors.findIndex(a =>
-    IA_HEADINGS.includes(normalizeHeading(a.text))
-  );
-  const iaEndIdx = iaStartIdx >= 0 ? findSectionEnd(anchors, iaStartIdx) : anchors.length;
-  const iaAnchors = iaStartIdx >= 0 ? anchors.slice(iaStartIdx + 1, iaEndIdx) : [];
+  const iaSection = collectSectionBody(anchors, IA_HEADINGS);
+  const iaAnchors = iaSection ? iaSection.bodyAnchors : [];
 
   const step1Hits: Hit[] = [];
   const step2Hits: Hit[] = [];
@@ -157,8 +91,11 @@ export function extractIPRandL(
         if (/client|company/.test(chosenRole) && context.partyA) mapped = context.partyA;
         else if (/provider|consultant|firm/.test(chosenRole) && context.partyB) mapped = context.partyB;
 
+        const regex = new RegExp(`\\b(?:the\\s+)?${chosenRole}[A-Za-z()]*`, "i");
+        const rawMatch = regex.exec(text);
+
         step2Hits.push({
-          assignee: mapped ?? (rawRoleLabel ?? chosenRole),
+          assignee: mapped ?? (rawMatch ? rawMatch[0] : text),
           page: anchor.page,
           y: anchor.y,
           text,
@@ -231,20 +168,4 @@ export function extractIPRandL(
   });
 
   return candidates;
-}
-
-// --- helper ---
-function findSectionEnd(anchors: TextAnchor[], startIdx: number): number {
-  for (let i = startIdx + 1; i < anchors.length; i++) {
-    const norm = normalizeHeading(anchors[i].text);
-    if (
-      Object.values(CONTRACT_KEYWORDS.headings.byField)
-        .flat()
-        .map(normalizeHeading)
-        .includes(norm)
-    ) {
-      return i; // stop at the next heading
-    }
-  }
-  return anchors.length; // default: run to end of document
 }
