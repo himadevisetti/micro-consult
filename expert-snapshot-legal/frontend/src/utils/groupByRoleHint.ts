@@ -4,6 +4,14 @@ import { TextAnchor } from "../types/TextAnchor";
 import { ClauseBlock } from "../types/ClauseBlock";
 import { logWarn, logDebug } from "../utils/logger.js";
 
+// helper to strip out underline-only lines
+function cleanLine(text: string): string | null {
+  const trimmed = text.trim();
+  if (!trimmed) return null;
+  if (/^_+$/.test(trimmed)) return null; // drop underline-only
+  return trimmed;
+}
+
 export function groupByRoleHint(anchors: TextAnchor[]): ClauseBlock[] {
   const grouped: Record<
     string,
@@ -36,13 +44,16 @@ export function groupByRoleHint(anchors: TextAnchor[]): ClauseBlock[] {
       };
     }
 
-    grouped[key].texts.push(a.text.trim());
-    grouped[key].spans.push({
-      text: a.text.trim(),
-      pageNumber: a.page,
-      yPosition: a.y,
-      polygon: (a as any).polygon ?? (a as any).boundingBox,
-    });
+    const cleaned = cleanLine(a.text);
+    if (cleaned) {
+      grouped[key].texts.push(cleaned);
+      grouped[key].spans.push({
+        text: cleaned,
+        pageNumber: a.page,
+        yPosition: a.y,
+        polygon: (a as any).polygon ?? (a as any).boundingBox,
+      });
+    }
   }
 
   if (unassigned.length > 0) {
