@@ -1,5 +1,7 @@
+// src/utils/candidateExtractors/dates.ts
+
 import { Candidate } from "../../types/Candidate";
-import { TextAnchor } from "../../types/TextAnchor";
+import { ClauseBlock } from "../../types/ClauseBlock";
 import { PartyContext } from "../../types/PartyContext";
 import { CONTRACT_KEYWORDS } from "../../constants/contractKeywords.js";
 import { parseIsoDate } from "../formatDate.js";
@@ -7,7 +9,7 @@ import { logDebug } from "../logger.js";
 import { normalizeHeading } from "../normalizeValue.js";
 
 export function extractDatesAndFilingParty(
-  anchors: TextAnchor[],
+  blocks: ClauseBlock[],
   context: PartyContext
 ): Candidate[] {
   const candidates: Candidate[] = [];
@@ -16,7 +18,8 @@ export function extractDatesAndFilingParty(
   const emitDate = (
     rawDate: string,
     schemaField: "effectiveDate" | "expirationDate" | "executionDate",
-    anchor: TextAnchor
+    block: ClauseBlock,
+    sourceText: string
   ) => {
     const iso = parseIsoDate(rawDate);
     candidates.push({
@@ -31,94 +34,107 @@ export function extractDatesAndFilingParty(
           year: "numeric",
         })
         : rawDate,
-      pageNumber: anchor.page,
-      yPosition: anchor.y,
-      roleHint: anchor.roleHint,
-      sourceText: anchor.text,
+      pageNumber: block.pageNumber,
+      yPosition: block.yPosition,
+      roleHint: block.roleHint,
+      sourceText,
     });
     logDebug(">>> date.emitted", {
       schemaField,
       rawDate,
-      page: anchor.page,
-      y: anchor.y,
-      sourcePreview: anchor.text.slice(0, 80),
+      page: block.pageNumber,
+      y: block.yPosition,
+      sourcePreview: sourceText.slice(0, 80),
     });
   };
 
-  // --- Inline dates ---
-  for (const anchor of anchors) {
-    let dm: RegExpExecArray | null;
-    while ((dm = monthDateRegex.exec(anchor.text)) !== null) {
-      const rawDate = dm[0];
-      const lower = anchor.text.toLowerCase();
+  // --- Inline dates across all blocks ---
+  for (const block of blocks) {
+    const lines = block.body.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+    for (const line of lines) {
+      let dm: RegExpExecArray | null;
+      while ((dm = monthDateRegex.exec(line)) !== null) {
+        const rawDate = dm[0];
+        const lower = line.toLowerCase();
 
-      if (CONTRACT_KEYWORDS.dates.effective.some(k => lower.includes(k))) {
-        emitDate(rawDate, "effectiveDate", anchor);
-      } else if (CONTRACT_KEYWORDS.dates.expiration.some(k => lower.includes(k))) {
-        emitDate(rawDate, "expirationDate", anchor);
-      } else if (CONTRACT_KEYWORDS.dates.execution.some(k => lower.includes(k))) {
-        emitDate(rawDate, "executionDate", anchor);
-      } else {
-        candidates.push({
-          rawValue: rawDate,
-          schemaField: null,
-          candidates: ["effectiveDate", "expirationDate"],
-          pageNumber: anchor.page,
-          yPosition: anchor.y,
-          roleHint: anchor.roleHint,
-          sourceText: anchor.text,
-        });
-        logDebug(">>> date.ambiguous", {
-          rawDate,
-          page: anchor.page,
-          y: anchor.y,
-          sourcePreview: anchor.text.slice(0, 80),
-        });
+        if (CONTRACT_KEYWORDS.dates.effective.some(k => lower.includes(k))) {
+          emitDate(rawDate, "effectiveDate", block, line);
+        } else if (CONTRACT_KEYWORDS.dates.expiration.some(k => lower.includes(k))) {
+          emitDate(rawDate, "expirationDate", block, line);
+        } else if (CONTRACT_KEYWORDS.dates.execution.some(k => lower.includes(k))) {
+          emitDate(rawDate, "executionDate", block, line);
+        } else {
+          candidates.push({
+            rawValue: rawDate,
+            schemaField: null,
+            candidates: ["effectiveDate", "expirationDate"],
+            pageNumber: block.pageNumber,
+            yPosition: block.yPosition,
+            roleHint: block.roleHint,
+            sourceText: line,
+          });
+          logDebug(">>> date.ambiguous", {
+            rawDate,
+            page: block.pageNumber,
+            y: block.yPosition,
+            sourcePreview: line.slice(0, 80),
+          });
+        }
       }
     }
   }
 
-  // --- Signature block detection (custom helper restored) ---
+  // --- Signature block detection ---
   const SIGNATURE_HEADINGS = CONTRACT_KEYWORDS.headings.byField.signatures.map(normalizeHeading);
   const IGNORE_SIGNATURE_LINES = CONTRACT_KEYWORDS.signatures.ignore.map(normalizeHeading);
 
-  const sigStartIdx = anchors.findIndex(a =>
-    SIGNATURE_HEADINGS.includes(normalizeHeading(a.text))
-  );
-  // ✅ custom: grab everything from "Signatures" to EOF, or last 20 anchors
-  const sigBlock = sigStartIdx >= 0 ? anchors.slice(sigStartIdx) : anchors.slice(-20);
+  const sigBlock =
+    blocks.find(b => b.roleHint && SIGNATURE_HEADINGS.includes(normalizeHeading(b.roleHint))) ??
+    blocks[blocks.length - 1]; // fallback to last block
 
-  // Collect signatory anchors
-  const signatoryAnchors: TextAnchor[] = [];
-  for (let i = 0; i < sigBlock.length; i++) {
-    const curr = sigBlock[i];
-    const next = sigBlock[i + 1];
-    const windowText = `${curr.text} ${next ? next.text : ""}`;
+  const signatoryLines: string[] = sigBlock.body
+    .split(/\r?\n/)
+    .map(l => l.trim())
+    .filter(Boolean);
+
+  const signatoryCandidates: Candidate[] = [];
+
+  for (let i = 0; i < signatoryLines.length; i++) {
+    const curr = signatoryLines[i];
+    const next = signatoryLines[i + 1] ?? "";
+    const windowText = `${curr} ${next}`;
     const windowLower = windowText.toLowerCase();
 
     // Execution Date inside signature block
     if (CONTRACT_KEYWORDS.dates.execution.some(k => windowLower.includes(k))) {
       const dateMatch = windowText.match(monthDateRegex);
       if (dateMatch) {
-        emitDate(dateMatch[0], "executionDate", curr);
+        emitDate(dateMatch[0], "executionDate", sigBlock, curr);
       }
     }
 
-    const text = curr.text.trim();
     if (
-      text &&
-      !SIGNATURE_HEADINGS.includes(normalizeHeading(text)) &&
-      !monthDateRegex.test(text) &&
-      !IGNORE_SIGNATURE_LINES.includes(normalizeHeading(text)) &&
-      !/^_+$/.test(text)
+      curr &&
+      !SIGNATURE_HEADINGS.includes(normalizeHeading(curr)) &&
+      !monthDateRegex.test(curr) &&
+      !IGNORE_SIGNATURE_LINES.includes(normalizeHeading(curr)) &&
+      !/^_+$/.test(curr)
     ) {
-      signatoryAnchors.push(curr);
+      signatoryCandidates.push({
+        rawValue: curr,
+        schemaField: "", // assigned below
+        candidates: [],
+        pageNumber: sigBlock.pageNumber,
+        yPosition: sigBlock.yPosition,
+        roleHint: "Signatory",
+        sourceText: curr,
+      });
     }
   }
 
   // --- Filing Party resolution ---
   const { inventorNames = [], partyA, partyB } = context;
-  const sigTextLower = signatoryAnchors.map(a => a.text).join(" ").toLowerCase();
+  const sigTextLower = signatoryCandidates.map(c => c.rawValue).join(" ").toLowerCase();
 
   let emitted = false;
 
@@ -131,7 +147,6 @@ export function extractDatesAndFilingParty(
       matchedInventors.forEach((inv, idx) => {
         const schemaField =
           matchedInventors.length > 1 ? `filingParty${idx + 1}` : "filingParty";
-
         candidates.push({
           rawValue: inv,
           schemaField,
@@ -169,7 +184,7 @@ export function extractDatesAndFilingParty(
 
   if (!emitted) {
     logDebug(">>> filingParty.unresolved", {
-      signatories: signatoryAnchors.map(s => s.text),
+      signatories: signatoryCandidates.map(s => s.rawValue),
       inventorNames,
       partyA,
       partyB,
@@ -177,19 +192,14 @@ export function extractDatesAndFilingParty(
   }
 
   // Emit signatory candidates after Filing Party
-  if (signatoryAnchors.length > 0) {
-    signatoryAnchors.forEach((anchor, idx) => {
+  if (signatoryCandidates.length > 0) {
+    signatoryCandidates.forEach((c, idx) => {
       const schemaField =
-        signatoryAnchors.length > 1 ? `signatory${idx + 1}` : "signatory";
-
+        signatoryCandidates.length > 1 ? `signatory${idx + 1}` : "signatory";
       candidates.push({
-        rawValue: anchor.text.trim(),
+        ...c,
         schemaField,
         candidates: [schemaField],
-        pageNumber: anchor.page,
-        yPosition: anchor.y,
-        roleHint: "Signatory",
-        sourceText: anchor.text,
       });
     });
   }

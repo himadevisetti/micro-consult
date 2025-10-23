@@ -13,6 +13,7 @@ import { mergeCandidates } from "../../utils/candidates/mergeCandidates.js";
 import { sortCandidatesByDocumentOrder } from "../../utils/candidates/sortCandidatesByDocumentOrder.js";
 import { deriveCandidatesFromRead } from "../../utils/candidates/deriveCandidatesFromRead.js";
 import { saveCandidates } from "../../infrastructure/sessionStore.js";
+import { logAllReadFields } from "../../utils/candidates/logAllReadFields.js";
 
 const router = Router();
 
@@ -64,6 +65,8 @@ router.post(
       logDebug("upload.prebuiltRead", {
         preview: readResult.content?.slice(0, 500),
       });
+
+      logAllReadFields(readResult);
 
       // Extract candidates
       const { candidates: readCandidates } = deriveCandidatesFromRead(readResult);

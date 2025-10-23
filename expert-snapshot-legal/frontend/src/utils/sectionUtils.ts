@@ -9,18 +9,6 @@ import { logDebug } from "./logger.js";
  */
 export function collectHeadingAnchors(anchors: TextAnchor[]): TextAnchor[] {
   const headingAnchors = anchors.filter(a => a.wasHeading);
-
-  headingAnchors.forEach((h, idx) => {
-    logDebug(">>> heading.anchor", {
-      idx,
-      page: h.page,
-      y: h.y,
-      raw: h.text,
-      normalized: normalizeHeading(h.text),
-      roleHint: h.roleHint,
-    });
-  });
-
   logDebug(">>> heading.count", { total: headingAnchors.length });
 
   return headingAnchors;

@@ -1,7 +1,6 @@
 // src/utils/candidates/deriveCandidatesFromRead.ts
 
 import { Candidate } from "../../types/Candidate";
-import { TextAnchor } from "../../types/TextAnchor";
 import { getTextAnchors } from "./getTextAnchors.js";
 import { extractActors } from "../candidateExtractors/actors.js";
 import { extractFeeStructure } from "../candidateExtractors/fees.js";
@@ -16,9 +15,6 @@ import { logDebug } from "../logger.js";
 
 const TRACE = process.env.DEBUG_TRACE === "true";
 
-/**
- * Derive structured candidates from prebuilt-read output.
- */
 export function deriveCandidatesFromRead(
   readResult: any
 ): { candidates: Candidate[] } {
@@ -27,19 +23,15 @@ export function deriveCandidatesFromRead(
     return { candidates: [] };
   }
 
-  // Still build anchors internally for the extractors
-  const anchors: TextAnchor[] = getTextAnchors(readResult);
+  const clauseBlocks = getTextAnchors(readResult);
 
-  // First extract all actors (partyA, partyB, inventors)
-  const actorCandidates = extractActors(anchors);
+  const actorCandidates = extractActors(clauseBlocks);
 
-  // Pull out inventor names (handles both "Inventor" and "InventorN")
   const inventorNames = actorCandidates
     .filter(c => c.schemaField && c.schemaField.toLowerCase().startsWith("inventor"))
     .map(c => c.rawValue)
     .filter(Boolean);
 
-  // Handle ambiguous parties
   const ambiguousParties = actorCandidates.filter(
     c => c.schemaField === null && c.candidates?.includes("partyA")
   );
@@ -58,17 +50,16 @@ export function deriveCandidatesFromRead(
     partyB = ambiguousParties[1].rawValue;
   }
 
-  // Merge all candidates
   const candidates: Candidate[] = [
     ...actorCandidates,
-    ...extractFeeStructure(anchors),
-    ...extractAmounts(anchors),
-    ...extractDatesAndFilingParty(anchors, { inventorNames, partyA, partyB }),
-    ...extractGoverningLaw(anchors),
-    ...extractScope(anchors),
-    ...extractIPType(anchors),
-    ...extractLicenseScope(anchors),
-    ...extractInventionAssignment(anchors, { inventorNames, partyA, partyB }),
+    ...extractFeeStructure(clauseBlocks),
+    ...extractAmounts(clauseBlocks),
+    ...extractDatesAndFilingParty(clauseBlocks, { inventorNames, partyA, partyB }),
+    ...extractGoverningLaw(clauseBlocks),
+    ...extractScope(clauseBlocks),
+    ...extractIPType(clauseBlocks),
+    ...extractLicenseScope(clauseBlocks),
+    ...extractInventionAssignment(clauseBlocks, { inventorNames, partyA, partyB }),
   ];
 
   if (TRACE) {

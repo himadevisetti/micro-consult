@@ -1,28 +1,29 @@
+// src/utils/candidateExtractors/actors.ts
+
 import { Candidate } from "../../types/Candidate";
-import { TextAnchor } from "../../types/TextAnchor";
+import { ClauseBlock } from "../../types/ClauseBlock";
 import { CONTRACT_KEYWORDS } from "../../constants/contractKeywords.js";
 import { logDebug } from "../logger.js";
 import { normalizeHeading } from "../normalizeValue.js";
-import { collectSectionBody } from "../sectionUtils.js";
 
-export function extractActors(anchors: TextAnchor[]): Candidate[] {
+export function extractActors(blocks: ClauseBlock[]): Candidate[] {
   const candidates: Candidate[] = [];
 
   // Normalized heading list for Parties/Actors (includes Inventors variants)
   const ACTOR_HEADINGS = (CONTRACT_KEYWORDS.headings.byField.parties || []).map(normalizeHeading);
 
-  // Use helper to collect section body
-  const section = collectSectionBody(anchors, ACTOR_HEADINGS);
-  if (!section) {
-    return candidates; // no Parties/Actors section found
-  }
+  // Find the Parties/Actors block
+  const block = blocks.find(
+    b => b.roleHint && ACTOR_HEADINGS.includes(normalizeHeading(b.roleHint))
+  );
+  if (!block) return candidates;
 
-  const { bodyAnchors } = section;
+  const lines = block.body.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
 
   // --- Parties extraction ---
-  for (const anchor of bodyAnchors) {
+  for (const line of lines) {
     const partyRegex = /between\s+(.+?)\s+and\s+([^.,]+)(?:[.,]|$)/i;
-    const match = anchor.text.match(partyRegex);
+    const match = line.match(partyRegex);
     if (match) {
       const clean = (s: string) =>
         s.replace(/\s*,?\s*effective as of.*$/i, "")
@@ -40,7 +41,7 @@ export function extractActors(anchors: TextAnchor[]): Candidate[] {
       partyB = partyB.replace(labelRegex, "").trim();
 
       if (partyA && partyB) {
-        const baseRoleHint = anchor.roleHint ?? "Parties";
+        const baseRoleHint = block.roleHint ?? "Parties";
 
         if (labelA || labelB) {
           candidates.push({
@@ -48,18 +49,18 @@ export function extractActors(anchors: TextAnchor[]): Candidate[] {
             schemaField: "partyA",
             candidates: ["partyA"],
             roleHint: labelA || baseRoleHint,
-            pageNumber: anchor.page,
-            yPosition: anchor.y,
-            sourceText: anchor.text,
+            pageNumber: block.pageNumber,
+            yPosition: block.yPosition,
+            sourceText: line,
           });
           candidates.push({
             rawValue: partyB,
             schemaField: "partyB",
             candidates: ["partyB"],
             roleHint: labelB || baseRoleHint,
-            pageNumber: anchor.page,
-            yPosition: anchor.y,
-            sourceText: anchor.text,
+            pageNumber: block.pageNumber,
+            yPosition: block.yPosition,
+            sourceText: line,
           });
         } else {
           candidates.push({
@@ -67,18 +68,18 @@ export function extractActors(anchors: TextAnchor[]): Candidate[] {
             schemaField: null,
             candidates: ["partyA", "partyB"],
             roleHint: baseRoleHint,
-            pageNumber: anchor.page,
-            yPosition: anchor.y,
-            sourceText: anchor.text,
+            pageNumber: block.pageNumber,
+            yPosition: block.yPosition,
+            sourceText: line,
           });
           candidates.push({
             rawValue: partyB,
             schemaField: null,
             candidates: ["partyA", "partyB"],
             roleHint: baseRoleHint,
-            pageNumber: anchor.page,
-            yPosition: anchor.y,
-            sourceText: anchor.text,
+            pageNumber: block.pageNumber,
+            yPosition: block.yPosition,
+            sourceText: line,
           });
         }
 
@@ -90,8 +91,8 @@ export function extractActors(anchors: TextAnchor[]): Candidate[] {
 
   // --- Inventors extraction ---
   const rawInventors: Candidate[] = [];
-  for (const anchor of bodyAnchors) {
-    const text = anchor.text.trim();
+  for (const line of lines) {
+    const text = line.trim();
 
     const byMatch = text.match(
       /\b(?:created by|invented by|originated by|conceived by)\s+(.+)/i
@@ -106,13 +107,13 @@ export function extractActors(anchors: TextAnchor[]): Candidate[] {
           .trim();
 
         if (isLikelyName(clean)) {
-          rawInventors.push(toInventorCandidate(clean, anchor));
+          rawInventors.push(toInventorCandidate(clean, block, text));
           logDebug(">>> inventor.detected", {
             name: clean,
-            page: anchor.page,
-            y: anchor.y,
-            roleHint: anchor.roleHint,
-            sourcePreview: anchor.text.slice(0, 80),
+            page: block.pageNumber,
+            y: block.yPosition,
+            roleHint: block.roleHint,
+            sourcePreview: text.slice(0, 80),
           });
         }
       }
@@ -120,13 +121,13 @@ export function extractActors(anchors: TextAnchor[]): Candidate[] {
     }
 
     if (/^\bthe\s+inventor\b$/i.test(text)) {
-      rawInventors.push(toInventorCandidate("the Inventor", anchor));
+      rawInventors.push(toInventorCandidate("the Inventor", block, text));
       logDebug(">>> inventor.defaultRoleDetected", {
         value: "the Inventor",
-        page: anchor.page,
-        y: anchor.y,
-        roleHint: anchor.roleHint,
-        sourcePreview: anchor.text.slice(0, 80),
+        page: block.pageNumber,
+        y: block.yPosition,
+        roleHint: block.roleHint,
+        sourcePreview: text.slice(0, 80),
       });
       continue;
     }
@@ -147,15 +148,15 @@ export function extractActors(anchors: TextAnchor[]): Candidate[] {
 }
 
 // Helpers
-function toInventorCandidate(rawValue: string, anchor: TextAnchor): Candidate {
+function toInventorCandidate(rawValue: string, block: ClauseBlock, sourceText: string): Candidate {
   return {
     rawValue,
     schemaField: "inventor", // temporary, replaced later
     candidates: ["inventor"],
-    pageNumber: anchor.page,
-    yPosition: anchor.y,
-    roleHint: anchor.roleHint,
-    sourceText: anchor.text,
+    pageNumber: block.pageNumber,
+    yPosition: block.yPosition,
+    roleHint: block.roleHint,
+    sourceText,
   };
 }
 

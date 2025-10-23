@@ -1,34 +1,40 @@
+// src/utils/candidateExtractors/amounts.ts
+
 import { Candidate } from "../../types/Candidate";
-import { TextAnchor } from "../../types/TextAnchor";
+import { ClauseBlock } from "../../types/ClauseBlock";
 import { CONTRACT_KEYWORDS } from "../../constants/contractKeywords.js";
 import { logDebug } from "../logger.js";
 import { normalizeHeading } from "../normalizeValue.js";
-import { collectSectionBody } from "../sectionUtils.js";
 
-export function extractAmounts(anchors: TextAnchor[]): Candidate[] {
+export function extractAmounts(blocks: ClauseBlock[]): Candidate[] {
   const candidates: Candidate[] = [];
   const amountRegex = /\$\s?\d[\d,]*(?:\.\d{2})?/g;
 
   // Normalized heading list for Fees
   const FEES_HEADINGS = CONTRACT_KEYWORDS.headings.byField.fees.map(normalizeHeading);
 
-  // Use helper to collect section body
-  const section = collectSectionBody(anchors, FEES_HEADINGS);
-  if (!section) {
+  // Find the Fees block
+  const block = blocks.find(
+    b => b.roleHint && FEES_HEADINGS.includes(normalizeHeading(b.roleHint))
+  );
+  if (!block) {
     logDebug(">>> amounts.notEmitted", { reason: "No Fees heading found" });
     return candidates;
   }
+
   logDebug(">>> amounts.sectionFound", {
-    start: anchors[section.startIdx]?.text,
-    bodyCount: section.bodyAnchors.length,
+    heading: block.heading,
+    roleHint: block.roleHint,
+    page: block.pageNumber,
+    y: block.yPosition,
   });
 
-  const { bodyAnchors } = section;
+  const lines = block.body.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
 
-  for (let i = 0; i < bodyAnchors.length; i++) {
-    const curr = bodyAnchors[i].text;
-    const prev = bodyAnchors[i - 1]?.text ?? "";
-    const next = bodyAnchors[i + 1]?.text ?? "";
+  for (let i = 0; i < lines.length; i++) {
+    const curr = lines[i];
+    const prev = lines[i - 1] ?? "";
+    const next = lines[i + 1] ?? "";
 
     const currLower = curr.toLowerCase();
     const prevLower = prev.toLowerCase();
@@ -38,11 +44,11 @@ export function extractAmounts(anchors: TextAnchor[]): Candidate[] {
     while ((m = amountRegex.exec(curr)) !== null) {
       const raw = m[0];
 
-      const hasFeeCue = CONTRACT_KEYWORDS.amounts.feeContext.some(k =>
-        currLower.includes(k) || prevLower.includes(k) || nextLower.includes(k)
+      const hasFeeCue = CONTRACT_KEYWORDS.amounts.feeContext.some(
+        k => currLower.includes(k) || prevLower.includes(k) || nextLower.includes(k)
       );
-      const hasRetainerCue = ["retainer", "deposit", "advance"].some(k =>
-        currLower.includes(k) || prevLower.includes(k) || nextLower.includes(k)
+      const hasRetainerCue = ["retainer", "deposit", "advance"].some(
+        k => currLower.includes(k) || prevLower.includes(k) || nextLower.includes(k)
       );
 
       let schemaField: "feeAmount" | "retainerAmount" | null = null;
@@ -63,9 +69,9 @@ export function extractAmounts(anchors: TextAnchor[]): Candidate[] {
         rawValue: raw,
         schemaField,
         candidates: options,
-        pageNumber: bodyAnchors[i].page,
-        yPosition: bodyAnchors[i].y,
-        roleHint: bodyAnchors[i].roleHint,
+        pageNumber: block.pageNumber,
+        yPosition: block.yPosition,
+        roleHint: block.roleHint,
         sourceText: curr,
       });
 
@@ -73,8 +79,8 @@ export function extractAmounts(anchors: TextAnchor[]): Candidate[] {
         raw,
         schemaField,
         options,
-        page: bodyAnchors[i].page,
-        y: bodyAnchors[i].y,
+        page: block.pageNumber,
+        y: block.yPosition,
         sourcePreview: curr.slice(0, 80),
       });
     }

@@ -60,7 +60,16 @@ export const CONTRACT_KEYWORDS = {
         "intellectual property description",
       ],
       entireAgreement: ["entire agreement", "entire agreement & amendments"],
-      signatures: ["signatures"],
+      signatures: [
+        "signatures",
+        "signature",
+        "execution",
+        "signatory",
+        "signatories",
+        "witness",
+        "acknowledged by",
+        "notary"
+      ],
       standardRetainer: ["standard retainer agreement"],
     },
   },
@@ -142,6 +151,16 @@ export const CONTRACT_KEYWORDS = {
       "hereby assigns",
     ],
     // descriptionCues removed — unified under scope.byField
+  },
+
+  governingLaw: {
+    cues: [
+      "laws of",
+      "governed by the laws of",
+      "under the laws of",
+      "subject to the laws of",
+      "construed in accordance with the laws of",
+    ],
   },
 
   textAnchors: {

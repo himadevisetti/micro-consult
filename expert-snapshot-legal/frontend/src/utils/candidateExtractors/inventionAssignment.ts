@@ -1,9 +1,10 @@
+// src/utils/candidateExtractors/inventionAssignment.ts
+
 import { Candidate } from "../../types/Candidate";
-import { TextAnchor } from "../../types/TextAnchor";
+import { ClauseBlock } from "../../types/ClauseBlock";
 import { PartyContext } from "../../types/PartyContext";
 import { CONTRACT_KEYWORDS } from "../../constants/contractKeywords.js";
 import { normalizeHeading } from "../normalizeValue.js";
-import { collectSectionBody } from "../sectionUtils.js";
 import { logDebug } from "../logger.js";
 
 type Hit = {
@@ -15,25 +16,28 @@ type Hit = {
 };
 
 export function extractInventionAssignment(
-  anchors: TextAnchor[],
+  blocks: ClauseBlock[],
   context: PartyContext
 ): Candidate[] {
   const candidates: Candidate[] = [];
 
-  // Locate invention assignment section
+  // Locate invention assignment block
   const IA_HEADINGS = CONTRACT_KEYWORDS.headings.byField.inventionAssignment.map(normalizeHeading);
-  const iaSection = collectSectionBody(anchors, IA_HEADINGS);
-  const iaAnchors = iaSection ? iaSection.bodyAnchors : [];
+  const block = blocks.find(
+    b => b.roleHint && IA_HEADINGS.includes(normalizeHeading(b.roleHint))
+  );
+  if (!block) return candidates;
+
+  const text = block.body;
+  const lines = text.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
 
   const step1Hits: Hit[] = [];
   const step2Hits: Hit[] = [];
   const step3Hits: Hit[] = [];
 
   // Step 1: explicit party/inventor names
-  for (const anchor of iaAnchors) {
-    const text = anchor.text.trim();
-    const lower = text.toLowerCase();
-
+  for (const line of lines) {
+    const lower = line.toLowerCase();
     const hits: string[] = [];
     if (context.partyA && lower.includes(context.partyA.toLowerCase())) hits.push(context.partyA);
     if (context.partyB && lower.includes(context.partyB.toLowerCase())) hits.push(context.partyB);
@@ -42,24 +46,21 @@ export function extractInventionAssignment(
         if (inv && lower.includes(inv.toLowerCase())) hits.push(inv);
       }
     }
-
     hits.forEach(a =>
       step1Hits.push({
         assignee: a,
-        page: anchor.page,
-        y: anchor.y,
-        text,
-        roleHint: anchor.roleHint,
+        page: block.pageNumber,
+        y: block.yPosition,
+        text: line,
+        roleHint: block.roleHint,
       })
     );
   }
 
   // Step 2: role labels (only if step1 empty)
   if (step1Hits.length === 0) {
-    for (const anchor of iaAnchors) {
-      const text = anchor.text.trim();
-      const lower = text.toLowerCase();
-
+    for (const line of lines) {
+      const lower = line.toLowerCase();
       const foundLabels = CONTRACT_KEYWORDS.parties.roleLabels.filter(label =>
         lower.includes(label)
       );
@@ -74,7 +75,7 @@ export function extractInventionAssignment(
         if (match) {
           chosenRole = match;
           const regex = new RegExp(`\\b(?:the\\s+)?${match}[A-Za-z()]*`, "i");
-          const rawMatch = regex.exec(text);
+          const rawMatch = regex.exec(line);
           if (rawMatch) rawRoleLabel = rawMatch[0];
         }
       }
@@ -82,7 +83,7 @@ export function extractInventionAssignment(
       if (!chosenRole && foundLabels.length > 0) {
         chosenRole = foundLabels[0];
         const regex = new RegExp(`\\b(?:the\\s+)?${chosenRole}[A-Za-z()]*`, "i");
-        const rawMatch = regex.exec(text);
+        const rawMatch = regex.exec(line);
         if (rawMatch) rawRoleLabel = rawMatch[0];
       }
 
@@ -92,14 +93,14 @@ export function extractInventionAssignment(
         else if (/provider|consultant|firm/.test(chosenRole) && context.partyB) mapped = context.partyB;
 
         const regex = new RegExp(`\\b(?:the\\s+)?${chosenRole}[A-Za-z()]*`, "i");
-        const rawMatch = regex.exec(text);
+        const rawMatch = regex.exec(line);
 
         step2Hits.push({
-          assignee: mapped ?? (rawMatch ? rawMatch[0] : text),
-          page: anchor.page,
-          y: anchor.y,
-          text,
-          roleHint: anchor.roleHint,
+          assignee: mapped ?? (rawMatch ? rawMatch[0] : line),
+          page: block.pageNumber,
+          y: block.yPosition,
+          text: line,
+          roleHint: block.roleHint,
         });
       }
     }
@@ -107,13 +108,11 @@ export function extractInventionAssignment(
 
   // Step 3: fallback cues (only if step1 & step2 empty)
   if (step1Hits.length === 0 && step2Hits.length === 0) {
-    for (const anchor of iaAnchors) {
-      const text = anchor.text.trim();
-      const lower = text.toLowerCase();
-
+    for (const line of lines) {
+      const lower = line.toLowerCase();
       const cuesHit = CONTRACT_KEYWORDS.ip.inventionAssignmentCues.some(k => lower.includes(k));
       if (cuesHit) {
-        const m = text.match(/\bto\s+([A-Z][A-Za-z0-9&.,\-()'\s]+)/);
+        const m = line.match(/\bto\s+([A-Z][A-Za-z0-9&.,\-()'\s]+)/);
         if (m) {
           const raw = m[1].replace(/\b(effective|dated|commencing|during|pursuant)\b.*$/i, "").trim();
           if (raw) {
@@ -121,10 +120,10 @@ export function extractInventionAssignment(
             targets.forEach(a =>
               step3Hits.push({
                 assignee: a,
-                page: anchor.page,
-                y: anchor.y,
-                text,
-                roleHint: anchor.roleHint,
+                page: block.pageNumber,
+                y: block.yPosition,
+                text: line,
+                roleHint: block.roleHint,
               })
             );
           }

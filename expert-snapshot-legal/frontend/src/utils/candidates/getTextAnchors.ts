@@ -1,15 +1,17 @@
 // src/utils/getTextAnchors.ts
 
-import { TextAnchor } from "../../types/TextAnchor";
+import { ClauseBlock } from "../../types/ClauseBlock";
 import { CONTRACT_KEYWORDS } from "../../constants/contractKeywords.js";
 import { normalizeHeading } from "../../utils/normalizeValue.js";
+import { groupByRoleHint } from "../groupByRoleHint.js";
+import { logClauseBlocks } from "../logClauseBlocks.js";
 import { logDebug } from "../logger.js";
 
 const TRACE = process.env.DEBUG_TRACE === "true";
 
-export function getTextAnchors(readResult: any): TextAnchor[] {
-  const anchors: TextAnchor[] = [];
-  if (!readResult) return anchors;
+export function getTextAnchors(readResult: any): ClauseBlock[] {
+  const anchors: any[] = [];
+  if (!readResult) return [];
 
   const norm = (s: string) =>
     s.replace(/\u00A0/g, " ")
@@ -41,97 +43,103 @@ export function getTextAnchors(readResult: any): TextAnchor[] {
     return { is: false, reason: "defaultBody" };
   };
 
-  const getY = (bb?: number[], fallback = 0): number => {
-    if (Array.isArray(bb) && bb.length >= 8) {
-      const ys = [bb[1], bb[3], bb[5], bb[7]].filter(v => typeof v === "number");
-      if (ys.length) return Math.min(...(ys as number[]));
+  const getY = (bb?: number[] | { x: number; y: number }[], fallback = 0): number => {
+    if (Array.isArray(bb) && bb.length >= 4) {
+      if (typeof bb[0] === "number") {
+        const ys = [bb[1], bb[3], bb[5], bb[7]].filter(v => typeof v === "number");
+        if (ys.length) return Math.min(...(ys as number[]));
+      } else {
+        const ys = (bb as { x: number; y: number }[]).map(p => p.y);
+        if (ys.length) return Math.min(...ys);
+      }
     }
     return fallback;
+  };
+
+  const emitHeading = (pageNum: number, y: number, text: string, reason: string, currentHeading: string | undefined) => {
+    anchors.push({ text, page: pageNum, y, roleHint: text, wasHeading: true });
+    if (TRACE) logDebug(`EMIT heading: page=${pageNum} y=${y} wasHeading=true reason="${reason}" heading="${text}"`);
+  };
+
+  const emitSentence = (pageNum: number, y: number, text: string, currentHeading: string | undefined) => {
+    anchors.push({ text, page: pageNum, y, roleHint: currentHeading, wasHeading: false });
+    if (TRACE) logDebug(`EMIT sentence: page=${pageNum} y=${y} roleHint="${currentHeading ?? ""}" text="${text}"`);
   };
 
   // Case A: PDF/image
   if (readResult.pages?.some((p: any) => (p.lines ?? []).length > 0)) {
     logDebug(">>> getTextAnchors: PDF/image branch");
     for (const page of readResult.pages) {
-      let buffer = "";
-      let bufferY = 0;
       let currentHeading: string | undefined;
+      let bufferText = "";
+      let bufferStartY: number | undefined;
+
+      const flushBuffer = () => {
+        if (!bufferText) return;
+        const parts = bufferText.split(/(?<=[.?!])\s+(?=[A-Z])/).map(norm).filter(Boolean);
+        for (let j = 0; j < parts.length; j++) {
+          const s = parts[j];
+          emitSentence(page.pageNumber, (bufferStartY ?? 0) + j, s, currentHeading);
+        }
+        bufferText = "";
+        bufferStartY = undefined;
+      };
 
       for (const [lineIdx, line] of (page.lines ?? []).entries()) {
         const content = norm(String(line.content ?? ""));
         if (!content) continue;
 
-        const heading = isHeading(content);
-        if (heading.is) {
-          if (buffer) {
-            anchors.push({
-              text: buffer,
-              page: page.pageNumber,
-              y: bufferY,
-              roleHint: currentHeading,
-              wasHeading: false,
-            });
-            if (TRACE) logDebug(`PDF EMIT body: page=${page.pageNumber} y=${bufferY} roleHint="${currentHeading ?? ""}" text="${buffer}"`);
-            buffer = "";
+        const h = isHeading(content);
+        const words = content.split(/\s+/);
+        const looksSentence =
+          /[.?!]/.test(content) ||
+          /\b(is|are|was|were|shall|will|includes?|pertains?|constitutes|agrees?|licensed?|executed)\b/i.test(content) ||
+          /[$]\s*\d|USD|\b\d{4}\b/.test(content) ||
+          words.length > 12 ||
+          content.length > 80;
+        const shouldDowngrade = h.is && h.reason !== "keyword" && h.reason !== "fallbackAllCapsShort" && looksSentence;
+        const wasHeading = h.is && !shouldDowngrade;
+
+        const y = getY(line.polygon ?? line.boundingBox, lineIdx);
+
+        const inSignatureSection =
+          currentHeading &&
+          CONTRACT_KEYWORDS.headings.byField.signatures
+            .map(normalizeHeading)
+            .includes(normalizeHeading(currentHeading));
+
+        if (wasHeading) {
+          if (inSignatureSection && h.reason === "fallbackTitleCaseShort") {
+            emitSentence(page.pageNumber, y, content, currentHeading);
+            if (TRACE) logDebug("terminal.emitLine.PDF", { page: page.pageNumber, heading: currentHeading, text: content });
+            continue;
           }
+          flushBuffer();
           currentHeading = content;
-          const y = getY(line.boundingBox, lineIdx);
-          anchors.push({
-            text: content,
-            page: page.pageNumber,
-            y,
-            roleHint: currentHeading,
-            wasHeading: true,
-          });
-          if (TRACE) logDebug(`PDF HEADING: page=${page.pageNumber} y=${y} heading="${currentHeading}"`);
+          emitHeading(page.pageNumber, y, content, h.reason, currentHeading);
           continue;
         }
 
-        if (!buffer) {
-          buffer = content;
-          bufferY = getY(line.boundingBox, lineIdx);
-        } else {
-          buffer += " " + content;
-        }
-
-        if (/[.?!]$/.test(content)) {
-          anchors.push({
-            text: buffer,
-            page: page.pageNumber,
-            y: bufferY,
-            roleHint: currentHeading,
-            wasHeading: false,
-          });
-          if (TRACE) logDebug(`PDF EMIT sentence: page=${page.pageNumber} y=${bufferY} roleHint="${currentHeading ?? ""}" text="${buffer}"`);
-          buffer = "";
-        }
+        if (!bufferText) bufferStartY = y;
+        bufferText = bufferText ? `${bufferText} ${content}` : content;
+        if (/[.?!]$/.test(content)) flushBuffer();
       }
-
-      if (buffer) {
-        anchors.push({
-          text: buffer,
-          page: page.pageNumber,
-          y: bufferY,
-          roleHint: currentHeading,
-          wasHeading: false,
-        });
-        if (TRACE) logDebug(`PDF EMIT tail: page=${page.pageNumber} y=${bufferY} roleHint="${currentHeading ?? ""}" text="${buffer}"`);
-        buffer = "";
-      }
+      flushBuffer();
     }
+
     logDebug(`>>> getTextAnchors OUTPUT (PDF): count=${anchors.length}`);
-    return anchors;
+    const clauseBlocks = groupByRoleHint(anchors);
+    logClauseBlocks(clauseBlocks, "PDF");
+    return clauseBlocks;
   }
 
-  // Case B: DOCX
+  // Case B: DOCX  // Case B: DOCX
   if (readResult.paragraphs?.length) {
     logDebug(">>> getTextAnchors: DOCX branch");
     let currentHeading: string | undefined;
-
     readResult.paragraphs.forEach((p: any, idx: number) => {
       const pageNum = p.boundingRegions?.[0]?.pageNumber ?? 1;
-      const rawPara = String(p.content ?? "");
-      const text = norm(rawPara);
+      const text = norm(String(p.content ?? ""));
       if (!text) return;
 
       const h = isHeading(text);
@@ -142,43 +150,41 @@ export function getTextAnchors(readResult: any): TextAnchor[] {
         /[$]\s*\d|USD|\b\d{4}\b/.test(text) ||
         words.length > 12 ||
         text.length > 80;
-
-      const shouldDowngrade = h.is && h.reason !== "keyword" && h.reason !== "fallbackAllCapsShort" && looksSentence;
+      const shouldDowngrade =
+        h.is && h.reason !== "keyword" && h.reason !== "fallbackAllCapsShort" && looksSentence;
       const wasHeading = h.is && !shouldDowngrade;
 
-      if (TRACE) logDebug(`DOCX PARA[${idx}] page=${pageNum} wasHeading=${wasHeading} reason="${h.reason}" text="${text}"`);
+      const inSignatureSection =
+        currentHeading &&
+        CONTRACT_KEYWORDS.headings.byField.signatures
+          .map(normalizeHeading)
+          .includes(normalizeHeading(currentHeading));
 
       if (wasHeading) {
+        if (inSignatureSection && h.reason === "fallbackTitleCaseShort") {
+          emitSentence(pageNum, idx * 100, text, currentHeading);
+          if (TRACE) logDebug("terminal.emitLine.DOCX", { page: pageNum, heading: currentHeading, text });
+          return;
+        }
         currentHeading = text;
         const y = idx * 100;
-        anchors.push({
-          text,
-          page: pageNum,
-          y,
-          roleHint: currentHeading,
-          wasHeading: true,
-        });
-        if (TRACE) logDebug(`  -> SET currentHeading="${currentHeading}" EMIT heading: page=${pageNum} y=${y}`);
-        return;
-      }
-
-      const parts = text.split(/(?<=[.?!])\s+(?=[A-Z])/).map(norm).filter(Boolean);
-      for (let j = 0; j < parts.length; j++) {
-        const s = parts[j];
-        const y = idx * 100 + j;
-        anchors.push({
-          text: s,
-          page: pageNum,
-          y,
-          roleHint: currentHeading,
-          wasHeading: false,
-        });
-        if (TRACE) logDebug(`  EMIT sentence: page=${pageNum} y=${y} roleHint="${currentHeading ?? ""}" text="${s}"`);
+        emitHeading(pageNum, y, text, h.reason, currentHeading);
+      } else {
+        const parts = text
+          .split(/(?<=[.?!])\s+(?=[A-Z])/)
+          .map(norm)
+          .filter(Boolean);
+        for (let j = 0; j < parts.length; j++) {
+          const s = parts[j];
+          const y = idx * 100 + j;
+          emitSentence(pageNum, y, s, currentHeading);
+        }
       }
     });
-
     logDebug(`>>> getTextAnchors OUTPUT (DOCX): count=${anchors.length}`);
-    return anchors;
+    const clauseBlocks = groupByRoleHint(anchors);
+    logClauseBlocks(clauseBlocks, "DOCX");
+    return clauseBlocks;
   }
 
   // Case C: fallback
@@ -191,30 +197,55 @@ export function getTextAnchors(readResult: any): TextAnchor[] {
       .filter(Boolean)
       .forEach((line, idx) => {
         const h = isHeading(line);
-        if (h.is) {
+        const words = line.split(/\s+/);
+        const looksSentence =
+          /[.?!]/.test(line) ||
+          /\b(is|are|was|were|shall|will|includes?|pertains?|constitutes|agrees?|licensed?|executed)\b/i.test(line) ||
+          /[$]\s*\d|USD|\b\d{4}\b/.test(line) ||
+          words.length > 12 ||
+          line.length > 80;
+
+        const shouldDowngrade =
+          h.is && h.reason !== "keyword" && h.reason !== "fallbackAllCapsShort" && looksSentence;
+        const wasHeading = h.is && !shouldDowngrade;
+
+        const inSignatureSection =
+          currentHeading &&
+          CONTRACT_KEYWORDS.headings.byField.signatures
+            .map(normalizeHeading)
+            .includes(normalizeHeading(currentHeading));
+
+        if (wasHeading) {
+          if (inSignatureSection && h.reason === "fallbackTitleCaseShort") {
+            emitSentence(1, idx, line, currentHeading);
+            if (TRACE) logDebug("terminal.emitLine.FALLBACK", { heading: currentHeading, text: line });
+            return;
+          }
           currentHeading = line;
-          anchors.push({
-            text: line,
-            page: 1,
-            y: idx,
-            roleHint: currentHeading,
-            wasHeading: true,
-          });
-          if (TRACE) logDebug(`FALLBACK HEADING: page=1 y=${idx} heading="${currentHeading}"`);
+          emitHeading(1, idx, line, h.reason, currentHeading);
         } else {
-          anchors.push({
-            text: line,
-            page: 1,
-            y: idx,
-            roleHint: currentHeading,
-            wasHeading: false,
-          });
-          if (TRACE) logDebug(`FALLBACK EMIT: page=1 y=${idx} roleHint="${currentHeading ?? ""}" text="${line}"`);
+          const parts = line
+            .split(/(?<=[.?!])\s+(?=[A-Z])/)
+            .map(norm)
+            .filter(Boolean);
+          if (parts.length === 0) {
+            emitSentence(1, idx, line, currentHeading);
+          } else {
+            for (let j = 0; j < parts.length; j++) {
+              const s = parts[j];
+              emitSentence(1, idx + j, s, currentHeading);
+            }
+          }
         }
       });
     logDebug(`>>> getTextAnchors OUTPUT (Fallback): count=${anchors.length}`);
-    return anchors;
+    const clauseBlocks = groupByRoleHint(anchors);
+    logClauseBlocks(clauseBlocks, "Fallback");
+    return clauseBlocks;
   }
 
-  return anchors;
+  // Default return if no branch matched
+  const clauseBlocks = groupByRoleHint(anchors);
+  logClauseBlocks(clauseBlocks, "Default");
+  return clauseBlocks;
 }
