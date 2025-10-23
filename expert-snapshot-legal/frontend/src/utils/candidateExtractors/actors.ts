@@ -5,6 +5,7 @@ import { ClauseBlock } from "../../types/ClauseBlock";
 import { CONTRACT_KEYWORDS } from "../../constants/contractKeywords.js";
 import { logDebug } from "../logger.js";
 import { normalizeHeading } from "../normalizeValue.js";
+import { headingMatches } from "../headingMatches.js";
 
 export function extractActors(blocks: ClauseBlock[]): Candidate[] {
   const candidates: Candidate[] = [];
@@ -14,7 +15,7 @@ export function extractActors(blocks: ClauseBlock[]): Candidate[] {
 
   // Find the Parties/Actors block
   const block = blocks.find(
-    b => b.roleHint && ACTOR_HEADINGS.includes(normalizeHeading(b.roleHint))
+    b => b.roleHint && headingMatches(b.roleHint, ACTOR_HEADINGS)
   );
   if (!block) return candidates;
 

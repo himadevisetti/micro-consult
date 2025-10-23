@@ -7,6 +7,7 @@ import { CONTRACT_KEYWORDS } from "../../constants/contractKeywords.js";
 import { parseIsoDate } from "../formatDate.js";
 import { logDebug } from "../logger.js";
 import { normalizeHeading } from "../normalizeValue.js";
+import { headingMatches } from "../headingMatches.js";
 
 export function extractDatesAndFilingParty(
   blocks: ClauseBlock[],
@@ -89,7 +90,7 @@ export function extractDatesAndFilingParty(
   const IGNORE_SIGNATURE_LINES = CONTRACT_KEYWORDS.signatures.ignore.map(normalizeHeading);
 
   const sigBlock =
-    blocks.find(b => b.roleHint && SIGNATURE_HEADINGS.includes(normalizeHeading(b.roleHint))) ??
+    blocks.find(b => b.roleHint && headingMatches(b.roleHint, SIGNATURE_HEADINGS)) ??
     blocks[blocks.length - 1]; // fallback to last block
 
   const signatoryLines: string[] = sigBlock.body
@@ -115,7 +116,7 @@ export function extractDatesAndFilingParty(
 
     if (
       curr &&
-      !SIGNATURE_HEADINGS.includes(normalizeHeading(curr)) &&
+      !headingMatches(curr, SIGNATURE_HEADINGS) &&
       !monthDateRegex.test(curr) &&
       !IGNORE_SIGNATURE_LINES.includes(normalizeHeading(curr)) &&
       !/^_+$/.test(curr)

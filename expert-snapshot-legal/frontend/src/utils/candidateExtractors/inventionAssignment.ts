@@ -5,6 +5,7 @@ import { ClauseBlock } from "../../types/ClauseBlock";
 import { PartyContext } from "../../types/PartyContext";
 import { CONTRACT_KEYWORDS } from "../../constants/contractKeywords.js";
 import { normalizeHeading } from "../normalizeValue.js";
+import { headingMatches } from "../headingMatches.js";
 import { logDebug } from "../logger.js";
 
 type Hit = {
@@ -24,7 +25,7 @@ export function extractInventionAssignment(
   // Locate invention assignment block
   const IA_HEADINGS = CONTRACT_KEYWORDS.headings.byField.inventionAssignment.map(normalizeHeading);
   const block = blocks.find(
-    b => b.roleHint && IA_HEADINGS.includes(normalizeHeading(b.roleHint))
+    b => b.roleHint && headingMatches(b.roleHint, IA_HEADINGS)
   );
   if (!block) return candidates;
 

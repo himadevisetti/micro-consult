@@ -42,9 +42,16 @@ export const CONTRACT_KEYWORDS = {
         "fees & engagement terms",
         "fee structure",
         "retainer",
-        "costs & expenses",
+        "fees & payment",
+        "fees",
+        "payment terms",
+        "payment",
         "compensation",
         "engagement"
+      ],
+      expenses: [
+        "costs & expenses",
+        "expenses"
       ],
       confidentiality: ["confidentiality", "nondisclosure"],
       governingLaw: ["governing law", "jurisdiction"],

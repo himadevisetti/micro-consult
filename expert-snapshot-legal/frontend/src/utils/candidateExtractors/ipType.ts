@@ -4,6 +4,7 @@ import { Candidate } from "../../types/Candidate";
 import { ClauseBlock } from "../../types/ClauseBlock";
 import { CONTRACT_KEYWORDS } from "../../constants/contractKeywords.js";
 import { normalizeHeading } from "../normalizeValue.js";
+import { headingMatches } from "../headingMatches.js";
 import { escapeRegExp } from "../escapeRegExp.js";
 import { logDebug } from "../logger.js";
 
@@ -14,7 +15,7 @@ export function extractIPType(blocks: ClauseBlock[]): Candidate[] {
 
   // Find the IP Validity block
   const block = blocks.find(
-    b => b.roleHint && IPTYPE_HEADINGS.includes(normalizeHeading(b.roleHint))
+    b => b.roleHint && headingMatches(b.roleHint, IPTYPE_HEADINGS)
   );
   if (!block) return candidates;
 

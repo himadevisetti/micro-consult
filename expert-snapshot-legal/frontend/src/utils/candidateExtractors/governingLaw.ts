@@ -1,14 +1,21 @@
+// src/utils/candidateExtractors/governingLaw.ts
+
 import { Candidate } from "../../types/Candidate";
 import { ClauseBlock } from "../../types/ClauseBlock";
 import { CONTRACT_KEYWORDS } from "../../constants/contractKeywords.js";
 import { logDebug } from "../logger.js";
+import { normalizeHeading } from "../normalizeValue.js";
+import { headingMatches } from "../headingMatches.js";
 
 export function extractGoverningLaw(blocks: ClauseBlock[]): Candidate[] {
   const candidates: Candidate[] = [];
 
+  // Normalized heading list for Governing Law
+  const GOVLAW_HEADINGS = CONTRACT_KEYWORDS.headings.byField.governingLaw.map(normalizeHeading);
+
   // Find the Governing Law block by roleHint
   const block = blocks.find(
-    b => b.roleHint && b.roleHint.toLowerCase() === "governing law"
+    b => b.roleHint && headingMatches(b.roleHint, GOVLAW_HEADINGS)
   );
   if (!block) return candidates;
 
@@ -47,7 +54,6 @@ export function extractGoverningLaw(blocks: ClauseBlock[]): Candidate[] {
     page: block.pageNumber,
     y: block.yPosition,
     sourcePreview: block.body,
-    // sourcePreview: block.body.slice(0, 80),
   });
 
   return candidates;

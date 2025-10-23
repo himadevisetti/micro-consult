@@ -3,8 +3,7 @@
 import { Candidate } from "../../types/Candidate";
 import { getTextAnchors } from "./getTextAnchors.js";
 import { extractActors } from "../candidateExtractors/actors.js";
-import { extractFeeStructure } from "../candidateExtractors/fees.js";
-import { extractAmounts } from "../candidateExtractors/amounts.js";
+import { extractFees } from "../candidateExtractors/fees.js";
 import { extractDatesAndFilingParty } from "../candidateExtractors/dates.js";
 import { extractGoverningLaw } from "../candidateExtractors/governingLaw.js";
 import { extractScope } from "../candidateExtractors/scope.js";
@@ -52,8 +51,7 @@ export function deriveCandidatesFromRead(
 
   const candidates: Candidate[] = [
     ...actorCandidates,
-    ...extractFeeStructure(clauseBlocks),
-    ...extractAmounts(clauseBlocks),
+    ...extractFees(clauseBlocks),
     ...extractDatesAndFilingParty(clauseBlocks, { inventorNames, partyA, partyB }),
     ...extractGoverningLaw(clauseBlocks),
     ...extractScope(clauseBlocks),

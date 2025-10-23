@@ -4,6 +4,7 @@ import { Candidate } from "../../types/Candidate";
 import { ClauseBlock } from "../../types/ClauseBlock";
 import { CONTRACT_KEYWORDS } from "../../constants/contractKeywords.js";
 import { normalizeHeading } from "../normalizeValue.js";
+import { headingMatches } from "../headingMatches.js";
 import { escapeRegExp } from "../escapeRegExp.js";
 import { logDebug } from "../logger.js";
 
@@ -14,7 +15,7 @@ export function extractLicenseScope(blocks: ClauseBlock[]): Candidate[] {
 
   // Find the License Terms block
   const block = blocks.find(
-    b => b.roleHint && LICENSE_HEADINGS.includes(normalizeHeading(b.roleHint))
+    b => b.roleHint && headingMatches(b.roleHint, LICENSE_HEADINGS)
   );
   if (!block) return candidates;
 

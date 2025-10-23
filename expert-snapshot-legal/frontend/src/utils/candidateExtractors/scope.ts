@@ -4,6 +4,7 @@ import { Candidate } from "../../types/Candidate";
 import { ClauseBlock } from "../../types/ClauseBlock";
 import { normalizeHeading } from "../normalizeValue.js";
 import { CONTRACT_KEYWORDS } from "../../constants/contractKeywords.js";
+import { headingMatches } from "../headingMatches.js";
 import { logDebug } from "../logger.js";
 
 function firstSentence(text: string): string {
@@ -18,8 +19,9 @@ export function extractScope(blocks: ClauseBlock[]): Candidate[] {
 
   // Find the Scope block
   const block = blocks.find(
-    b => b.roleHint && SCOPE_HEADINGS.includes(normalizeHeading(b.roleHint))
+    b => b.roleHint && headingMatches(b.roleHint, SCOPE_HEADINGS)
   );
+
   if (!block) {
     logDebug(">>> scope.notEmitted", { reason: "No scope heading found" });
     return candidates;
