@@ -100,7 +100,7 @@ export async function placeholderizeDocx(
           cand.rawValue.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"),
           "g"
         );
-        slice = slice.replace(regex, `[[${cand.schemaField}}]`);
+        slice = slice.replace(regex, `[[${cand.schemaField}]]`);
       }
 
       // Log AFTER replacement
