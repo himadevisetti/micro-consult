@@ -17,13 +17,17 @@ export function extractIPType(blocks: ClauseBlock[]): Candidate[] {
   const block = blocks.find(
     b => b.roleHint && headingMatches(b.roleHint, IPTYPE_HEADINGS)
   );
-  if (!block) return candidates;
+  if (!block) {
+    logDebug(">>> ipType.notEmitted", { reason: "No IP Validity heading found" });
+    return candidates;
+  }
 
   logDebug(">>> ipType.sectionFound", {
     heading: block.heading,
     roleHint: block.roleHint,
     page: block.pageNumber,
     y: block.yPosition,
+    sourcePreview: block.body.slice(0, 120),
   });
 
   const lines = block.body.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
@@ -44,7 +48,8 @@ export function extractIPType(blocks: ClauseBlock[]): Candidate[] {
         pageNumber: block.pageNumber,
         yPosition: block.yPosition,
         roleHint: block.roleHint,
-        sourceText: line,
+        sourceText: block.body, // full clause body
+        blockIdx: block.idx,    // 🔹 attach owning block
       });
 
       logDebug(">>> ip.ipTypeDetected", {
@@ -52,7 +57,8 @@ export function extractIPType(blocks: ClauseBlock[]): Candidate[] {
         rawValue: raw,
         page: block.pageNumber,
         y: block.yPosition,
-        sourcePreview: line.slice(0, 80),
+        roleHint: block.roleHint,
+        sourcePreview: block.body.slice(0, 120),
         detectedFrom: "ipValidity",
       });
     }

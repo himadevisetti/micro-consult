@@ -42,3 +42,14 @@ export function normalizeBySchema(raw: string, schemaField: string | null): stri
       return raw.trim();
   }
 }
+
+export function normalizeForXmlMatch(text: string): string {
+  return text
+    .trim()
+    .replace(/\s+/g, " ")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&apos;");
+}

@@ -56,14 +56,61 @@ export function getTextAnchors(readResult: any): ClauseBlock[] {
     return fallback;
   };
 
-  const emitHeading = (pageNum: number, y: number, text: string, reason: string, currentHeading: string | undefined) => {
-    anchors.push({ text, page: pageNum, y, roleHint: text, wasHeading: true });
-    if (TRACE) logDebug(`EMIT heading: page=${pageNum} y=${y} wasHeading=true reason="${reason}" heading="${text}"`);
+  const emitHeading = (
+    pageNum: number,
+    y: number,
+    text: string,
+    reason: string,
+    currentHeading: string | undefined,
+    polygon?: any,
+    boundingBox?: any,
+    offset?: number,
+    length?: number
+  ) => {
+    anchors.push({
+      text,
+      page: pageNum,
+      y,
+      roleHint: text,
+      wasHeading: true,
+      polygon,
+      boundingBox,
+      offset,
+      length,
+    });
+    if (TRACE) {
+      logDebug(
+        `EMIT heading: page=${pageNum} y=${y} wasHeading=true reason="${reason}" heading="${text}" offset=${offset} length=${length}`
+      );
+    }
   };
 
-  const emitSentence = (pageNum: number, y: number, text: string, currentHeading: string | undefined) => {
-    anchors.push({ text, page: pageNum, y, roleHint: currentHeading, wasHeading: false });
-    if (TRACE) logDebug(`EMIT sentence: page=${pageNum} y=${y} roleHint="${currentHeading ?? ""}" text="${text}"`);
+  const emitSentence = (
+    pageNum: number,
+    y: number,
+    text: string,
+    currentHeading: string | undefined,
+    polygon?: any,
+    boundingBox?: any,
+    offset?: number,
+    length?: number
+  ) => {
+    anchors.push({
+      text,
+      page: pageNum,
+      y,
+      roleHint: currentHeading,
+      wasHeading: false,
+      polygon,
+      boundingBox,
+      offset,
+      length,
+    });
+    if (TRACE) {
+      logDebug(
+        `EMIT sentence: page=${pageNum} y=${y} roleHint="${currentHeading ?? ""}" text="${text}" offset=${offset} length=${length}`
+      );
+    }
   };
 
   // Case A: PDF/image
@@ -73,21 +120,42 @@ export function getTextAnchors(readResult: any): ClauseBlock[] {
       let currentHeading: string | undefined;
       let bufferText = "";
       let bufferStartY: number | undefined;
+      let bufferPolygon: any;
+      let bufferBoundingBox: any;
+      let bufferOffset: number | undefined;
+      let bufferLength: number | undefined;
 
       const flushBuffer = () => {
         if (!bufferText) return;
         const parts = bufferText.split(/(?<=[.?!])\s+(?=[A-Z])/).map(norm).filter(Boolean);
         for (let j = 0; j < parts.length; j++) {
           const s = parts[j];
-          emitSentence(page.pageNumber, (bufferStartY ?? 0) + j, s, currentHeading);
+          emitSentence(
+            page.pageNumber,
+            (bufferStartY ?? 0) + j,
+            s,
+            currentHeading,
+            bufferPolygon,
+            bufferBoundingBox,
+            bufferOffset,
+            bufferLength
+          );
         }
         bufferText = "";
         bufferStartY = undefined;
+        bufferPolygon = undefined;
+        bufferBoundingBox = undefined;
+        bufferOffset = undefined;
+        bufferLength = undefined;
       };
 
       for (const [lineIdx, line] of (page.lines ?? []).entries()) {
         const content = norm(String(line.content ?? ""));
         if (!content) continue;
+
+        const firstSpan = line.spans?.[0];
+        const offset = firstSpan?.offset;
+        const length = firstSpan?.length;
 
         const h = isHeading(content);
         const words = content.split(/\s+/);
@@ -110,17 +178,23 @@ export function getTextAnchors(readResult: any): ClauseBlock[] {
 
         if (wasHeading) {
           if (inSignatureSection && h.reason === "fallbackTitleCaseShort") {
-            emitSentence(page.pageNumber, y, content, currentHeading);
+            emitSentence(page.pageNumber, y, content, currentHeading, line.polygon, line.boundingBox, offset, length);
             if (TRACE) logDebug("terminal.emitLine.PDF", { page: page.pageNumber, heading: currentHeading, text: content });
             continue;
           }
           flushBuffer();
           currentHeading = content;
-          emitHeading(page.pageNumber, y, content, h.reason, currentHeading);
+          emitHeading(page.pageNumber, y, content, h.reason, currentHeading, line.polygon, line.boundingBox, offset, length);
           continue;
         }
 
-        if (!bufferText) bufferStartY = y;
+        if (!bufferText) {
+          bufferStartY = y;
+          bufferPolygon = line.polygon;
+          bufferBoundingBox = line.boundingBox;
+          bufferOffset = offset;
+          bufferLength = length;
+        }
         bufferText = bufferText ? `${bufferText} ${content}` : content;
         if (/[.?!]$/.test(content)) flushBuffer();
       }
@@ -133,7 +207,7 @@ export function getTextAnchors(readResult: any): ClauseBlock[] {
     return clauseBlocks;
   }
 
-  // Case B: DOCX  // Case B: DOCX
+  // Case B: DOCX
   if (readResult.paragraphs?.length) {
     logDebug(">>> getTextAnchors: DOCX branch");
     let currentHeading: string | undefined;
@@ -141,6 +215,10 @@ export function getTextAnchors(readResult: any): ClauseBlock[] {
       const pageNum = p.boundingRegions?.[0]?.pageNumber ?? 1;
       const text = norm(String(p.content ?? ""));
       if (!text) return;
+
+      const firstSpan = p.spans?.[0];
+      const offset = firstSpan?.offset;
+      const length = firstSpan?.length;
 
       const h = isHeading(text);
       const words = text.split(/\s+/);
@@ -160,15 +238,19 @@ export function getTextAnchors(readResult: any): ClauseBlock[] {
           .map(normalizeHeading)
           .includes(normalizeHeading(currentHeading));
 
+      const region = p.boundingRegions?.[0];
+      const polygon = region?.polygon;
+      const boundingBox = region?.boundingBox;
+
       if (wasHeading) {
         if (inSignatureSection && h.reason === "fallbackTitleCaseShort") {
-          emitSentence(pageNum, idx * 100, text, currentHeading);
+          emitSentence(pageNum, idx * 100, text, currentHeading, polygon, boundingBox, offset, length);
           if (TRACE) logDebug("terminal.emitLine.DOCX", { page: pageNum, heading: currentHeading, text });
           return;
         }
         currentHeading = text;
         const y = idx * 100;
-        emitHeading(pageNum, y, text, h.reason, currentHeading);
+        emitHeading(pageNum, y, text, h.reason, currentHeading, polygon, boundingBox, offset, length);
       } else {
         const parts = text
           .split(/(?<=[.?!])\s+(?=[A-Z])/)
@@ -177,7 +259,7 @@ export function getTextAnchors(readResult: any): ClauseBlock[] {
         for (let j = 0; j < parts.length; j++) {
           const s = parts[j];
           const y = idx * 100 + j;
-          emitSentence(pageNum, y, s, currentHeading);
+          emitSentence(pageNum, y, s, currentHeading, polygon, boundingBox, offset, length);
         }
       }
     });
@@ -217,23 +299,23 @@ export function getTextAnchors(readResult: any): ClauseBlock[] {
 
         if (wasHeading) {
           if (inSignatureSection && h.reason === "fallbackTitleCaseShort") {
-            emitSentence(1, idx, line, currentHeading);
+            emitSentence(1, idx, line, currentHeading, undefined, undefined, undefined, undefined);
             if (TRACE) logDebug("terminal.emitLine.FALLBACK", { heading: currentHeading, text: line });
             return;
           }
           currentHeading = line;
-          emitHeading(1, idx, line, h.reason, currentHeading);
+          emitHeading(1, idx, line, h.reason, currentHeading, undefined, undefined, undefined, undefined);
         } else {
           const parts = line
             .split(/(?<=[.?!])\s+(?=[A-Z])/)
             .map(norm)
             .filter(Boolean);
           if (parts.length === 0) {
-            emitSentence(1, idx, line, currentHeading);
+            emitSentence(1, idx, line, currentHeading, undefined, undefined, undefined, undefined);
           } else {
             for (let j = 0; j < parts.length; j++) {
               const s = parts[j];
-              emitSentence(1, idx + j, s, currentHeading);
+              emitSentence(1, idx + j, s, currentHeading, undefined, undefined, undefined, undefined);
             }
           }
         }

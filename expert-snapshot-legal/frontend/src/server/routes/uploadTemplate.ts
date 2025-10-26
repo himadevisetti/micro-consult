@@ -68,15 +68,19 @@ router.post(
 
       logAllReadFields(readResult);
 
-      // Extract candidates
-      const { candidates: readCandidates } = deriveCandidatesFromRead(readResult);
+      // Extract candidates + clauseBlocks
+      const { candidates: readCandidates, clauseBlocks } =
+        deriveCandidatesFromRead(readResult);
 
       // Merge + sort
       const mergedCandidates = mergeCandidates(readCandidates);
       const orderedCandidates = sortCandidatesByDocumentOrder(mergedCandidates);
 
-      // Save candidates in session store keyed by templateId
-      await saveCandidates(`candidates:${templateId}`, orderedCandidates);
+      // Save both candidates and clauseBlocks in session store keyed by templateId
+      await saveCandidates(`candidates:${templateId}`, {
+        candidates: orderedCandidates,
+        clauseBlocks,
+      });
 
       // Return the extracted candidates for UI mapping
       return res.json({
@@ -117,4 +121,3 @@ router.post(
 );
 
 export default router;
-

@@ -1,6 +1,7 @@
 // src/utils/candidates/deriveCandidatesFromRead.ts
 
 import { Candidate } from "../../types/Candidate";
+import { ClauseBlock } from "../../types/ClauseBlock";
 import { getTextAnchors } from "./getTextAnchors.js";
 import { extractActors } from "../candidateExtractors/actors.js";
 import { extractFees } from "../candidateExtractors/fees.js";
@@ -16,30 +17,33 @@ const TRACE = process.env.DEBUG_TRACE === "true";
 
 export function deriveCandidatesFromRead(
   readResult: any
-): { candidates: Candidate[] } {
+): { candidates: Candidate[]; clauseBlocks: ClauseBlock[] } {
   if (!readResult) {
     logDebug(">>> deriveCandidatesFromRead.emptyInput");
-    return { candidates: [] };
+    return { candidates: [], clauseBlocks: [] };
   }
 
-  const clauseBlocks = getTextAnchors(readResult);
+  const clauseBlocks: ClauseBlock[] = getTextAnchors(readResult);
 
   const actorCandidates = extractActors(clauseBlocks);
 
   const inventorNames = actorCandidates
-    .filter(c => c.schemaField && c.schemaField.toLowerCase().startsWith("inventor"))
-    .map(c => c.rawValue)
+    .filter(
+      (c) =>
+        c.schemaField && c.schemaField.toLowerCase().startsWith("inventor")
+    )
+    .map((c) => c.rawValue)
     .filter(Boolean);
 
   const ambiguousParties = actorCandidates.filter(
-    c => c.schemaField === null && c.candidates?.includes("partyA")
+    (c) => c.schemaField === null && c.candidates?.includes("partyA")
   );
 
   let partyA =
-    actorCandidates.find(c => c.schemaField?.toLowerCase() === "partya")
+    actorCandidates.find((c) => c.schemaField?.toLowerCase() === "partya")
       ?.rawValue ?? "";
   let partyB =
-    actorCandidates.find(c => c.schemaField?.toLowerCase() === "partyb")
+    actorCandidates.find((c) => c.schemaField?.toLowerCase() === "partyb")
       ?.rawValue ?? "";
 
   if (!partyA && ambiguousParties.length > 0) {
@@ -76,5 +80,5 @@ export function deriveCandidatesFromRead(
     logDebug(`>>> deriveCandidatesFromRead.output: count=${candidates.length}`);
   }
 
-  return { candidates };
+  return { candidates, clauseBlocks };
 }

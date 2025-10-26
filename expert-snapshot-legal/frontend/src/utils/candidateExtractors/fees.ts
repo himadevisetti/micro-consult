@@ -24,6 +24,7 @@ export function extractFees(blocks: ClauseBlock[]): Candidate[] {
     roleHint: block.roleHint,
     page: block.pageNumber,
     y: block.yPosition,
+    sourcePreview: block.body.slice(0, 120),
   });
 
   // --- Fee Structure ---
@@ -43,10 +44,17 @@ export function extractFees(blocks: ClauseBlock[]): Candidate[] {
       pageNumber: block.pageNumber,
       yPosition: block.yPosition,
       roleHint: block.roleHint,
-      sourceText: block.body,
+      sourceText: block.body, // full clause body
+      blockIdx: block.idx,    // 🔹 attach owning block
     });
 
-    logDebug(">>> fee.structureDetected", { norm, rawMatch, page: block.pageNumber, y: block.yPosition });
+    logDebug(">>> fee.structureDetected", {
+      norm,
+      rawMatch,
+      page: block.pageNumber,
+      y: block.yPosition,
+      sourcePreview: block.body.slice(0, 120),
+    });
     break; // usually only one structure per clause
   }
 
@@ -94,10 +102,18 @@ export function extractFees(blocks: ClauseBlock[]): Candidate[] {
         pageNumber: block.pageNumber,
         yPosition: block.yPosition,
         roleHint: block.roleHint,
-        sourceText: curr,
+        sourceText: block.body, // full clause body
+        blockIdx: block.idx,    // 🔹 attach owning block
       });
 
-      logDebug(">>> fee.amountDetected", { raw, schemaField, options, page: block.pageNumber, y: block.yPosition });
+      logDebug(">>> fee.amountDetected", {
+        raw,
+        schemaField,
+        options,
+        page: block.pageNumber,
+        y: block.yPosition,
+        sourcePreview: block.body.slice(0, 120),
+      });
     }
   }
 

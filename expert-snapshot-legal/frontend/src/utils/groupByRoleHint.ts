@@ -51,7 +51,13 @@ export function groupByRoleHint(anchors: TextAnchor[]): ClauseBlock[] {
         text: cleaned,
         pageNumber: a.page,
         yPosition: a.y,
-        polygon: (a as any).polygon ?? (a as any).boundingBox,
+        offset: (a as any).offset,
+        length: (a as any).length,
+        polygon: Array.isArray((a as any).polygon)
+          ? (a as any).polygon
+          : Array.isArray((a as any).boundingBox)
+            ? (a as any).boundingBox
+            : undefined,
       });
     }
   }
@@ -70,15 +76,19 @@ export function groupByRoleHint(anchors: TextAnchor[]): ClauseBlock[] {
     );
   }
 
-  return Object.values(grouped).map(block => {
+  // 🔹 Assign idx here
+  return Object.values(grouped).map((block, idx) => {
     const start = block.startAnchor!;
     return {
+      idx,
       heading: block.heading,
       roleHint: block.roleHint,
-      body: block.texts.join("\n"),
+      body: block.texts.join(" "),
+      debugBody: block.texts.join("\n"),
       pageNumber: start.page,
       yPosition: start.y,
       spans: block.spans,
+      polygon: block.spans[0]?.polygon,
     };
   });
 }

@@ -9,7 +9,9 @@ export interface Candidate {
   roleHint?: string;             // e.g. "Client" or "Provider"
   pageNumber?: number;
   yPosition?: number;
+  polygon?: number[] | { x: number; y: number }[];
   placeholder?: string;
   sourceText?: string;           // full block for UI expand/collapse
   isExpandable?: boolean;        // only true for clause‑type fields
+  blockIdx?: number;             // index of the ClauseBlock this candidate belongs to
 }

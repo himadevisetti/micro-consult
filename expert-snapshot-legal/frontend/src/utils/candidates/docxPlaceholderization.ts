@@ -1,29 +1,17 @@
-// src/utils/docxPlaceholderization.ts
-//
-// Placeholderization logic for DOCX templates.
-// - Iterates over extracted Candidates
-// - Builds [[placeholders]] based on schemaField
-// - Replaces matching text in document.xml with placeholders
-//
-// Notes:
-// - Clause-type fields (isExpandable === true) use sourceText (full block) as match target
-// - Short fields use rawValue (exact snippet)
-// - Normalization encodes XML entities (& -> &amp;) so matches align with DOCX XML
-
+// src/utils/candidates/docxPlaceholderization.ts
 import JSZip from "jszip";
 import { Candidate } from "../../types/Candidate";
+import { ClauseBlock } from "../../types/ClauseBlock";
 import { logDebug } from "../logger.js";
-import {
-  PLACEHOLDER_KEYWORDS,
-  PLACEHOLDER_REGEX
-} from "../../constants/contractKeywords.js";
-import { escapeRegExp } from "../escapeRegExp.js";
+import { AugmentedClauseBlock } from "../../types/AugmentedClauseBlock";
+import { spliceParagraphXmlByRuns } from "../spliceParagraphXmlByRuns.js";
 
 const TRACE = process.env.DEBUG_TRACE === "true";
 
 export async function placeholderizeDocx(
   buffer: Buffer,
-  candidates: Candidate[]
+  candidates: Candidate[],
+  clauseBlocks: ClauseBlock[]
 ): Promise<{ placeholderBuffer: Buffer; enrichedCandidates: Candidate[] }> {
   const zip = await JSZip.loadAsync(buffer);
   const docXmlPath = "word/document.xml";
@@ -31,157 +19,118 @@ export async function placeholderizeDocx(
   if (!fileEntry) throw new Error("DOCX missing document.xml");
 
   let docXml: string = await fileEntry.async("string");
+  docXml = docXml.replace(/\r?\n/g, " ");
+  let paragraphs = docXml.split(/(?=<w:p)/);
 
-  const enrichedCandidates = candidates.map((c) => {
-    let placeholder: string | undefined;
+  // Sample a few paragraphs for sanity
+  if (TRACE) {
+    paragraphs.slice(0, 5).forEach((p, i) => {
+      const plain = p.replace(/<[^>]+>/g, "").trim();
+      logDebug(">>> paragraph.sample", {
+        index: i,
+        plainTextPreview: plain.slice(0, 200),
+      });
+    });
+  }
 
-    if (c.schemaField) {
-      const digits = (c.schemaField.match(/\d+$/) || [])[0] ?? "";
-      const base = c.schemaField.replace(/\d+$/, "").toLowerCase();
-      const keyword = PLACEHOLDER_KEYWORDS[base]; // dictionary value is camelCase
+  // Build paragraph ranges
+  const paragraphRanges: { index: number; start: number; end: number; plain: string }[] = [];
+  for (let j = 0; j < paragraphs.length; j++) {
+    const plain = paragraphs[j].replace(/<[^>]+>/g, "");
+    const matchingSpan = clauseBlocks
+      .flatMap(cb => cb.spans)
+      .find(sp => sp.text && plain.includes(sp.text.slice(0, 40)));
 
-      // Clause-type fields (scope, etc.) are marked isExpandable
-      const isClause = c.isExpandable === true;
-      const candidateText = isClause ? c.sourceText : c.rawValue;
+    if (matchingSpan && matchingSpan.offset !== undefined) {
+      const start = matchingSpan.offset;
+      const end = start + (matchingSpan.length ?? plain.length);
+      paragraphRanges.push({ index: j, start, end, plain });
+    } else {
+      paragraphRanges.push({ index: j, start: -1, end: -1, plain });
+    }
+  }
 
-      if (keyword) {
-        // Build camelCase placeholder, append digits if present
-        const tag = digits ? `${keyword}${digits}` : keyword;
-        placeholder = `[[${tag}]]`;
-
-        /**
-         * Replacement target selection:
-         * - Clause-type fields (isExpandable === true): use sourceText (full block).
-         * - Short fields: use rawValue (exact snippet found in DOCX).
-         *
-         * Notes:
-         * - sourceText exists for all candidates as section anchoring context,
-         *   but it should only be used to replace when the candidate represents
-         *   a multi-sentence clause (isExpandable true).
-         * - We never match text that already contains a placeholder.
-         */
-        const isClauseInner = c.isExpandable === true;
-        const candidateTextInner = isClauseInner ? c.sourceText : c.rawValue;
-
-        if (candidateTextInner && !PLACEHOLDER_REGEX.test(candidateTextInner)) {
-          // Normalize for XML entity encoding (& -> &amp;, etc.)
-          const normalizedMatch = normalizeForXmlMatch(candidateTextInner);
-          const safeMatch = escapeRegExp(normalizedMatch);
-
-          // Scoped replacement:
-          // - Parties: replace once within the anchor text (avoid touching other sections).
-          // - Others: replace globally within the section (still scoped if sourceText is present).
-          if (c.roleHint === "Parties") {
-            docXml = replaceScopedOnce(
-              docXml,
-              safeMatch,
-              placeholder,
-              c.sourceText
-            );
-          } else {
-            docXml = replaceScopedGlobal(
-              docXml,
-              safeMatch,
-              placeholder,
-              c.sourceText
-            );
-          }
-
-          if (TRACE) {
-            logDebug("placeholderizeDocx.replace", {
-              field: c.schemaField,
-              strategy: isClauseInner ? "sourceText" : "rawValue",
-              usedLength: candidateTextInner.length,
-            });
-          }
-        }
+  // Normalize ClauseBlocks into augmented ones
+  const augmentedBlocks: AugmentedClauseBlock[] = clauseBlocks.map((b, i) => {
+    const indices: number[] = [];
+    for (const span of b.spans) {
+      if (span.offset !== undefined) {
+        const match = paragraphRanges.find(
+          (r) => span.offset! >= r.start && span.offset! < r.end
+        );
+        if (match) indices.push(match.index);
       }
     }
-    return { ...c, placeholder };
+    const uniqueIndices = Array.from(new Set(indices));
+    return { ...b, idx: i, paragraphIndices: uniqueIndices };
   });
 
+  const enrichedCandidates: Candidate[] = [];
+
+  // Sequential clause processing
+  for (const block of augmentedBlocks) {
+    const blockCandidates = candidates.filter(
+      c => c.blockIdx !== undefined && c.blockIdx === block.idx
+    );
+
+    for (const paraIdx of block.paragraphIndices ?? []) {
+      const range = paragraphRanges.find(r => r.index === paraIdx);
+      if (!range) continue;
+
+      let slice = range.plain;
+
+      // Log BEFORE replacement
+      if (TRACE) {
+        logDebug(">>> slice.before", {
+          clauseIdx: block.idx,
+          heading: block.heading,
+          paraIndex: paraIdx,
+          preview: slice,
+          candidates: blockCandidates.map(c => ({
+            field: c.schemaField,
+            raw: c.rawValue,
+          })),
+        });
+      }
+
+      // Apply replacements (plain-text preview only)
+      for (const cand of blockCandidates) {
+        if (!cand.rawValue) continue;
+        const regex = new RegExp(
+          cand.rawValue.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"),
+          "g"
+        );
+        slice = slice.replace(regex, `[[${cand.schemaField}}]`);
+      }
+
+      // Log AFTER replacement
+      if (TRACE) {
+        logDebug(">>> slice.after", {
+          clauseIdx: block.idx,
+          heading: block.heading,
+          paraIndex: paraIdx,
+          preview: slice,
+        });
+      }
+
+      // Splice back into the paragraph XML
+      const originalXml = paragraphs[paraIdx];
+      const updatedXml = spliceParagraphXmlByRuns(originalXml, blockCandidates, block.idx);
+      paragraphs[paraIdx] = updatedXml;
+    }
+  }
+
+  // Finalize
+  docXml = paragraphs.join("");
   zip.file(docXmlPath, docXml);
   const placeholderBuffer = await zip.generateAsync({ type: "nodebuffer" });
 
-  const placeholders = enrichedCandidates
-    .filter((c) => c.placeholder)
-    .map((c) => ({ field: c.schemaField, placeholder: c.placeholder }));
-
   if (TRACE) {
-    logDebug(">>> placeholderizeDocx.done (detailed)", {
+    logDebug(">>> placeholderizeDocx.summary", {
       candidateCount: enrichedCandidates.length,
-      placeholders,
+      clauseBlocks: augmentedBlocks.length,
     });
-  } else {
-    logDebug(
-      `>>> placeholderizeDocx.done: candidates=${enrichedCandidates.length}, placeholders=${placeholders.length}`
-    );
   }
 
   return { placeholderBuffer, enrichedCandidates };
-}
-
-/**
- * Normalize candidate text for XML matching:
- * - Collapse whitespace
- * - Encode XML entities (&, <, >, quotes)
- */
-function normalizeForXmlMatch(text: string): string {
-  return text
-    .trim()
-    .replace(/\s+/g, " ")
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&apos;");
-}
-
-/**
- * Replace exactly once within an optional scoped sourceText block (if provided).
- * If scope is provided, we first try to limit replacement within that block
- * to avoid over-matching elsewhere.
- */
-function replaceScopedOnce(
-  docXml: string,
-  safeMatch: string,
-  placeholder: string,
-  sourceText?: string
-) {
-  const oneValueRegex = new RegExp(safeMatch, "m");
-  if (sourceText) {
-    const safeScope = escapeRegExp(normalizeForXmlMatch(sourceText));
-    const scopeRegex = new RegExp(safeScope, "m");
-    const scopeMatch = docXml.match(scopeRegex);
-    if (scopeMatch) {
-      const scopeText = scopeMatch[0];
-      const replacedScope = scopeText.replace(oneValueRegex, placeholder);
-      return docXml.replace(scopeRegex, replacedScope);
-    }
-  }
-  return docXml.replace(oneValueRegex, placeholder);
-}
-
-/**
- * Replace all occurrences within an optional scoped sourceText block (if provided).
- * This is used for non-Parties fields where multiple instances may appear.
- */
-function replaceScopedGlobal(
-  docXml: string,
-  safeMatch: string,
-  placeholder: string,
-  sourceText?: string
-) {
-  const valueRegex = new RegExp(safeMatch, "gm");
-  if (sourceText) {
-    const safeScope = escapeRegExp(normalizeForXmlMatch(sourceText));
-    const scopeRegex = new RegExp(safeScope, "m");
-    const scopeMatch = docXml.match(scopeRegex);
-    if (scopeMatch) {
-      const scopeText = scopeMatch[0];
-      const replacedScope = scopeText.replace(valueRegex, placeholder);
-      return docXml.replace(scopeRegex, replacedScope);
-    }
-  }
-  return docXml.replace(valueRegex, placeholder);
 }

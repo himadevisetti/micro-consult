@@ -17,7 +17,10 @@ export function extractGoverningLaw(blocks: ClauseBlock[]): Candidate[] {
   const block = blocks.find(
     b => b.roleHint && headingMatches(b.roleHint, GOVLAW_HEADINGS)
   );
-  if (!block) return candidates;
+  if (!block) {
+    logDebug(">>> governingLaw.notEmitted", { reason: "No Governing Law heading found" });
+    return candidates;
+  }
 
   const text = block.body;
 
@@ -36,7 +39,14 @@ export function extractGoverningLaw(blocks: ClauseBlock[]): Candidate[] {
     }
   }
 
-  if (!raw) return candidates;
+  if (!raw) {
+    logDebug(">>> governingLaw.notEmitted", {
+      reason: "No cue match",
+      page: block.pageNumber,
+      y: block.yPosition,
+    });
+    return candidates;
+  }
 
   candidates.push({
     rawValue: raw,
@@ -45,7 +55,8 @@ export function extractGoverningLaw(blocks: ClauseBlock[]): Candidate[] {
     pageNumber: block.pageNumber,
     yPosition: block.yPosition,
     roleHint: block.roleHint,
-    sourceText: block.body,
+    sourceText: block.body, // full clause body
+    blockIdx: block.idx,    // 🔹 attach owning block
   });
 
   logDebug(">>> governingLaw.detected", {
@@ -53,7 +64,8 @@ export function extractGoverningLaw(blocks: ClauseBlock[]): Candidate[] {
     cue: cueUsed,
     page: block.pageNumber,
     y: block.yPosition,
-    sourcePreview: block.body,
+    roleHint: block.roleHint,
+    sourcePreview: block.body.slice(0, 120),
   });
 
   return candidates;

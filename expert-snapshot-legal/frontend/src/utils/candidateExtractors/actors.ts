@@ -6,6 +6,7 @@ import { CONTRACT_KEYWORDS } from "../../constants/contractKeywords.js";
 import { logDebug } from "../logger.js";
 import { normalizeHeading } from "../normalizeValue.js";
 import { headingMatches } from "../headingMatches.js";
+import { getAnchorPosition } from "../getAnchorPosition.js";
 
 export function extractActors(blocks: ClauseBlock[]): Candidate[] {
   const candidates: Candidate[] = [];
@@ -20,6 +21,7 @@ export function extractActors(blocks: ClauseBlock[]): Candidate[] {
   if (!block) return candidates;
 
   const lines = block.body.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+  const pos = getAnchorPosition(block);
 
   // --- Parties extraction ---
   for (const line of lines) {
@@ -51,8 +53,10 @@ export function extractActors(blocks: ClauseBlock[]): Candidate[] {
             candidates: ["partyA"],
             roleHint: labelA || baseRoleHint,
             pageNumber: block.pageNumber,
-            yPosition: block.yPosition,
-            sourceText: line,
+            yPosition: pos.y,
+            polygon: pos.polygon,
+            sourceText: block.body, // full clause body
+            blockIdx: block.idx,    // 🔹 attach owning block
           });
           candidates.push({
             rawValue: partyB,
@@ -60,8 +64,10 @@ export function extractActors(blocks: ClauseBlock[]): Candidate[] {
             candidates: ["partyB"],
             roleHint: labelB || baseRoleHint,
             pageNumber: block.pageNumber,
-            yPosition: block.yPosition,
-            sourceText: line,
+            yPosition: pos.y,
+            polygon: pos.polygon,
+            sourceText: block.body,
+            blockIdx: block.idx,    // 🔹 attach owning block
           });
         } else {
           candidates.push({
@@ -70,8 +76,10 @@ export function extractActors(blocks: ClauseBlock[]): Candidate[] {
             candidates: ["partyA", "partyB"],
             roleHint: baseRoleHint,
             pageNumber: block.pageNumber,
-            yPosition: block.yPosition,
-            sourceText: line,
+            yPosition: pos.y,
+            polygon: pos.polygon,
+            sourceText: block.body,
+            blockIdx: block.idx,    // 🔹 attach owning block
           });
           candidates.push({
             rawValue: partyB,
@@ -79,12 +87,23 @@ export function extractActors(blocks: ClauseBlock[]): Candidate[] {
             candidates: ["partyA", "partyB"],
             roleHint: baseRoleHint,
             pageNumber: block.pageNumber,
-            yPosition: block.yPosition,
-            sourceText: line,
+            yPosition: pos.y,
+            polygon: pos.polygon,
+            sourceText: block.body,
+            blockIdx: block.idx,    // 🔹 attach owning block
           });
         }
 
-        logDebug(">>> Parties detected:", { partyA, partyB, labelA, labelB });
+        logDebug(">>> parties.detected", {
+          partyA,
+          partyB,
+          labelA,
+          labelB,
+          page: block.pageNumber,
+          y: pos.y,
+          roleHint: baseRoleHint,
+          sourceText: block.body.slice(0, 120), // preview
+        });
         break; // stop after first match
       }
     }
@@ -108,13 +127,13 @@ export function extractActors(blocks: ClauseBlock[]): Candidate[] {
           .trim();
 
         if (isLikelyName(clean)) {
-          rawInventors.push(toInventorCandidate(clean, block, text));
+          rawInventors.push(toInventorCandidate(clean, block));
           logDebug(">>> inventor.detected", {
             name: clean,
             page: block.pageNumber,
             y: block.yPosition,
             roleHint: block.roleHint,
-            sourcePreview: text.slice(0, 80),
+            sourceText: block.body.slice(0, 120),
           });
         }
       }
@@ -122,13 +141,13 @@ export function extractActors(blocks: ClauseBlock[]): Candidate[] {
     }
 
     if (/^\bthe\s+inventor\b$/i.test(text)) {
-      rawInventors.push(toInventorCandidate("the Inventor", block, text));
+      rawInventors.push(toInventorCandidate("the Inventor", block));
       logDebug(">>> inventor.defaultRoleDetected", {
         value: "the Inventor",
         page: block.pageNumber,
         y: block.yPosition,
         roleHint: block.roleHint,
-        sourcePreview: text.slice(0, 80),
+        sourceText: block.body.slice(0, 120),
       });
       continue;
     }
@@ -142,6 +161,9 @@ export function extractActors(blocks: ClauseBlock[]): Candidate[] {
       schemaField,
       candidates: [schemaField],
       roleHint: "inventor",
+      yPosition: pos.y,
+      polygon: pos.polygon,
+      blockIdx: block.idx,   // 🔹 attach owning block
     });
   });
 
@@ -149,15 +171,18 @@ export function extractActors(blocks: ClauseBlock[]): Candidate[] {
 }
 
 // Helpers
-function toInventorCandidate(rawValue: string, block: ClauseBlock, sourceText: string): Candidate {
+function toInventorCandidate(rawValue: string, block: ClauseBlock): Candidate {
+  const pos = getAnchorPosition(block);
   return {
     rawValue,
     schemaField: "inventor", // temporary, replaced later
     candidates: ["inventor"],
     pageNumber: block.pageNumber,
-    yPosition: block.yPosition,
+    yPosition: pos.y,
     roleHint: block.roleHint,
-    sourceText,
+    sourceText: block.body, // full clause body
+    polygon: pos.polygon,
+    blockIdx: block.idx,    // 🔹 attach owning block
   };
 }
 

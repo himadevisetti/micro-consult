@@ -56,7 +56,7 @@ router.post(
       const buffer = await fs.promises.readFile(seedFilePath);
       const ext = path.extname(seedFilePath).toLowerCase();
 
-      // 2. Load stored candidates from sessionStore
+      // 2. Load stored candidates + clauseBlocks from sessionStore
       const stored = await loadCandidates(`candidates:${templateId}`);
       if (!stored) {
         return res.status(400).json({
@@ -64,9 +64,10 @@ router.post(
           error: "No stored candidates found for this templateId",
         });
       }
+      const { candidates, clauseBlocks } = stored;
 
       // 3. Merge NormalizedMapping[] into stored candidates
-      const enrichedCandidates = mergeMappingWithCandidates(mapping, stored);
+      const enrichedCandidates = mergeMappingWithCandidates(mapping, candidates);
 
       // 4. Build manifest from enriched candidates
       const manifest = {
@@ -94,11 +95,12 @@ router.post(
         customerId,
       });
 
-      // 6. Placeholderize with enriched candidates
+      // 6. Placeholderize with enriched candidates + clauseBlocks
       const { placeholderBuffer } = await placeholderizeDocument(
         buffer,
         enrichedCandidates,
-        ext
+        ext,
+        clauseBlocks
       );
 
       // 7. Save placeholderized copy

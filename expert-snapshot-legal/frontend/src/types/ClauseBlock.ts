@@ -1,6 +1,9 @@
 // src/types/ClauseBlock.ts
 
 export interface ClauseBlock {
+  /** Index of the current ClauseBlock in the ClauseBlock array */
+  idx: number;
+
   /** Clause heading (raw text as detected) */
   heading: string;
 
@@ -19,6 +22,8 @@ export interface ClauseBlock {
     text: string;
     pageNumber: number;
     yPosition: number;
+    offset?: number;
+    length?: number;
     polygon?: number[] | { x: number; y: number }[];
   }>;
 }

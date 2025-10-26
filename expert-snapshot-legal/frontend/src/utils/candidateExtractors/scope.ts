@@ -27,6 +27,14 @@ export function extractScope(blocks: ClauseBlock[]): Candidate[] {
     return candidates;
   }
 
+  logDebug(">>> scope.sectionFound", {
+    heading: block.heading,
+    roleHint: block.roleHint,
+    page: block.pageNumber,
+    y: block.yPosition,
+    sourcePreview: block.body.slice(0, 120),
+  });
+
   const fullScope = block.body
     .split(/\r?\n/)
     .map(l => l.trim())
@@ -40,15 +48,16 @@ export function extractScope(blocks: ClauseBlock[]): Candidate[] {
     const preview = firstSentence(fullScope);
 
     candidates.push({
-      rawValue: fullScope, // use full text as rawValue
+      rawValue: fullScope, // normalized full text
       displayValue: preview,
       schemaField: "scope",
       candidates: ["scope"],
       pageNumber: block.pageNumber,
       yPosition: block.yPosition,
       roleHint: block.roleHint,
-      sourceText: fullScope,
+      sourceText: block.body, // use original clause body for scoping
       isExpandable: fullScope.length > preview.length,
+      blockIdx: block.idx,    // 🔹 attach owning block
     });
 
     logDebug(">>> scope.detected", {
@@ -60,7 +69,7 @@ export function extractScope(blocks: ClauseBlock[]): Candidate[] {
       roleHint: block.roleHint,
       preview,
       rawValue: fullScope.slice(0, 80),
-      sourcePreview: fullScope,
+      sourcePreview: block.body.slice(0, 120),
     });
   } else {
     logDebug(">>> scope.notEmitted", { reason: "No body text found in block" });

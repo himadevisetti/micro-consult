@@ -12,7 +12,6 @@ type Hit = {
   assignee: string;
   page: number;
   y: number;
-  text: string;
   roleHint?: string;
 };
 
@@ -27,7 +26,10 @@ export function extractInventionAssignment(
   const block = blocks.find(
     b => b.roleHint && headingMatches(b.roleHint, IA_HEADINGS)
   );
-  if (!block) return candidates;
+  if (!block) {
+    logDebug(">>> ip.inventionAssignment.notEmitted", { reason: "No Invention Assignment heading found" });
+    return candidates;
+  }
 
   const text = block.body;
   const lines = text.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
@@ -52,7 +54,6 @@ export function extractInventionAssignment(
         assignee: a,
         page: block.pageNumber,
         y: block.yPosition,
-        text: line,
         roleHint: block.roleHint,
       })
     );
@@ -67,7 +68,6 @@ export function extractInventionAssignment(
       );
 
       let chosenRole: string | undefined;
-      let rawRoleLabel: string | undefined;
 
       const toIdx = lower.indexOf("to ");
       if (toIdx >= 0) {
@@ -75,17 +75,11 @@ export function extractInventionAssignment(
         const match = foundLabels.find(label => afterTo.includes(label));
         if (match) {
           chosenRole = match;
-          const regex = new RegExp(`\\b(?:the\\s+)?${match}[A-Za-z()]*`, "i");
-          const rawMatch = regex.exec(line);
-          if (rawMatch) rawRoleLabel = rawMatch[0];
         }
       }
 
       if (!chosenRole && foundLabels.length > 0) {
         chosenRole = foundLabels[0];
-        const regex = new RegExp(`\\b(?:the\\s+)?${chosenRole}[A-Za-z()]*`, "i");
-        const rawMatch = regex.exec(line);
-        if (rawMatch) rawRoleLabel = rawMatch[0];
       }
 
       if (chosenRole) {
@@ -93,14 +87,14 @@ export function extractInventionAssignment(
         if (/client|company/.test(chosenRole) && context.partyA) mapped = context.partyA;
         else if (/provider|consultant|firm/.test(chosenRole) && context.partyB) mapped = context.partyB;
 
-        const regex = new RegExp(`\\b(?:the\\s+)?${chosenRole}[A-Za-z()]*`, "i");
-        const rawMatch = regex.exec(line);
+        // Capture the literal text from the line (e.g. "Inventor(s)")
+        const rolePattern = new RegExp(`${chosenRole}(?:\\(s\\))?`, "i");
+        const rawMatch = line.match(rolePattern)?.[0] ?? chosenRole;
 
         step2Hits.push({
-          assignee: mapped ?? (rawMatch ? rawMatch[0] : line),
+          assignee: mapped ?? rawMatch,
           page: block.pageNumber,
           y: block.yPosition,
-          text: line,
           roleHint: block.roleHint,
         });
       }
@@ -123,7 +117,6 @@ export function extractInventionAssignment(
                 assignee: a,
                 page: block.pageNumber,
                 y: block.yPosition,
-                text: line,
                 roleHint: block.roleHint,
               })
             );
@@ -155,15 +148,17 @@ export function extractInventionAssignment(
       pageNumber: h.page,
       yPosition: h.y,
       roleHint: h.roleHint,
-      sourceText: h.text,
+      sourceText: block.body, // full clause body
+      blockIdx: block.idx,    // 🔹 attach owning block
     });
 
     logDebug(">>> ip.inventionAssignmentDetected", {
-      assignee: h.assignee,
+      rawValue: h.assignee,
       schemaField,
       page: h.page,
       y: h.y,
-      sourcePreview: h.text.slice(0, 80),
+      roleHint: h.roleHint,
+      sourcePreview: block.body.slice(0, 120),
     });
   });
 
