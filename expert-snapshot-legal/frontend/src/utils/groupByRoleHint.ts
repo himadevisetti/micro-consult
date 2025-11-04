@@ -53,7 +53,6 @@ export function groupByRoleHint(anchors: TextAnchor[]): ClauseBlock[] {
         yPosition: a.y,
         offset: (a as any).offset,
         length: (a as any).length,
-        polygon: undefined,
       });
     }
   }
@@ -84,7 +83,6 @@ export function groupByRoleHint(anchors: TextAnchor[]): ClauseBlock[] {
       pageNumber: start.page,
       yPosition: start.y,
       spans: block.spans,
-      polygon: block.spans[0]?.polygon,
     };
   });
 }

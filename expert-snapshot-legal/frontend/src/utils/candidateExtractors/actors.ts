@@ -6,7 +6,6 @@ import { CONTRACT_KEYWORDS } from "../../constants/contractKeywords.js";
 import { logDebug } from "../logger.js";
 import { normalizeHeading } from "../normalizeValue.js";
 import { headingMatches } from "../headingMatches.js";
-import { getAnchorPosition } from "../getAnchorPosition.js";
 
 export function extractActors(blocks: ClauseBlock[]): Candidate[] {
   const candidates: Candidate[] = [];
@@ -21,7 +20,6 @@ export function extractActors(blocks: ClauseBlock[]): Candidate[] {
   if (!block) return candidates;
 
   const lines = block.body.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
-  const pos = getAnchorPosition(block);
 
   // --- Parties extraction ---
   for (const line of lines) {
@@ -53,10 +51,9 @@ export function extractActors(blocks: ClauseBlock[]): Candidate[] {
             candidates: ["partyA"],
             roleHint: labelA || baseRoleHint,
             pageNumber: block.pageNumber,
-            yPosition: pos.y,
-            polygon: pos.polygon,
-            sourceText: block.body, // full clause body
-            blockIdx: block.idx,    // 🔹 attach owning block
+            yPosition: block.yPosition,
+            sourceText: block.body,
+            blockIdx: block.idx,
           });
           candidates.push({
             rawValue: partyB,
@@ -64,10 +61,9 @@ export function extractActors(blocks: ClauseBlock[]): Candidate[] {
             candidates: ["partyB"],
             roleHint: labelB || baseRoleHint,
             pageNumber: block.pageNumber,
-            yPosition: pos.y,
-            polygon: pos.polygon,
+            yPosition: block.yPosition,
             sourceText: block.body,
-            blockIdx: block.idx,    // 🔹 attach owning block
+            blockIdx: block.idx,
           });
         } else {
           candidates.push({
@@ -76,10 +72,9 @@ export function extractActors(blocks: ClauseBlock[]): Candidate[] {
             candidates: ["partyA", "partyB"],
             roleHint: baseRoleHint,
             pageNumber: block.pageNumber,
-            yPosition: pos.y,
-            polygon: pos.polygon,
+            yPosition: block.yPosition,
             sourceText: block.body,
-            blockIdx: block.idx,    // 🔹 attach owning block
+            blockIdx: block.idx,
           });
           candidates.push({
             rawValue: partyB,
@@ -87,10 +82,9 @@ export function extractActors(blocks: ClauseBlock[]): Candidate[] {
             candidates: ["partyA", "partyB"],
             roleHint: baseRoleHint,
             pageNumber: block.pageNumber,
-            yPosition: pos.y,
-            polygon: pos.polygon,
+            yPosition: block.yPosition,
             sourceText: block.body,
-            blockIdx: block.idx,    // 🔹 attach owning block
+            blockIdx: block.idx,
           });
         }
 
@@ -100,11 +94,11 @@ export function extractActors(blocks: ClauseBlock[]): Candidate[] {
           labelA,
           labelB,
           page: block.pageNumber,
-          y: pos.y,
+          y: block.yPosition,
           roleHint: baseRoleHint,
-          sourceText: block.body.slice(0, 120), // preview
+          sourceText: block.body.slice(0, 120),
         });
-        break; // stop after first match
+        break;
       }
     }
   }
@@ -161,9 +155,8 @@ export function extractActors(blocks: ClauseBlock[]): Candidate[] {
       schemaField,
       candidates: [schemaField],
       roleHint: "inventor",
-      yPosition: pos.y,
-      polygon: pos.polygon,
-      blockIdx: block.idx,   // 🔹 attach owning block
+      yPosition: block.yPosition,
+      blockIdx: block.idx,
     });
   });
 
@@ -172,17 +165,15 @@ export function extractActors(blocks: ClauseBlock[]): Candidate[] {
 
 // Helpers
 function toInventorCandidate(rawValue: string, block: ClauseBlock): Candidate {
-  const pos = getAnchorPosition(block);
   return {
     rawValue,
     schemaField: "inventor", // temporary, replaced later
     candidates: ["inventor"],
     pageNumber: block.pageNumber,
-    yPosition: pos.y,
+    yPosition: block.yPosition,
     roleHint: block.roleHint,
-    sourceText: block.body, // full clause body
-    polygon: pos.polygon,
-    blockIdx: block.idx,    // 🔹 attach owning block
+    sourceText: block.body,
+    blockIdx: block.idx,
   };
 }
 

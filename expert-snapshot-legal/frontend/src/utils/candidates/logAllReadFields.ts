@@ -18,16 +18,11 @@ export function logAllReadFields(readResult: any) {
       logDebug(`logAllReadFields: --- Page ${idx + 1} ---`);
       (page.lines ?? []).forEach((line: any, lineIdx: number) => {
         const content = String(line.content ?? "").trim();
-        const bb = Array.isArray(line.boundingBox) ? line.boundingBox
-          : Array.isArray(line.polygon) ? line.polygon : undefined;
         // Always dump the raw line object once if TRACE is on
         // if (process.env.DEBUG_TRACE === "true") {
         //   logDebug(`Line[${lineIdx}] raw=${JSON.stringify(line)}`);
         // }
-        logDebug(
-          `Line[${lineIdx}] (page=${page.pageNumber}) "${content}"` +
-          (bb ? ` bb=${JSON.stringify(bb)}` : " bb=none")
-        );
+        logDebug(`Line[${lineIdx}] (page=${page.pageNumber}) "${content}"`);
       });
     });
     return;
@@ -38,14 +33,10 @@ export function logAllReadFields(readResult: any) {
     logDebug("logAllReadFields: --- Paragraphs ---");
     readResult.paragraphs.forEach((p: any, idx: number) => {
       const page = p.boundingRegions?.[0]?.pageNumber ?? "?";
-      const bb = p.boundingRegions?.[0]?.boundingBox;
       if (process.env.DEBUG_TRACE === "true") {
         logDebug(`Paragraph[${idx}] raw=${JSON.stringify(p)}`);
       }
-      logDebug(
-        `[p${idx}] (page ${page}) "${p.content}"` +
-        (bb ? ` bb=${JSON.stringify(bb)}` : " bb=none")
-      );
+      logDebug(`[p${idx}] (page ${page}) "${p.content}"`);
     });
     return;
   }

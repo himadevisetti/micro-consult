@@ -43,27 +43,12 @@ export function getTextAnchors(readResult: any): ClauseBlock[] {
     return { is: false, reason: "defaultBody" };
   };
 
-  const getY = (bb?: number[] | { x: number; y: number }[], fallback = 0): number => {
-    if (Array.isArray(bb) && bb.length >= 4) {
-      if (typeof bb[0] === "number") {
-        const ys = [bb[1], bb[3], bb[5], bb[7]].filter(v => typeof v === "number");
-        if (ys.length) return Math.min(...(ys as number[]));
-      } else {
-        const ys = (bb as { x: number; y: number }[]).map(p => p.y);
-        if (ys.length) return Math.min(...ys);
-      }
-    }
-    return fallback;
-  };
-
   const emitHeading = (
     pageNum: number,
     y: number,
     text: string,
     reason: string,
     currentHeading: string | undefined,
-    polygon?: any,
-    boundingBox?: any,
     offset?: number,
     length?: number
   ) => {
@@ -73,8 +58,6 @@ export function getTextAnchors(readResult: any): ClauseBlock[] {
       y,
       roleHint: text,
       wasHeading: true,
-      polygon,
-      boundingBox,
       offset,
       length,
     });
@@ -90,8 +73,6 @@ export function getTextAnchors(readResult: any): ClauseBlock[] {
     y: number,
     text: string,
     currentHeading: string | undefined,
-    polygon?: any,
-    boundingBox?: any,
     offset?: number,
     length?: number
   ) => {
@@ -101,8 +82,6 @@ export function getTextAnchors(readResult: any): ClauseBlock[] {
       y,
       roleHint: currentHeading,
       wasHeading: false,
-      polygon,
-      boundingBox,
       offset,
       length,
     });
@@ -123,8 +102,6 @@ export function getTextAnchors(readResult: any): ClauseBlock[] {
     for (const page of readResult.pages) {
       let bufferText = "";
       let bufferStartY: number | undefined;
-      let bufferPolygon: any;
-      let bufferBoundingBox: any;
       let bufferOffset: number | undefined;
       let bufferLength: number | undefined;
 
@@ -138,16 +115,12 @@ export function getTextAnchors(readResult: any): ClauseBlock[] {
             (bufferStartY ?? 0) + j,
             s,
             currentHeading,
-            bufferPolygon,
-            bufferBoundingBox,
             bufferOffset,
             bufferLength
           );
         }
         bufferText = "";
         bufferStartY = undefined;
-        bufferPolygon = undefined;
-        bufferBoundingBox = undefined;
         bufferOffset = undefined;
         bufferLength = undefined;
       };
@@ -172,7 +145,7 @@ export function getTextAnchors(readResult: any): ClauseBlock[] {
           h.is && h.reason !== "keyword" && h.reason !== "fallbackAllCapsShort" && looksSentence;
         const wasHeading = h.is && !shouldDowngrade;
 
-        const y = getY(line.polygon ?? line.boundingBox, lineIdx);
+        const y = lineIdx;
 
         const inSignatureSection =
           currentHeading &&
@@ -181,7 +154,6 @@ export function getTextAnchors(readResult: any): ClauseBlock[] {
             .includes(normalizeHeading(currentHeading));
 
         if (wasHeading) {
-          // 🔹 Debug log for every heading candidate
           logDebug("PDF.headingCandidate", {
             text: content,
             reason: h.reason,
@@ -192,15 +164,12 @@ export function getTextAnchors(readResult: any): ClauseBlock[] {
             y,
           });
 
-          // Downgrade signatory names under Signatures
           if (inSignatureSection && h.reason === "fallbackTitleCaseShort") {
             emitSentence(
               page.pageNumber,
               y,
               content,
               currentHeading,
-              line.polygon,
-              line.boundingBox,
               offset,
               length
             );
@@ -211,10 +180,9 @@ export function getTextAnchors(readResult: any): ClauseBlock[] {
                 text: content,
               });
             }
-            continue; // 🔹 do not reset currentHeading
+            continue;
           }
 
-          // Otherwise treat as a true clause heading
           flushBuffer();
           currentHeading = content;
           emitHeading(
@@ -223,19 +191,14 @@ export function getTextAnchors(readResult: any): ClauseBlock[] {
             content,
             h.reason,
             currentHeading,
-            line.polygon,
-            line.boundingBox,
             offset,
             length
           );
           continue;
         }
 
-        // Accumulate sentence-like lines into buffer
         if (!bufferText) {
           bufferStartY = y;
-          bufferPolygon = line.polygon;
-          bufferBoundingBox = line.boundingBox;
           bufferOffset = offset;
           bufferLength = length;
         }
@@ -282,19 +245,15 @@ export function getTextAnchors(readResult: any): ClauseBlock[] {
           .map(normalizeHeading)
           .includes(normalizeHeading(currentHeading));
 
-      const region = p.boundingRegions?.[0];
-      const polygon = region?.polygon;
-      const boundingBox = region?.boundingBox;
-
       if (wasHeading) {
         if (inSignatureSection && h.reason === "fallbackTitleCaseShort") {
-          emitSentence(pageNum, idx * 100, text, currentHeading, polygon, boundingBox, offset, length);
+          emitSentence(pageNum, idx * 100, text, currentHeading, offset, length);
           if (TRACE) logDebug("terminal.emitLine.DOCX", { page: pageNum, heading: currentHeading, text });
           return;
         }
         currentHeading = text;
         const y = idx * 100;
-        emitHeading(pageNum, y, text, h.reason, currentHeading, polygon, boundingBox, offset, length);
+        emitHeading(pageNum, y, text, h.reason, currentHeading, offset, length);
       } else {
         const parts = text
           .split(/(?<=[.?!])\s+(?=[A-Z])/)
@@ -303,7 +262,7 @@ export function getTextAnchors(readResult: any): ClauseBlock[] {
         for (let j = 0; j < parts.length; j++) {
           const s = parts[j];
           const y = idx * 100 + j;
-          emitSentence(pageNum, y, s, currentHeading, polygon, boundingBox, offset, length);
+          emitSentence(pageNum, y, s, currentHeading, offset, length);
         }
       }
     });
@@ -343,23 +302,23 @@ export function getTextAnchors(readResult: any): ClauseBlock[] {
 
         if (wasHeading) {
           if (inSignatureSection && h.reason === "fallbackTitleCaseShort") {
-            emitSentence(1, idx, line, currentHeading, undefined, undefined, undefined, undefined);
+            emitSentence(1, idx, line, currentHeading, undefined, undefined);
             if (TRACE) logDebug("terminal.emitLine.FALLBACK", { heading: currentHeading, text: line });
             return;
           }
           currentHeading = line;
-          emitHeading(1, idx, line, h.reason, currentHeading, undefined, undefined, undefined, undefined);
+          emitHeading(1, idx, line, h.reason, currentHeading, undefined, undefined);
         } else {
           const parts = line
             .split(/(?<=[.?!])\s+(?=[A-Z])/)
             .map(norm)
             .filter(Boolean);
           if (parts.length === 0) {
-            emitSentence(1, idx, line, currentHeading, undefined, undefined, undefined, undefined);
+            emitSentence(1, idx, line, currentHeading, undefined, undefined);
           } else {
             for (let j = 0; j < parts.length; j++) {
               const s = parts[j];
-              emitSentence(1, idx + j, s, currentHeading, undefined, undefined, undefined, undefined);
+              emitSentence(1, idx + j, s, currentHeading, undefined, undefined);
             }
           }
         }

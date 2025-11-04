@@ -17,13 +17,12 @@ export interface ClauseBlock {
   pageNumber: number;
   yPosition: number;
 
-  /** Geometry spans for PDF preview/highlighting */
+  /** Text spans for PDF preview/highlighting */
   spans: Array<{
     text: string;
     pageNumber: number;
     yPosition: number;
     offset?: number;
     length?: number;
-    polygon?: number[] | { x: number; y: number }[];
   }>;
 }
