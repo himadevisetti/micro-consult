@@ -1,5 +1,7 @@
+// src/server/utils/manifestEnrichment.ts
+
 import type { Candidate } from "../../types/Candidate.js";
-import { ENUM_OPTIONS } from "../../constants/contractKeywords.js";
+import { ENUM_OPTIONS, ACRONYMS } from "../../constants/contractKeywords.js";
 
 export function enrichMapping(c: Candidate) {
   if (!c.schemaField) {
@@ -14,10 +16,19 @@ export function enrichMapping(c: Candidate) {
   }
 
   const label = c.schemaField
-    .replace(/([A-Z])/g, " $1")        // split camelCase
-    .replace(/(\d+)$/, " #$1")         // turn trailing digits into #n
-    .replace(/^./, (ch) => ch.toUpperCase())
-    .trim();
+    .replace(/([a-z0-9])([A-Z])/g, "$1 $2") // split camelCase
+    .replace(/(\d+)$/, " #$1")              // trailing digits
+    .replace(/\s+/g, " ")                   // collapse multiple spaces
+    .trim()
+    .split(" ")
+    .map(token => {
+      const lower = token.toLowerCase();
+      if (ACRONYMS.has(lower)) {
+        return lower.toUpperCase();
+      }
+      return token[0].toUpperCase() + token.slice(1);
+    })
+    .join(" ");
 
   let inputType: "text" | "date" | "currency" | "textarea" | "select" = "text";
   let options: string[] | undefined;

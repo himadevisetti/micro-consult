@@ -52,17 +52,17 @@ export async function placeholderizeDocx(
 
   // Normalize ClauseBlocks into augmented ones
   const augmentedBlocks: AugmentedClauseBlock[] = clauseBlocks.map((b, i) => {
-    const indices: number[] = [];
+    const paraIndices: number[] = [];
     for (const span of b.spans) {
       if (span.offset !== undefined) {
         const match = paragraphRanges.find(
           (r) => span.offset! >= r.start && span.offset! < r.end
         );
-        if (match) indices.push(match.index);
+        if (match) paraIndices.push(match.index);
       }
     }
-    const uniqueIndices = Array.from(new Set(indices));
-    return { ...b, idx: i, paragraphIndices: uniqueIndices };
+    const uniqueIndices = Array.from(new Set(paraIndices));
+    return { ...b, idx: i, indices: uniqueIndices };
   });
 
   const enrichedCandidates: Candidate[] = [];
@@ -73,7 +73,7 @@ export async function placeholderizeDocx(
       c => c.blockIdx !== undefined && c.blockIdx === block.idx
     );
 
-    for (const paraIdx of block.paragraphIndices ?? []) {
+    for (const paraIdx of block.indices ?? []) {
       const range = paragraphRanges.find(r => r.index === paraIdx);
       if (!range) continue;
 

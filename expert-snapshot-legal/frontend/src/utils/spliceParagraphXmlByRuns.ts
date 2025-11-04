@@ -1,29 +1,9 @@
+// src/utils/spliceParagraphXmlByRuns.ts
+
 import { Candidate } from "../types/Candidate";
+import { buildTokenRegex } from "./buildTokenRegex.js";
+import { logDebug } from "../utils/logger.js";
 
-/**
- * Escape regex metacharacters in a string.
- */
-function escapeRegex(str: string): string {
-  return str.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-}
-
-/**
- * Build a regex for a candidate rawValue.
- * - If the value is purely alphanumeric, wrap with \b boundaries.
- * - Otherwise, just match the escaped string literally.
- */
-function buildTokenRegex(rawValue: string): RegExp {
-  const escaped = escapeRegex(rawValue);
-  const isWord = /^[A-Za-z0-9]+$/.test(rawValue);
-  return new RegExp(isWord ? `\\b${escaped}\\b` : escaped, "g");
-}
-
-/**
- * Replace candidate rawValues with [[schemaField]] inside <w:t> runs.
- * - Only applies candidates whose blockIdx matches the current clauseIdx
- * - Works run-by-run, so formatting splits (quotes, italics) don't break it
- * - No hardcoded schema names; uses whatever schemaField is already set
- */
 export function spliceParagraphXmlByRuns(
   originalXml: string,
   candidates: Candidate[],
@@ -31,14 +11,53 @@ export function spliceParagraphXmlByRuns(
 ): string {
   if (!originalXml || candidates.length === 0) return originalXml;
 
-  // Scope candidates to this clause
   const scoped = candidates.filter(c => c.blockIdx === clauseIdx);
-
   const runRegex = /(<w:t[^>]*>)([\s\S]*?)(<\/w:t>)/g;
+
+  // Concatenate all run texts for full‑clause detection
+  const runTexts: string[] = [];
+  let m: RegExpExecArray | null;
+  while ((m = runRegex.exec(originalXml)) !== null) {
+    runTexts.push(m[2]); // inner text only
+  }
+  const concatenated = runTexts.join("");
+  const normalize = (s: string) => s.replace(/\s+/g, " ").trim();
+
+  logDebug("splice.start", {
+    clauseIdx,
+    runCount: runTexts.length,
+    candidateFields: scoped.map(c => c.schemaField),
+  });
+
+  // 🔹 Check for full‑clause replacement
+  for (const c of scoped) {
+    if (!c.rawValue || !c.schemaField) continue;
+    if (
+      normalize(concatenated) === normalize(c.rawValue) &&
+      c.isExpandable &&
+      c.sourceText
+    ) {
+      logDebug("splice.fullClauseReplace", { schemaField: c.schemaField });
+
+      const firstRunIdx = originalXml.search(/<w:r[\s>]/);
+      const lastRunCloseIdx = originalXml.lastIndexOf("</w:r>");
+      const hasRuns = firstRunIdx !== -1 && lastRunCloseIdx !== -1;
+
+      const prefix = hasRuns ? originalXml.slice(0, firstRunIdx) : originalXml;
+      const suffix = hasRuns ? originalXml.slice(lastRunCloseIdx + "</w:r>".length) : "";
+
+      const firstRunPrMatch = originalXml.match(/<w:rPr[\s\S]*?<\/w:rPr>/);
+      const runPr = firstRunPrMatch ? firstRunPrMatch[0] : "";
+
+      const placeholderRun = `<w:r>${runPr}<w:t xml:space="preserve">[[${c.schemaField}]]</w:t></w:r>`;
+      return `${prefix}${placeholderRun}${suffix}`;
+    }
+  }
+
+  // 🔹 Run‑by‑run replacement
   let updatedXml = "";
   let lastIndex = 0;
   let match: RegExpExecArray | null;
-
   while ((match = runRegex.exec(originalXml)) !== null) {
     const [full, openTag, runText, closeTag] = match;
     const before = originalXml.slice(lastIndex, match.index);
@@ -47,7 +66,14 @@ export function spliceParagraphXmlByRuns(
     for (const c of scoped) {
       if (!c.rawValue || !c.schemaField) continue;
       const tokenRegex = buildTokenRegex(c.rawValue);
-      newRunText = newRunText.replace(tokenRegex, `[[${c.schemaField}]]`);
+      if (tokenRegex.test(newRunText)) {
+        logDebug("splice.tokenReplace", {
+          schemaField: c.schemaField,
+          raw: c.rawValue,
+          clauseIdx,
+        });
+        newRunText = newRunText.replace(tokenRegex, `[[${c.schemaField}]]`);
+      }
     }
 
     updatedXml += before + openTag + newRunText + closeTag;
@@ -58,5 +84,6 @@ export function spliceParagraphXmlByRuns(
     updatedXml += originalXml.slice(lastIndex);
   }
 
+  logDebug("splice.runByRunComplete", { clauseIdx });
   return updatedXml;
 }

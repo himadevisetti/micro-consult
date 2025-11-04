@@ -224,6 +224,34 @@ export const FIELD_LABELS: Record<string, string> = {
   signatory: "Signatory",
 };
 
+export const MONTH_KEYWORDS = [
+  "January", "Jan",
+  "February", "Feb",
+  "March", "Mar",
+  "April", "Apr",
+  "May",
+  "June", "Jun",
+  "July", "Jul",
+  "August", "Aug",
+  "September", "Sep", "Sept",
+  "October", "Oct",
+  "November", "Nov",
+  "December", "Dec"
+];
+
+// Known acronyms that should always be uppercased in labels
+export const ACRONYMS = new Set([
+  "ip",
+  "llc",
+  "ssn",
+  "dob",
+  "ein",
+  "nda",
+  "mou",
+  "usa",
+  "uk",
+]);
+
 export const ENUM_OPTIONS: Record<string, string[]> = {
   feeStructure: ["Contingency", "Hourly", "Flat"],
   licenseScope: ["Worldwide", "Exclusive", "Non-exclusive"],

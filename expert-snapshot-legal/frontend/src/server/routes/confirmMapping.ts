@@ -99,8 +99,9 @@ router.post(
       const { placeholderBuffer } = await placeholderizeDocument(
         buffer,
         enrichedCandidates,
-        ext,
-        clauseBlocks
+        ext.replace(".", ""), // pass "pdf" or "docx"
+        clauseBlocks,
+        seedFilePath
       );
 
       // 7. Save placeholderized copy
@@ -110,9 +111,10 @@ router.post(
         "templates"
       );
       await fs.promises.mkdir(customerTemplatePath, { recursive: true });
+      const outExt = ext === ".pdf" ? ".docx" : ext;
       const templatePath = path.join(
         customerTemplatePath,
-        `${templateId}${ext}`
+        `${templateId}${outExt}`
       );
       await fs.promises.writeFile(templatePath, placeholderBuffer);
 

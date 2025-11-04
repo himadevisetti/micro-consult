@@ -53,11 +53,7 @@ export function groupByRoleHint(anchors: TextAnchor[]): ClauseBlock[] {
         yPosition: a.y,
         offset: (a as any).offset,
         length: (a as any).length,
-        polygon: Array.isArray((a as any).polygon)
-          ? (a as any).polygon
-          : Array.isArray((a as any).boundingBox)
-            ? (a as any).boundingBox
-            : undefined,
+        polygon: undefined,
       });
     }
   }

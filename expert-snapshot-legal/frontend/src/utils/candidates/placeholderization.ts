@@ -8,11 +8,19 @@ export async function placeholderizeDocument(
   buffer: Buffer,
   candidates: Candidate[],
   ext: string,
-  clauseBlocks?: ClauseBlock[]
+  clauseBlocks: ClauseBlock[] = [],
+  seedFilePath?: string
 ): Promise<{ placeholderBuffer: Buffer; enrichedCandidates?: Candidate[] }> {
   if (ext.toLowerCase() === "pdf") {
-    return placeholderizePdf(buffer, candidates);
+    // For PDFs, we don’t use the raw buffer directly.
+    // Instead, pass the seedFilePath into placeholderizePdf()
+    if (!seedFilePath) {
+      throw new Error("PDF placeholderization requires seedFilePath");
+    }
+    return placeholderizePdf(seedFilePath, candidates, clauseBlocks);
   }
-  // For DOCX, forward clauseBlocks (default to [] if not provided)
-  return placeholderizeDocx(buffer, candidates, clauseBlocks ?? []);
+
+  // For DOCX, continue as before
+  return placeholderizeDocx(buffer, candidates, clauseBlocks);
 }
+

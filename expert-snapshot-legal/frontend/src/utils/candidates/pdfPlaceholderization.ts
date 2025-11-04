@@ -1,56 +1,89 @@
-// src/utils/pdfPlaceholderization.ts
-import { PDFDocument, rgb } from "pdf-lib";
+import fs from "fs/promises";
+import { spawn } from "child_process";
+import path from "path";
 import { Candidate } from "../../types/Candidate";
-import { PLACEHOLDER_KEYWORDS, PLACEHOLDER_REGEX } from "../../constants/contractKeywords.js";
-import { escapeRegExp } from "../escapeRegExp.js";
-import { logDebug } from "../logger.js";
+import type { ClauseBlock } from "../../types/ClauseBlock";
+import { placeholderizeDocx } from "./docxPlaceholderization.js";
+import { logDebug } from "../../utils/logger.js";
+
+// --- Resolve project root and shim path ---
+const projectRoot = process.env.PROJECT_ROOT ?? process.cwd();
+const shimPath = path.join(projectRoot, "scripts/pdf2docx_shim.py");
+
+// --- Resolve Python binary ---
+// If VIRTUAL_ENV is relative (e.g. "./.venv"), normalize it against projectRoot
+let pythonBin: string;
+if (process.env.VIRTUAL_ENV) {
+  const venvRoot = path.resolve(projectRoot, process.env.VIRTUAL_ENV);
+  pythonBin = path.join(venvRoot, "bin", "python3");
+} else {
+  pythonBin = "python3";
+}
+
+logDebug("pdfPlaceholderization.pythonBin", { pythonBin });
+logDebug("pdfPlaceholderization.shimPath", { shimPath });
 
 export async function placeholderizePdf(
-  buffer: Buffer,
-  candidates: Candidate[]
-): Promise<{ placeholderBuffer: Buffer; enrichedCandidates: Candidate[] }> {
-  const pdfDoc = await PDFDocument.load(buffer);
-  const pages = pdfDoc.getPages();
+  seedFilePath: string,
+  candidates: Candidate[],
+  clauseBlocks: ClauseBlock[]
+): Promise<{ placeholderBuffer: Buffer; enrichedCandidates?: Candidate[] }> {
+  // 1. Define temp output path for converted DOCX
+  const tempDocxPath = seedFilePath.replace(/\.pdf$/i, ".converted.docx");
 
-  const enrichedCandidates = candidates.map((c) => {
-    let placeholder: string | undefined;
+  // 2. Run pdf2docx via our shim
+  await new Promise<void>((resolve, reject) => {
+    const proc = spawn(pythonBin, [
+      shimPath,
+      "convert",
+      seedFilePath,
+      tempDocxPath,
+    ]);
 
-    if (c.schemaField) {
-      const digits = (c.schemaField.match(/\d+$/) || [])[0] ?? "";
-      const base = c.schemaField.replace(/\d+$/, "").toLowerCase();
-      const keyword = PLACEHOLDER_KEYWORDS[base];
+    proc.stdout.on("data", (data) => {
+      logDebug("pdfPlaceholderization.converterStdout", {
+        seedFilePath,
+        message: data.toString(),
+      });
+    });
 
-      const isClause = c.isExpandable === true;
-      const candidateText = isClause ? c.sourceText : c.rawValue;
+    proc.stderr.on("data", (data) => {
+      logDebug("pdfPlaceholderization.converterStderr", {
+        seedFilePath,
+        message: data.toString(),
+      });
+    });
 
-      if (keyword && candidateText && !PLACEHOLDER_REGEX.test(candidateText)) {
-        const tag = digits ? `${keyword}${digits}` : keyword;
-        placeholder = `[[${tag}]]`;
+    proc.on("error", (err) => {
+      logDebug("pdfPlaceholderization.conversionError", {
+        seedFilePath,
+        tempDocxPath,
+        error: err.message,
+      });
+      reject(err);
+    });
 
-        // For now: overlay placeholder text at the candidate’s approximate location
-        // (requires you to have page + yPosition from extraction)
-        const pageIndex = (c.pageNumber ?? 1) - 1;
-        const page = pages[pageIndex];
-        if (page) {
-          page.drawText(placeholder, {
-            x: 50, // TODO: map from c.yPosition / xPosition if available
-            y: page.getHeight() - (c.yPosition ?? 100),
-            size: 12,
-            color: rgb(1, 0, 0),
-          });
-        }
-
-        logDebug("placeholderizePdf.overlay", {
-          field: c.schemaField,
-          placeholder,
-          page: c.pageNumber,
+    proc.on("exit", (code) => {
+      if (code === 0) {
+        logDebug("pdfPlaceholderization.conversionSuccess", {
+          seedFilePath,
+          tempDocxPath,
         });
+        resolve();
+      } else {
+        logDebug("pdfPlaceholderization.conversionFailure", {
+          seedFilePath,
+          tempDocxPath,
+          exitCode: code,
+        });
+        reject(new Error(`pdf2docx failed with code ${code}`));
       }
-    }
-    return { ...c, placeholder };
+    });
   });
 
-  const placeholderBuffer = Buffer.from(await pdfDoc.save());
+  // 3. Read the converted DOCX into a Buffer
+  const docxBuffer = await fs.readFile(tempDocxPath);
 
-  return { placeholderBuffer, enrichedCandidates };
+  // 4. Call placeholderizeDocx() with the converted buffer
+  return placeholderizeDocx(docxBuffer, candidates, clauseBlocks);
 }

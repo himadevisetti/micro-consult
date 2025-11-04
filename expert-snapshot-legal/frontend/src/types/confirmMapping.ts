@@ -8,6 +8,7 @@ export interface NormalizedMapping {
   raw: string;              // raw text from the document
   normalized?: string;      // optional normalized form (e.g. ISO date, number)
   schemaField: string;      // required schema field name
-  placeholder: string;     // required placeholder mapping
+  placeholder: string;      // required placeholder mapping
+  deleted?: boolean;        // true if user explicitly removed this field in UI
 }
 

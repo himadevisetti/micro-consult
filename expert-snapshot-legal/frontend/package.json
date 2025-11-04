@@ -13,7 +13,8 @@
     "codemod": "tsc && node dist/fix-import-extensions.mjs --dry",
     "build": "tsc -p tsconfig.build.json && vite build",
     "start-dev": "NODE_ENV=development tsx devServer.mts",
-    "start-prod": "npm run build && NODE_ENV=production node build/start-server.js"
+    "start-prod": "npm run build && NODE_ENV=production node build/start-server.js",
+    "setup-venv": "python3 -m venv .venv && ./.venv/bin/python3 -m pip install pdf2docx PyMuPDF && echo 'VIRTUAL_ENV=./.venv' > .env.local"
   },
   "keywords": [],
   "author": "",

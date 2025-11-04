@@ -116,8 +116,11 @@ export function getTextAnchors(readResult: any): ClauseBlock[] {
   // Case A: PDF/image
   if (readResult.pages?.some((p: any) => (p.lines ?? []).length > 0)) {
     logDebug(">>> getTextAnchors: PDF/image branch");
+
+    // 🔹 Persist across pages
+    let currentHeading: string | undefined;
+
     for (const page of readResult.pages) {
-      let currentHeading: string | undefined;
       let bufferText = "";
       let bufferStartY: number | undefined;
       let bufferPolygon: any;
@@ -165,7 +168,8 @@ export function getTextAnchors(readResult: any): ClauseBlock[] {
           /[$]\s*\d|USD|\b\d{4}\b/.test(content) ||
           words.length > 12 ||
           content.length > 80;
-        const shouldDowngrade = h.is && h.reason !== "keyword" && h.reason !== "fallbackAllCapsShort" && looksSentence;
+        const shouldDowngrade =
+          h.is && h.reason !== "keyword" && h.reason !== "fallbackAllCapsShort" && looksSentence;
         const wasHeading = h.is && !shouldDowngrade;
 
         const y = getY(line.polygon ?? line.boundingBox, lineIdx);
@@ -177,17 +181,57 @@ export function getTextAnchors(readResult: any): ClauseBlock[] {
             .includes(normalizeHeading(currentHeading));
 
         if (wasHeading) {
+          // 🔹 Debug log for every heading candidate
+          logDebug("PDF.headingCandidate", {
+            text: content,
+            reason: h.reason,
+            currentHeading,
+            inSignatureSection,
+            wasHeading,
+            page: page.pageNumber,
+            y,
+          });
+
+          // Downgrade signatory names under Signatures
           if (inSignatureSection && h.reason === "fallbackTitleCaseShort") {
-            emitSentence(page.pageNumber, y, content, currentHeading, line.polygon, line.boundingBox, offset, length);
-            if (TRACE) logDebug("terminal.emitLine.PDF", { page: page.pageNumber, heading: currentHeading, text: content });
-            continue;
+            emitSentence(
+              page.pageNumber,
+              y,
+              content,
+              currentHeading,
+              line.polygon,
+              line.boundingBox,
+              offset,
+              length
+            );
+            if (TRACE) {
+              logDebug("terminal.emitLine.PDF", {
+                page: page.pageNumber,
+                heading: currentHeading,
+                text: content,
+              });
+            }
+            continue; // 🔹 do not reset currentHeading
           }
+
+          // Otherwise treat as a true clause heading
           flushBuffer();
           currentHeading = content;
-          emitHeading(page.pageNumber, y, content, h.reason, currentHeading, line.polygon, line.boundingBox, offset, length);
+          emitHeading(
+            page.pageNumber,
+            y,
+            content,
+            h.reason,
+            currentHeading,
+            line.polygon,
+            line.boundingBox,
+            offset,
+            length
+          );
           continue;
         }
 
+        // Accumulate sentence-like lines into buffer
         if (!bufferText) {
           bufferStartY = y;
           bufferPolygon = line.polygon;

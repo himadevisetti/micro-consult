@@ -1,14 +1,28 @@
+// src/server/injectCssIntoHtml.ts
+
+import { MONTH_KEYWORDS } from "../constants/contractKeywords.js";
+
 /**
  * Injects compiled CSS into raw HTML for PDF rendering,
  * and bakes in `.signature-break` on the "Signatures" clauseBlock.
  */
-export function injectCssIntoHtml(html: string, compiledCss: string, title: string): string {
-  const escapedCss = compiledCss.replace(/<\/style>/gi, '<\\/style>');
+export function injectCssIntoHtml(
+  html: string,
+  compiledCss: string,
+  title: string
+): string {
+  const escapedCss = compiledCss.replace(/<\/style>/gi, "<\\/style>");
 
-  // Tag the clauseBlock containing the "Signatures" heading
-  const htmlTagged = html.replace(
+  // Regex: Month + day + year → replace spaces with &nbsp;
+  const monthPattern = MONTH_KEYWORDS.join("|");
+  const htmlWithNbsp = html.replace(
+    new RegExp(`\\b(${monthPattern})\\s+(\\d{1,2}),\\s+(\\d{4})`, "gi"),
+    (_, month, day, year) => `${month}&nbsp;${day},&nbsp;${year}`
+  );
+
+  const htmlTagged = htmlWithNbsp.replace(
     /(<div[^>]*class=")([^"]*__clauseBlock___[A-Za-z0-9_-]*[^"]*)("[^>]*>)(?:(?!<\/div>)[\s\S])*?(<br><br>[\s\S]*?<h3[^>]*>\s*Signatures\s*<\/h3>)/i,
-    '$1$2 signature-break$3$4'
+    "$1$2 signature-break$3$4"
   );
 
   return `

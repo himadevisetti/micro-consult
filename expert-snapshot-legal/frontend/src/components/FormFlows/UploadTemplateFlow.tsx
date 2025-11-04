@@ -31,15 +31,18 @@ export default function UploadTemplateFlow({ customerId }: Props) {
     setError(null);
   };
 
-  const handleConfirmMapping = async (finalMapping: NormalizedMapping[]) => {
+  // 🔹 Return a result object instead of just setting error/navigating
+  const handleConfirmMapping = async (
+    finalMapping: NormalizedMapping[]
+  ): Promise<{ ok: boolean; error?: string }> => {
     if (!templateId) {
-      setError("No templateId available — upload step must complete first.");
-      return;
+      const msg = "No templateId available — upload step must complete first.";
+      setError(msg);
+      return { ok: false, error: msg };
     }
 
     const url = `/api/templates/${customerId}/${templateId}/confirm-mapping`;
 
-    // Log API request context (endpoint + summary, not full payload again)
     logDebug("confirmMapping.apiRequest", {
       url,
       fieldCount: finalMapping.length,
@@ -54,16 +57,16 @@ export default function UploadTemplateFlow({ customerId }: Props) {
       });
 
       if (!res.ok) {
-        // Log error context before throwing
         logError("confirmMapping.apiError", {
           url,
           status: res.status,
           statusText: res.statusText,
         });
-        throw new Error(`Failed to save mapping: ${res.statusText}`);
+        const msg = `Failed to save mapping: ${res.statusText}`;
+        setError(msg);
+        return { ok: false, error: msg };
       }
 
-      // ✅ Success log
       logDebug("confirmMapping.apiSuccess", {
         url,
         fieldCount: finalMapping.length,
@@ -75,14 +78,17 @@ export default function UploadTemplateFlow({ customerId }: Props) {
       navigate("/form/custom-template", {
         state: { success: true, templateId, templateName },
       });
+
+      return { ok: true };
     } catch (err: any) {
-      // Log unexpected errors (network, JSON, etc.)
       logError("confirmMapping.apiError", {
         url,
         message: err?.message,
         stack: err?.stack,
       });
-      setError(err.message || "Failed to save mapping");
+      const msg = err.message || "Failed to save mapping";
+      setError(msg);
+      return { ok: false, error: msg };
     }
   };
 
