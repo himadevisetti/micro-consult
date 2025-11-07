@@ -104,5 +104,3 @@ expert-snapshot-legal/frontend/storage/**
 # Keep just the root placeholder so the directory exists after clone/deploy
 !expert-snapshot-legal/frontend/storage/.gitkeep
 
-
-expert-snapshot-legal/frontend/.env.local
