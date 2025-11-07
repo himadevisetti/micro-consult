@@ -105,3 +105,4 @@ expert-snapshot-legal/frontend/storage/**
 !expert-snapshot-legal/frontend/storage/.gitkeep
 
 
+expert-snapshot-legal/frontend/.env.local
