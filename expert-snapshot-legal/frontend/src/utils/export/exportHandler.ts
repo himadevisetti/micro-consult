@@ -18,7 +18,7 @@
  *   and avoids duplicating substitution logic on the frontend.
  *
  * - PDF:
- *   Generated server‑side via /api/export-pdf for fidelity (slower).
+ *   Generated server‑side via /api/exportPdf for fidelity (slower).
  *
  * This split is intentional:
  *   • Keep fast paths on the frontend for responsiveness.
@@ -128,22 +128,22 @@ function resolveMetadata(formData: Record<string, any>, formType: FormType) {
 }
 
 export async function exportRetainer<T extends Record<string, any>>(
-  type: 'pdf' | 'docx',
+  type: "pdf" | "docx",
   formType: FormType,
   formData: T,
   html?: string,
-  customerId?: string,   // required only for CustomTemplateGenerate
-  templateId?: string    // required only for CustomTemplateGenerate
+  customerId?: string,
+  templateId?: string,
+  docxBufferBase64?: string // 🔹 new optional param
 ) {
   const { client: resolvedClient, purpose: resolvedMatter } =
     resolveMetadata(formData, formType);
 
-  const retainerType = RetainerTypeLabel[formType];
   const normalizedFormType = slugifyFormType(formType);
   const today = new Date().toISOString();
 
   const filename = getFilename(
-    type === 'pdf' ? 'final' : 'draft',
+    type === "pdf" ? "final" : "draft",
     resolvedClient,
     today,
     normalizedFormType
@@ -152,49 +152,60 @@ export async function exportRetainer<T extends Record<string, any>>(
   let blob: Blob | null = null;
 
   try {
-    if (type === 'pdf') {
-      if (!html) throw new Error(`Missing HTML for PDF export`);
-      // Backend path: PDF rendering is heavy, handled server‑side
-      const response = await fetch('/api/export-pdf', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ html, filename }),
-      });
-      if (!response.ok) throw new Error(`PDF export failed: ${response.statusText}`);
-      const arrayBuffer = await response.arrayBuffer();
-      blob = new Blob([arrayBuffer], { type: 'application/pdf' });
-    } else if (type === 'docx' && formType === FormType.CustomTemplateGenerate) {
-      if (!customerId || !templateId) {
-        throw new Error('Missing customerId or templateId for custom template export');
+    if (type === "pdf") {
+      // 🔹 Branch: Generate Document flow → send DOCX buffer
+      if (formType === FormType.CustomTemplateGenerate && docxBufferBase64) {
+        const response = await fetch("/api/exportPdf", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ docxBufferBase64, filename }),
+        });
+        if (!response.ok) throw new Error(`PDF export failed: ${response.statusText}`);
+        const arrayBuffer = await response.arrayBuffer();
+        blob = new Blob([arrayBuffer], { type: "application/pdf" });
+      } else {
+        // 🔹 Other flows → send HTML
+        if (!html) throw new Error(`Missing HTML for PDF export`);
+        const response = await fetch("/api/exportPdf", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ html, filename }),
+        });
+        if (!response.ok) throw new Error(`PDF export failed: ${response.statusText}`);
+        const arrayBuffer = await response.arrayBuffer();
+        blob = new Blob([arrayBuffer], { type: "application/pdf" });
       }
-      // 🔹 Unified backend path: call /generate with format=docx
+    } else if (type === "docx" && formType === FormType.CustomTemplateGenerate) {
+      if (!customerId || !templateId) {
+        throw new Error("Missing customerId or templateId for custom template export");
+      }
       const response = await fetch(
         `/api/templates/${encodeURIComponent(customerId)}/${encodeURIComponent(templateId)}/generate`,
         {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ variables: formData, format: 'docx' }),
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ variables: formData, format: "docx" }),
         }
       );
-      if (!response.ok) throw new Error(`Custom template DOCX export failed: ${response.statusText}`);
+      if (!response.ok)
+        throw new Error(`Custom template DOCX export failed: ${response.statusText}`);
       const arrayBuffer = await response.arrayBuffer();
       blob = new Blob([arrayBuffer], {
-        type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        type: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
       });
-    } else if (type === 'docx') {
+    } else if (type === "docx") {
       if (!html) throw new Error(`Missing HTML for DOCX export`);
-      // Frontend path: DOCX generated locally for speed
       blob = await generateDOCX({ html, filename });
     }
   } catch (err) {
     console.error(`[Export Error] Failed to generate ${type.toUpperCase()} blob:`, err);
-    alert('Export failed. Please try again or contact support.');
+    alert("Export failed. Please try again or contact support.");
     return;
   }
 
   if (blob) {
     const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
+    const link = document.createElement("a");
     link.href = url;
     link.download = filename;
     document.body.appendChild(link);
@@ -203,6 +214,6 @@ export async function exportRetainer<T extends Record<string, any>>(
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
   } else {
-    console.warn('No file blob was generated for download.');
+    console.warn("No file blob was generated for download.");
   }
 }

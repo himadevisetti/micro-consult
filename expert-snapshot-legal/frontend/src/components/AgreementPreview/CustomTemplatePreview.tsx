@@ -6,46 +6,77 @@ import { exportRetainer } from "../../utils/export/exportHandler";
 import DownloadToggle from "../Export/DownloadToggle";
 import { FormType } from "@/types/FormType";
 import { logWarn } from "../../utils/logger";
+import { arrayBufferToBase64 } from "../../utils/arrayBufferToBase64";
 
 export interface CustomTemplatePreviewProps {
   html: string; // preview HTML returned from /generate
   onRefresh: () => void;
-  metadata?: Record<string, any>;
   formData: Record<string, string>;
   formType: FormType;
   customerId?: string;
   templateId?: string;
-  templateType: "docx" | "pdf";
+  seedType: "docx" | "pdf";
 }
 
 export default function CustomTemplatePreview({
   html,
   onRefresh,
-  metadata,
   formData,
   formType,
   customerId,
   templateId,
-  templateType,
+  seedType,
 }: CustomTemplatePreviewProps) {
   const previewRef = useRef<HTMLDivElement>(null);
 
   const handleExport = async (type: "pdf" | "docx") => {
-    const content = previewRef.current?.innerHTML;
-    if (!content) {
-      logWarn("CustomTemplatePreview.export.noContent", { type });
-      return;
-    }
-
     try {
-      await exportRetainer(
-        type,
-        formType,
-        formData,
-        content,
-        customerId,
-        templateId
-      );
+      if (type === "docx") {
+        // DOCX export still uses preview HTML
+        const content = previewRef.current?.innerHTML;
+        if (!content) {
+          logWarn("CustomTemplatePreview.export.noContent", { type });
+          return;
+        }
+        await exportRetainer(
+          type,
+          formType,
+          formData,
+          content,
+          customerId,
+          templateId
+        );
+      } else if (type === "pdf") {
+        // 🔹 For PDF, call exportRetainer with docxBufferBase64 so backend converts DOCX → PDF
+        let docxBufferBase64: string | undefined;
+
+        if (formType === FormType.CustomTemplateGenerate && customerId && templateId) {
+          // fetch merged DOCX buffer from /generate
+          const res = await fetch(
+            `/api/templates/${encodeURIComponent(customerId)}/${encodeURIComponent(templateId)}/generate`,
+            {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ variables: formData, format: "docx" }),
+            }
+          );
+          if (!res.ok) {
+            throw new Error(`Failed to fetch DOCX buffer for PDF export: ${res.statusText}`);
+          }
+          const arrayBuffer = await res.arrayBuffer();
+          docxBufferBase64 = arrayBufferToBase64(arrayBuffer);
+        }
+
+        await exportRetainer(
+          type,
+          formType,
+          formData,
+          previewRef.current?.innerHTML,
+          customerId,
+          templateId,
+          docxBufferBase64
+        );
+      }
     } catch (err) {
       console.error("CustomTemplatePreview.export.error", { type, error: err });
     }
@@ -61,8 +92,8 @@ export default function CustomTemplatePreview({
 
       <DownloadToggle
         onDownload={(type) => handleExport(type)}
-        showDocx={templateType === "docx"}
-        showPdf={templateType === "pdf"}
+        showDocx={seedType === "docx" || seedType === "pdf"} // always allow DOCX export
+        showPdf={seedType === "pdf"}                         // only show PDF if seed was PDF
       />
     </div>
   );

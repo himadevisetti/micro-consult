@@ -1,23 +1,16 @@
 // src/server/routes/generateDocument.ts
-
 import { Router } from "express";
 import fs from "fs";
 import path from "path";
-import { storageBasePath } from "../config.js";
-import { logDebug } from "../../utils/logger.js";
+import { storageBasePath, getCustomerManifestPath } from "../config.js"; // 🔹 import getCustomerManifestPath
+import { logDebug, logError } from "../../utils/logger.js";
 import { transformVariables } from "../utils/transformVariables.js";
 import { generateDocxFromTemplate } from "../utils/generateDocxFromTemplate.js";
+import { convertDocxToPdf } from "../utils/convertDocxToPdf.js";
 import mammoth from "mammoth";
 
 const router = Router();
 
-/**
- * POST /api/templates/:customerId/:templateId/generate
- * Body: { variables: Record<string,string>, format: 'html' | 'docx' | 'pdf' }
- * Returns:
- *   - format=html → { previewHtml: string, metadata?: any }
- *   - format=docx/pdf → file stream
- */
 router.post(
   "/templates/:customerId/:templateId/generate",
   async (req, res) => {
@@ -29,13 +22,12 @@ router.post(
 
     try {
       const templateDir = path.join(storageBasePath, customerId, "templates");
-
-      // Detect template type by checking which file exists
       const docxPath = path.join(templateDir, `${templateId}.docx`);
       const pdfPath = path.join(templateDir, `${templateId}.pdf`);
 
       let templatePath: string | null = null;
       let templateType: "docx" | "pdf" | null = null;
+      let seedType: "docx" | "pdf" | null = null;
 
       if (fs.existsSync(docxPath)) {
         templatePath = docxPath;
@@ -46,24 +38,36 @@ router.post(
       }
 
       if (!templatePath || !templateType) {
-        return res
-          .status(404)
-          .json({ success: false, error: "Template not found" });
+        return res.status(404).json({ success: false, error: "Template not found" });
+      }
+
+      // Read seedType from manifest if available (correct path)
+      const manifestDir = getCustomerManifestPath(customerId);
+      const manifestPath = path.join(manifestDir, `${templateId}.manifest.json`);
+      if (fs.existsSync(manifestPath)) {
+        try {
+          const manifest = JSON.parse(await fs.promises.readFile(manifestPath, "utf-8"));
+          seedType = manifest.seedType as "docx" | "pdf";
+        } catch (err) {
+          logError("generateDocument.manifestReadError", { error: String(err) });
+        }
+      }
+      // fallback if manifest missing
+      if (!seedType) {
+        seedType = templateType;
       }
 
       logDebug("generateDocument.start", {
         customerId,
         templateId,
         templateType,
+        seedType,
         format,
         variableCount: variables ? Object.keys(variables).length : 0,
       });
 
-      // Debug: dump variables before substitution
       if (!variables) {
-        logDebug("generateDocument.variables", {
-          message: "variables is null/undefined",
-        });
+        logDebug("generateDocument.variables", { message: "variables is null/undefined" });
       } else {
         logDebug("generateDocument.variables", {
           keys: Object.keys(variables),
@@ -71,7 +75,6 @@ router.post(
         });
       }
 
-      // For DOCX templates, run substitution
       let mergedBuffer: Buffer | null = null;
       if (templateType === "docx") {
         const templateBuffer = fs.readFileSync(templatePath);
@@ -79,14 +82,11 @@ router.post(
           templateBuffer,
           transformVariables(variables || {})
         );
+        logDebug("generateDocument.docxMerged", { size: mergedBuffer.length });
       }
 
-      // Handle downloads
       if (format === "docx" && templateType === "docx") {
-        res.setHeader(
-          "Content-Disposition",
-          `attachment; filename="${templateId}.docx"`
-        );
+        res.setHeader("Content-Disposition", `attachment; filename="${templateId}.docx"`);
         res.setHeader(
           "Content-Type",
           "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
@@ -96,59 +96,74 @@ router.post(
 
       if (format === "pdf") {
         if (templateType === "pdf") {
-          // Stream static PDF template
-          res.setHeader(
-            "Content-Disposition",
-            `attachment; filename="${templateId}.pdf"`
-          );
+          res.setHeader("Content-Disposition", `attachment; filename="${templateId}.pdf"`);
           res.setHeader("Content-Type", "application/pdf");
           return fs.createReadStream(templatePath).pipe(res);
         }
-        // TODO: integrate DOCX→PDF conversion
-        return res.status(501).json({
-          success: false,
-          error: "PDF generation not yet implemented for DOCX templates",
-        });
+
+        if (templateType === "docx") {
+          if (!mergedBuffer) {
+            logError("generateDocument.noMergedBufferForPdf");
+            return res.status(500).json({
+              success: false,
+              error: "No merged buffer for PDF conversion",
+            });
+          }
+          try {
+            logDebug("generateDocument.pdfConversion.start", { bufferSize: mergedBuffer.length });
+            const pdfBuffer = await convertDocxToPdf(mergedBuffer);
+            logDebug("generateDocument.pdfConversion.success", { size: pdfBuffer.length });
+            res.setHeader("Content-Disposition", `attachment; filename="${templateId}.pdf"`);
+            res.setHeader("Content-Type", "application/pdf");
+            return res.send(pdfBuffer);
+          } catch (err) {
+            logError("generateDocument.pdfConversionError", {
+              message: err instanceof Error ? err.message : String(err),
+            });
+            return res.status(500).json({
+              success: false,
+              error: "PDF conversion failed",
+            });
+          }
+        }
       }
 
-      // Unified HTML preview branch
       if (format === "html") {
         if (templateType === "docx") {
-          const { value: html } = await mammoth.convertToHtml({
-            buffer: mergedBuffer!,
-          });
+          if (!mergedBuffer) {
+            logError("generateDocument.noMergedBufferForHtml");
+            return res.status(500).json({
+              success: false,
+              error: "No merged buffer generated for HTML preview",
+            });
+          }
+          const { value: html } = await mammoth.convertToHtml({ buffer: mergedBuffer });
+          logDebug("generateDocument.htmlPreview.success", { length: html.length });
           return res.json({
             previewHtml: html,
-            metadata: { templateId, customerId, templateType },
+            metadata: { templateId, customerId, templateType, seedType },
           });
         }
+
         if (templateType === "pdf") {
-          // TODO: implement PDF→HTML or PDF→image preview
           return res.status(501).json({
             success: false,
             error: "HTML preview not yet supported for PDF templates",
-            metadata: { templateId, customerId, templateType },
+            metadata: { templateId, customerId, templateType, seedType },
           });
         }
       }
 
-      return res
-        .status(400)
-        .json({ success: false, error: "Unsupported format or template type" });
+      return res.status(400).json({ success: false, error: "Unsupported format or template type" });
     } catch (err: unknown) {
       if (err instanceof Error) {
-        logDebug("generateDocument.error", {
-          message: err.message,
-          stack: err.stack,
-        });
-        return res
-          .status(500)
-          .json({ success: false, error: err.message });
+        logError("generateDocument.error", { message: err.message, stack: err.stack });
+        return res.status(500).json({ success: false, error: err.message });
       }
 
       if (typeof err === "object" && err !== null && "properties" in err) {
         const e = err as { message?: string; properties?: any };
-        logDebug("generateDocument.templateError", {
+        logError("generateDocument.templateError", {
           message: e.message,
           explanation: e.properties?.explanation,
           tag: e.properties?.xtag,
@@ -159,10 +174,8 @@ router.post(
         });
       }
 
-      logDebug("generateDocument.unknownError", { err });
-      return res
-        .status(500)
-        .json({ success: false, error: "Unknown error" });
+      logError("generateDocument.unknownError", { err });
+      return res.status(500).json({ success: false, error: "Unknown error" });
     }
   }
 );

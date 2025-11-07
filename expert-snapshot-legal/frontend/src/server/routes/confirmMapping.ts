@@ -16,7 +16,6 @@ import { enrichMapping } from "../utils/manifestEnrichment.js";
 
 const router = Router();
 
-// Confirm mapping route
 router.post(
   "/templates/:customerId/:templateId/confirm-mapping",
   async (req, res) => {
@@ -29,7 +28,6 @@ router.post(
         .json({ success: false, error: "No mapping provided" });
     }
 
-    // 🔹 Validate required fields
     const valid = mapping.every(
       (m) =>
         typeof m.raw === "string" &&
@@ -56,6 +54,9 @@ router.post(
       const buffer = await fs.promises.readFile(seedFilePath);
       const ext = path.extname(seedFilePath).toLowerCase();
 
+      // 🔹 Derive seedType from extension
+      const seedType = ext === ".pdf" ? "pdf" : "docx";
+
       // 2. Load stored candidates + clauseBlocks from sessionStore
       const stored = await loadCandidates(`candidates:${templateId}`);
       if (!stored) {
@@ -74,6 +75,7 @@ router.post(
         templateId,
         customerId,
         createdAt: new Date().toISOString(),
+        seedType, // 🔹 include original upload type
         variables: enrichedCandidates.map(enrichMapping),
       };
 
@@ -93,6 +95,7 @@ router.post(
         manifestPath,
         templateId,
         customerId,
+        seedType,
       });
 
       // 6. Placeholderize with enriched candidates + clauseBlocks

@@ -5,6 +5,7 @@ import homeStyles from '../styles/HomePage.module.css';
 import formStyles from '../styles/StandardRetainerForm.module.css';
 import { FormType, RetainerTypeLabel } from '@/types/FormType';
 import RetainerCard from '../components/RetainerCard';
+import { formatTemplateName } from "../utils/templateNameUtils";
 
 type TemplateInfo = {
   id: string;
@@ -173,19 +174,23 @@ const CustomTemplatePage = ({ customerId }: CustomTemplatePageProps) => {
                   gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
                 }}
               >
-                {readyTemplates.map((tpl) => (
-                  <RetainerCard
-                    key={tpl.id}
-                    title={tpl.name}
-                    templateId={tpl.id as any}
-                    iconSrc="generate-document"
-                    onStart={() =>
-                      navigate(`/form/${FormType.CustomTemplateGenerate}/${tpl.id}`)
-                    }
-                    tooltip={`Generate a document using ${tpl.name}`}
-                    disabled={false}
-                  />
-                ))}
+                {readyTemplates.map((tpl) => {
+                  const displayName = formatTemplateName(tpl.name, readyTemplates);
+
+                  return (
+                    <RetainerCard
+                      key={tpl.id}
+                      title={displayName}
+                      templateId={tpl.id as any}
+                      iconSrc="generate-document"
+                      onStart={() =>
+                        navigate(`/form/${FormType.CustomTemplateGenerate}/${tpl.id}`)
+                      }
+                      tooltip={`Generate a document using ${displayName}`}
+                      disabled={false}
+                    />
+                  );
+                })}
               </div>
             </div>
 

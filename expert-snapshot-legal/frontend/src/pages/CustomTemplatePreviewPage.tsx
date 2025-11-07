@@ -4,6 +4,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import PageLayout from '../components/PageLayout';
 import CustomTemplatePreview from '../components/AgreementPreview/CustomTemplatePreview';
 import { FormType } from '@/types/FormType';
+import { logDebug } from "../utils/logger";
 
 export default function CustomTemplatePreviewPage() {
   const location = useLocation();
@@ -17,8 +18,9 @@ export default function CustomTemplatePreviewPage() {
   const customerId = location.state?.customerId as string | undefined;
   const templateId = location.state?.templateId as string | undefined;
 
-  // Extract templateType from metadata
-  const templateType = (metadata?.templateType ?? "docx") as "docx" | "pdf";
+  // Extract seedType directly from state (manifest value passed through GenerateDocumentFlow)
+  const seedType = (metadata?.seedType ?? "docx") as "docx" | "pdf";
+  logDebug("CustomTemplatePreviewPage.seedType", { seedType, metadata });
 
   useEffect(() => {
     if (!formData || !previewHtml) {
@@ -68,12 +70,11 @@ export default function CustomTemplatePreviewPage() {
       <CustomTemplatePreview
         html={previewHtml}
         onRefresh={onRefresh}
-        metadata={metadata}
         formData={formData}
         formType={formType}
         customerId={customerId}
         templateId={templateId}
-        templateType={templateType}
+        seedType={seedType}
       />
     </PageLayout>
   );
