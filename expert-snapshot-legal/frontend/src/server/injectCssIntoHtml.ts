@@ -74,6 +74,14 @@ export function injectCssIntoHtml(
           width: 3.5in;
         }
 
+        .signature-break .signatory-pair p {
+          margin: 0 !important;
+          line-height: 1.2 !important;
+        }
+        .signature-break .signatory-pair {
+          margin-bottom: 4px !important;
+        }
+
         @media print {
           html, body { height: auto !important; overflow: visible !important; }
           p { widows: 1; orphans: 1; }

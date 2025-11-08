@@ -111,7 +111,7 @@ export const CONTRACT_KEYWORDS = {
     retainer: ["retainer", "deposit", "advance", "advance payment"],
     feeStructure: {
       Flat: ["flat"],
-      Hourly: ["hour", "per hour"],
+      Hourly: ["hourly", "per hour"],
       Monthly: ["monthly", "per month"],
       Contingency: ["contingency", "contingent"],
     },

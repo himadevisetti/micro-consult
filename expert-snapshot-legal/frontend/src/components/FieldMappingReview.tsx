@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { v4 as uuid } from 'uuid';
 import { TemplateVariable } from '../types/templates';
 import { NormalizedMapping } from '../types/confirmMapping';
 import { formatFieldLabel, toPlaceholder } from '../utils/formatters';
@@ -6,15 +7,16 @@ import { logDebug, logWarn } from "../utils/logger.js";
 import styles from '../styles/StandardRetainerForm.module.css';
 
 interface MappingRow extends TemplateVariable {
+  id: string;
   touched?: boolean;
   confirmed?: boolean;
   deleted?: boolean;
+  isNew?: boolean;
 }
 
 interface Props {
   templateName: string | null;
   candidates: TemplateVariable[];
-  // onConfirm returns a result so we can handle errors
   onConfirm: (finalMapping: NormalizedMapping[]) => Promise<{ ok: boolean; error?: string }>;
 }
 
@@ -23,19 +25,17 @@ export default function FieldMappingReview({ templateName, candidates, onConfirm
     .filter(c => c.schemaField !== "title")
     .map(c => ({
       ...c,
+      id: uuid(),
       schemaField: c.schemaField ?? (c.candidates?.length === 1 ? c.candidates[0] : null),
       touched: false,
       confirmed: false,
     }));
 
   const [mapping, setMapping] = useState<MappingRow[]>(initial);
-  const [expandedIndex, setExpandedIndex] = useState<number | null>(null);
-
-  // New state for UX
+  const [expandedId, setExpandedId] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Initial snapshot
   logDebug("fieldMapping.init", {
     templateName,
     rows: initial.map((m, i) => ({
@@ -48,45 +48,38 @@ export default function FieldMappingReview({ templateName, candidates, onConfirm
     })),
   });
 
-  const handleChange = (index: number, field: string | null) => {
-    const prev = mapping[index];
-    const computedPlaceholder = field ? toPlaceholder(field) ?? prev.placeholder : prev.placeholder;
-
-    logDebug("fieldMapping.userSelection", {
-      index,
-      prevSchemaField: prev.schemaField,
-      chosenSchemaField: field,
-      computedPlaceholder,
-    });
-
-    const updated = [...mapping];
-    updated[index] = {
-      ...updated[index],
-      schemaField: field,
-      touched: true,
-      confirmed: !!field,
-      placeholder: computedPlaceholder,
-    };
-    setMapping(updated);
-  };
-
-  const handleDelete = (index: number) => {
-    const updated = mapping.map((m, i) =>
-      i === index ? { ...m, deleted: true } : m
+  const handleChange = (id: string, field: string | null) => {
+    setMapping(prev =>
+      prev.map(m =>
+        m.id === id
+          ? {
+            ...m,
+            schemaField: field,
+            touched: true,
+            confirmed: !!field,
+            placeholder: field ? toPlaceholder(field) ?? m.placeholder : m.placeholder,
+          }
+          : m
+      )
     );
-    setMapping(updated);
   };
 
-  const handleCheckbox = (index: number) => {
-    const updated = [...mapping];
-    updated[index] = { ...updated[index], confirmed: !updated[index].confirmed };
-    setMapping(updated);
+  const handleDelete = (id: string) => {
+    setMapping(prev =>
+      prev.map(m => (m.id === id ? { ...m, deleted: true } : m))
+    );
   };
 
-  const handleRawTextChange = (index: number, value: string) => {
-    const updated = [...mapping];
-    updated[index] = { ...updated[index], rawValue: value, touched: true };
-    setMapping(updated);
+  const handleCheckbox = (id: string) => {
+    setMapping(prev =>
+      prev.map(m => (m.id === id ? { ...m, confirmed: !m.confirmed } : m))
+    );
+  };
+
+  const handleRawTextChange = (id: string, value: string) => {
+    setMapping(prev =>
+      prev.map(m => (m.id === id ? { ...m, rawValue: value, touched: true } : m))
+    );
   };
 
   const getStatus = (m: MappingRow): string => {
@@ -101,13 +94,11 @@ export default function FieldMappingReview({ templateName, candidates, onConfirm
     return "Mapped";
   };
 
-  // 🔹 Updated handleConfirm with async + error handling
   const handleConfirm = async () => {
     try {
       setLoading(true);
       setError(null);
 
-      // Snapshot before payload build
       logDebug("confirmMapping.buildStart", {
         rows: mapping.map((m, i) => ({
           index: i,
@@ -119,29 +110,31 @@ export default function FieldMappingReview({ templateName, candidates, onConfirm
         })),
       });
 
-      const normalized: NormalizedMapping[] = mapping.map((m, i) => {
-        const status = getStatus(m);
-        if (status === "Unmapped" || !m.schemaField) {
-          logWarn("confirmMapping.unmappedRow", { index: i, schemaField: m.schemaField, status });
-          throw new Error("Cannot confirm unmapped field");
-        }
-        if (!m.rawValue || !m.rawValue.trim()) {
-          logWarn("confirmMapping.missingRaw", { index: i, schemaField: m.schemaField });
-        }
-        return {
-          raw: m.rawValue,
-          normalized: m.normalized,
-          schemaField: m.schemaField,
-          placeholder: m.placeholder ? m.placeholder : toPlaceholder(m.schemaField),
-          deleted: (m as any).deleted ?? false,
-        };
-      });
+      const normalized: NormalizedMapping[] = mapping
+        .filter(m => !(m.deleted && m.isNew))
+        .map((m, i) => {
+          const status = getStatus(m);
+          if (status === "Unmapped" || !m.schemaField) {
+            logWarn("confirmMapping.unmappedRow", { index: i, schemaField: m.schemaField, status });
+            throw new Error("Cannot confirm unmapped field");
+          }
+          if (!m.rawValue || !m.rawValue.trim()) {
+            logWarn("confirmMapping.missingRaw", { index: i, schemaField: m.schemaField });
+          }
+          return {
+            raw: m.rawValue,
+            normalized: m.normalized,
+            schemaField: m.schemaField,
+            placeholder: m.placeholder ? m.placeholder : toPlaceholder(m.schemaField),
+            deleted: m.deleted ?? false,
+          };
+        });
 
       logDebug("confirmMapping.payloadBuilt", {
         count: normalized.length,
         fields: normalized.map(m => m.schemaField),
         placeholders: normalized.map(m => m.placeholder),
-        deleted: normalized.filter(m => (m as any).deleted).map(m => m.schemaField),
+        deleted: normalized.filter(m => m.deleted).map(m => m.schemaField),
       });
 
       const result = await onConfirm(normalized);
@@ -179,14 +172,14 @@ export default function FieldMappingReview({ templateName, candidates, onConfirm
         <tbody>
           {mapping
             .filter(m => !m.deleted)
-            .map((m, idx) => (
-              <tr key={idx}>
+            .map((m) => (
+              <tr key={m.id}>
                 <td className={styles.rawTextCol}>
                   {!m.schemaField && (m.candidates?.length ?? 0) === 0 ? (
                     <input
                       type="text"
                       value={m.rawValue ?? ''}
-                      onChange={(e) => handleRawTextChange(idx, e.target.value)}
+                      onChange={(e) => handleRawTextChange(m.id, e.target.value)}
                       placeholder="Enter raw text from document"
                       className={styles.textInput}
                     />
@@ -195,14 +188,14 @@ export default function FieldMappingReview({ templateName, candidates, onConfirm
                   ) : (
                     <>
                       <span>
-                        {expandedIndex === idx
+                        {expandedId === m.id
                           ? (m.isExpandable ? (m.sourceText ?? m.rawValue) : m.rawValue)
                           : m.displayValue ?? m.normalized ?? m.rawValue}
                       </span>
                       {(() => {
                         const fullText = m.sourceText ?? m.rawValue;
                         const shouldShowToggle =
-                          m.isExpandable &&                // only for expandable fields
+                          m.isExpandable &&
                           m.displayValue &&
                           fullText &&
                           fullText.trim() !== m.displayValue.trim() &&
@@ -213,10 +206,10 @@ export default function FieldMappingReview({ templateName, candidates, onConfirm
                             type="button"
                             className={styles.viewFullButton}
                             onClick={() =>
-                              setExpandedIndex(expandedIndex === idx ? null : idx)
+                              setExpandedId(expandedId === m.id ? null : m.id)
                             }
                           >
-                            {expandedIndex === idx ? "Hide" : "View full"}
+                            {expandedId === m.id ? "Hide" : "View full"}
                           </button>
                         ) : null;
                       })()}
@@ -224,12 +217,11 @@ export default function FieldMappingReview({ templateName, candidates, onConfirm
                   )}
                 </td>
 
-                {/* ✅ Always show FIELD_LABELS in Mapped Field column */}
                 <td className={styles.mappedFieldCol}>
                   {m.candidates && m.candidates.length > 1 ? (
                     <select
                       value={m.schemaField ?? ''}
-                      onChange={(e) => handleChange(idx, e.target.value || null)}
+                      onChange={(e) => handleChange(m.id, e.target.value || null)}
                       className={`${styles.selectInput} ${!m.touched ? styles.suggestedSelect : ''}`}
                     >
                       <option value="">Select…</option>
@@ -248,7 +240,7 @@ export default function FieldMappingReview({ templateName, candidates, onConfirm
                         <input
                           type="text"
                           value={label}
-                          onChange={(e) => handleChange(idx, e.target.value || null)}
+                          onChange={(e) => handleChange(m.id, e.target.value || null)}
                           className={m.candidates && m.candidates.length === 1 ? styles.suggestedText : styles.textInput}
                         />
                       );
@@ -260,7 +252,7 @@ export default function FieldMappingReview({ templateName, candidates, onConfirm
                   <input
                     type="checkbox"
                     checked={m.confirmed}
-                    onChange={() => handleCheckbox(idx)}
+                    onChange={() => handleCheckbox(m.id)}
                     disabled={getStatus(m) === 'Unmapped'}
                     title={getStatus(m)}
                   />
@@ -274,7 +266,7 @@ export default function FieldMappingReview({ templateName, candidates, onConfirm
                 <td className={styles.actionsCol}>
                   <button
                     type="button"
-                    onClick={() => handleDelete(idx)}
+                    onClick={() => handleDelete(m.id)}
                     className={styles.deleteButton}
                   >
                     🗑 Delete
@@ -289,12 +281,14 @@ export default function FieldMappingReview({ templateName, candidates, onConfirm
         <button
           onClick={() => {
             const newVar: MappingRow = {
+              id: uuid(),
               rawValue: '',
               schemaField: null,
               candidates: [],
               touched: false,
               confirmed: false,
-              placeholder: `{{customVar${mapping.length + 1}}}`
+              placeholder: `{{customVar${mapping.length + 1}}}`,
+              isNew: true,
             };
             setMapping([...mapping, newVar]);
           }}

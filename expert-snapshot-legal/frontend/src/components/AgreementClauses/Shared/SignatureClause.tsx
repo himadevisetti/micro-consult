@@ -15,6 +15,9 @@ export default function SignatureClause({
   const resolvedProvider = providerName?.trim() || 'Attorney';
   const resolvedDate = executionDate?.trim() || 'the date of execution';
 
+  const pairStyle = { marginBottom: '4px', lineHeight: '1.2' };
+  const lineStyle = { margin: 0, lineHeight: '1.2', width: '3.5in' };
+
   return (
     <>
       <br />
@@ -25,14 +28,18 @@ export default function SignatureClause({
           IN WITNESS WHEREOF, the parties have executed this Agreement as of{' '}
           <strong>{resolvedDate}</strong>.
         </p>
-        <p>__________________________</p>
-        <p>
-          <strong>{resolvedClient}</strong>
-        </p>
-        <p>__________________________</p>
-        <p>
-          <strong>{resolvedProvider}</strong>
-        </p>
+        <div style={pairStyle}>
+          <p style={lineStyle}>__________________________</p>
+          <p style={lineStyle}>
+            <strong>{resolvedClient}</strong>
+          </p>
+        </div>
+        <div style={pairStyle}>
+          <p style={lineStyle}>__________________________</p>
+          <p style={lineStyle}>
+            <strong>{resolvedProvider}</strong>
+          </p>
+        </div>
       </section>
     </>
   );
