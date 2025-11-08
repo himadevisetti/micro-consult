@@ -11,6 +11,7 @@ type TemplateInfo = {
   id: string;
   name: string;
   hasManifest: boolean;
+  createdAt?: string;
 };
 
 interface CustomTemplatePageProps {
@@ -66,7 +67,14 @@ const CustomTemplatePage = ({ customerId }: CustomTemplatePageProps) => {
         if (!res.ok) throw new Error(`Failed to fetch templates for ${customerId}`);
         return res.json();
       })
-      .then((data) => setTemplates(data.templates || []))
+      .then((data) => {
+        const sorted = (data.templates || []).sort((a: TemplateInfo, b: TemplateInfo) => {
+          const aTime = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+          const bTime = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+          return bTime - aTime;
+        });
+        setTemplates(sorted);
+      })
       .catch(() => setTemplates([]))
       .finally(() => {
         clearTimeout(timer);

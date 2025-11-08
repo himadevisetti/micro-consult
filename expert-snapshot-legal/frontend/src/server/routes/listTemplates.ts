@@ -7,7 +7,7 @@ import {
   getCustomerTemplatePath,
   getCustomerManifestPath,
   allowedExtensions,
-} from "../config.js"; // centralized shared helpers/constants
+} from "../config.js";
 
 const router = Router();
 
@@ -34,17 +34,50 @@ router.get("/templates/:customerId", (req, res) => {
       })
       .map((f) => {
         const id = path.parse(f).name;
-        const manifestPath = path.join(
-          customerManifestPath,
-          `${id}.manifest.json`
-        );
+        const manifestPath = path.join(customerManifestPath, `${id}.manifest.json`);
         const hasManifest = fs.existsSync(manifestPath);
+
+        let createdAt: string | null = null;
+
+        // Try manifest first
+        if (hasManifest) {
+          try {
+            const manifest = JSON.parse(fs.readFileSync(manifestPath, "utf-8"));
+            if (manifest.createdAt) {
+              createdAt = manifest.createdAt;
+            }
+          } catch (err: any) {
+            logDebug("getTemplates.manifestReadError", {
+              templateId: id,
+              error: err.message,
+            });
+          }
+        }
+
+        // Fallback to file birthtime
+        if (!createdAt) {
+          try {
+            const stats = fs.statSync(path.join(customerTemplatePath, f));
+            createdAt = stats.birthtime.toISOString();
+          } catch (err: any) {
+            logDebug("getTemplates.fileStatError", {
+              templateId: id,
+              error: err.message,
+            });
+          }
+        }
 
         return {
           id,
           name: f,
           hasManifest,
+          createdAt,
         };
+      })
+      .sort((a, b) => {
+        const aTime = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+        const bTime = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+        return bTime - aTime;
       });
 
     const manifestCount = templates.filter(t => t.hasManifest).length;
@@ -69,4 +102,3 @@ router.get("/templates/:customerId", (req, res) => {
 });
 
 export default router;
-
