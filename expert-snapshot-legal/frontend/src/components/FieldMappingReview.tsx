@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { v4 as uuid } from 'uuid';
 import { TemplateVariable } from '../types/templates';
 import { NormalizedMapping } from '../types/confirmMapping';
-import { formatFieldLabel, toPlaceholder } from '../utils/formatters';
+import { formatFieldLabel, toPlaceholder, toCamelCase } from '../utils/formatters';
 import { logDebug, logWarn } from "../utils/logger.js";
 import styles from '../styles/StandardRetainerForm.module.css';
 
@@ -121,11 +121,16 @@ export default function FieldMappingReview({ templateName, candidates, onConfirm
           if (!m.rawValue || !m.rawValue.trim()) {
             logWarn("confirmMapping.missingRaw", { index: i, schemaField: m.schemaField });
           }
+
+          const canonicalField = toCamelCase(m.schemaField);
+
           return {
             raw: m.rawValue,
             normalized: m.normalized,
-            schemaField: m.schemaField,
-            placeholder: m.placeholder ? m.placeholder : toPlaceholder(m.schemaField),
+            schemaField: canonicalField,
+            placeholder: m.isNew
+              ? toPlaceholder(canonicalField)
+              : m.placeholder ?? toPlaceholder(canonicalField),
             deleted: m.deleted ?? false,
           };
         });

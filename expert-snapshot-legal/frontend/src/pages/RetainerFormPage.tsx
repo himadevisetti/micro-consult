@@ -14,7 +14,6 @@ import UploadTemplateFlow from '../components/FormFlows/UploadTemplateFlow';
 
 const RetainerFormPage = () => {
   const navigate = useNavigate();
-  // ⬇️ Grab both type and templateId from the URL
   const { type, templateId } = useParams<{ type: string; templateId?: string }>();
 
   const isValidType = type && Object.values(FormType).includes(type as FormType);
@@ -29,6 +28,30 @@ const RetainerFormPage = () => {
     }
     setIsValid(true);
   }, [isValidType, navigate]);
+
+  const handleHomeClick = () => {
+    sessionStorage.clear();
+    navigate('/');
+  };
+
+  const handleBackClick = () => {
+    switch (formType) {
+      case FormType.CustomTemplateGenerate:
+      case FormType.CustomTemplateUpload:
+        navigate('/form/custom-template');
+        break;
+      default:
+        navigate('/');
+        break;
+    }
+  };
+
+  const getMainHeading = () => {
+    if (formType === FormType.CustomTemplate) {
+      return 'Custom Template';
+    }
+    return undefined;
+  };
 
   const renderForm = () => {
     switch (formType) {
@@ -45,46 +68,28 @@ const RetainerFormPage = () => {
         return <EmploymentAgreementFlow schema={formSchemas[FormType.EmploymentAgreement]} />;
 
       case FormType.CustomTemplate:
-        return (
-          <CustomTemplateFlow
-            customerId="customer-001" // TODO: replace with session user
-          />
-        );
+        return <CustomTemplateFlow customerId="customer-001" // TODO: replace with session user
+        />;
 
       case FormType.CustomTemplateUpload:
-        return (
-          <UploadTemplateFlow
-            customerId="customer-001" // TODO: replace with session user
-          />
-        );
+        return <UploadTemplateFlow customerId="customer-001" // TODO: replace with session user
+        />;
 
       case FormType.CustomTemplateGenerate:
-        return (
-          <GenerateDocumentFlow
-            customerId="customer-001" // TODO: replace with session user
-          />
-        );
+        return <GenerateDocumentFlow customerId="customer-001" // TODO: replace with session user
+        />;
 
       default:
         return null;
     }
   };
 
-  const handleHomeClick = () => {
-    sessionStorage.clear();
-    navigate('/');
-  };
-
-  // Only show a main heading in the green header for Custom Template
-  const getMainHeading = () => {
-    if (formType === FormType.CustomTemplate) {
-      return 'Custom Template';
-    }
-    return undefined;
-  };
-
   return (
-    <PageLayout onHomeClick={handleHomeClick} mainHeading={getMainHeading()}>
+    <PageLayout
+      onHomeClick={handleHomeClick}
+      onBackClick={handleBackClick}
+      mainHeading={getMainHeading()}
+    >
       {isValid && renderForm()}
     </PageLayout>
   );

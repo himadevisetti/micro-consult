@@ -1,4 +1,4 @@
-import { FIELD_LABELS, PLACEHOLDER_KEYWORDS } from "../constants/contractKeywords";
+import { FIELD_LABELS, PLACEHOLDER_KEYWORDS, ACRONYMS } from "../constants/contractKeywords";
 
 /**
  * Format a schemaField into a user‑friendly label for dropdowns/UI.
@@ -37,4 +37,26 @@ export function toPlaceholder(schemaField: string | null | undefined): string {
 
 function capitalize(s: string): string {
   return s.charAt(0).toUpperCase() + s.slice(1);
+}
+
+export function toCamelCase(label: string): string {
+  const trimmed = label.trim();
+  if (/^[a-z][a-zA-Z0-9]*$/.test(trimmed)) {
+    return trimmed; // already camelCase, skip
+  }
+
+  const tokens = trimmed
+    .replace(/[^a-zA-Z0-9 ]/g, "")
+    .replace(/\s+/g, " ")
+    .split(" ");
+
+  return tokens
+    .map((token, i) => {
+      const lower = token.toLowerCase();
+      if (ACRONYMS.has(lower)) return lower;
+      return i === 0
+        ? lower
+        : token[0].toUpperCase() + token.slice(1).toLowerCase();
+    })
+    .join("");
 }

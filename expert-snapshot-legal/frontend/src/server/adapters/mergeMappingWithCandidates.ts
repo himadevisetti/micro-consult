@@ -53,13 +53,34 @@ export function mergeMappingWithCandidates(
   for (const m of active) {
     const exists = merged.some(c => c.schemaField === m.schemaField);
     if (m.schemaField && !exists) {
-      logDebug("merge.newVariable", { schemaField: m.schemaField, raw: m.raw });
+      const anchor = stored.find(c => c.schemaField === m.schemaField);
+
+      if (anchor) {
+        logDebug("merge.readdedVariable", {
+          schemaField: m.schemaField,
+          raw: m.raw,
+          anchor: {
+            page: anchor.pageNumber,
+            y: anchor.yPosition,
+            blockIdx: anchor?.blockIdx,
+          },
+        });
+      } else {
+        logDebug("merge.newVariable", {
+          schemaField: m.schemaField,
+          raw: m.raw,
+        });
+      }
+
       merged.push({
         rawValue: m.raw ?? "",
         schemaField: m.schemaField,
         placeholder: m.placeholder,
         normalized: m.normalized,
         candidates: [],
+        pageNumber: anchor?.pageNumber ?? null,
+        yPosition: anchor?.yPosition ?? null,
+        blockIdx: anchor?.blockIdx ?? undefined,
       } as Candidate);
     }
   }

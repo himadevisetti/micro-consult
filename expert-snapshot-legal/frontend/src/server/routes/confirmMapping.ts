@@ -13,6 +13,7 @@ import { loadCandidates, deleteCandidates } from "../../infrastructure/sessionSt
 import { mergeMappingWithCandidates } from "../adapters/mergeMappingWithCandidates.js";
 import { placeholderizeDocument } from "../../utils/candidates/placeholderization.js";
 import { enrichMapping } from "../utils/manifestEnrichment.js";
+import { sortCandidatesByDocumentOrder } from "../../utils/candidates/sortCandidatesByDocumentOrder.js";
 
 const router = Router();
 
@@ -69,6 +70,23 @@ router.post(
 
       // 3. Merge NormalizedMapping[] into stored candidates
       const enrichedCandidates = mergeMappingWithCandidates(mapping, candidates);
+      const orderedEnrichedCandidates = sortCandidatesByDocumentOrder(enrichedCandidates);
+
+      logDebug("confirmMapping.sortedCandidates", {
+        ordered: orderedEnrichedCandidates.map((c) => ({
+          schemaField: c.schemaField,
+          raw: c.rawValue,
+          placeholder: c.placeholder,
+          page: c.pageNumber,
+          y: c.yPosition,
+        })),
+      });
+
+      const unanchored = orderedEnrichedCandidates.filter(c => c.pageNumber == null);
+      logDebug("confirmMapping.unanchoredCandidates", {
+        count: unanchored.length,
+        fields: unanchored.map(c => c.schemaField),
+      });
 
       // 4. Build manifest from enriched candidates
       const manifest = {
@@ -76,7 +94,7 @@ router.post(
         customerId,
         createdAt: new Date().toISOString(),
         seedType, // 🔹 include original upload type
-        variables: enrichedCandidates.map(enrichMapping),
+        variables: orderedEnrichedCandidates.map(enrichMapping),
       };
 
       // 5. Save manifest
@@ -101,7 +119,7 @@ router.post(
       // 6. Placeholderize with enriched candidates + clauseBlocks
       const { placeholderBuffer } = await placeholderizeDocument(
         buffer,
-        enrichedCandidates,
+        orderedEnrichedCandidates,
         ext.replace(".", ""), // pass "pdf" or "docx"
         clauseBlocks,
         seedFilePath
@@ -126,14 +144,14 @@ router.post(
 
       logDebug("confirmMapping.placeholderized", {
         templatePath,
-        placeholders: enrichedCandidates
+        placeholders: orderedEnrichedCandidates
           .filter((c) => c.placeholder)
           .map((c) => ({ field: c.schemaField, placeholder: c.placeholder })),
       });
 
       return res.json({
         success: true,
-        placeholders: enrichedCandidates,
+        placeholders: orderedEnrichedCandidates,
       });
     } catch (err) {
       logDebug("confirmMapping.error", {
