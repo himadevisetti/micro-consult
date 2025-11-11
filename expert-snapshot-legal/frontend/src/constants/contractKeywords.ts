@@ -253,7 +253,7 @@ export const ACRONYMS = new Set([
 ]);
 
 export const ENUM_OPTIONS: Record<string, string[]> = {
-  feeStructure: ["Contingency", "Hourly", "Flat"],
+  feeStructure: ["Contingency", "Hourly", "Flat", "Monthly"],
   licenseScope: ["Worldwide", "Exclusive", "Non-exclusive"],
   ipType: ["Patent", "Trademark", "Copyright", "Trade Secret"],
 };

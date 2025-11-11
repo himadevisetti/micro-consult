@@ -1,12 +1,23 @@
-// src/utils/export/convertDocxToPdf.ts
+// src/server/utils/convertDocxToPdf.ts
 
 import { acquireAccessToken } from "./acquireAccessToken.js";
-import { logDebug } from "../../utils/logger.js";
+import { logDebug, logError } from "../../utils/logger.js";
 
 export async function convertDocxToPdf(mergedBuffer: Buffer): Promise<Buffer> {
   const token = await acquireAccessToken(); // personal account, delegation flow
   const uploadMeta = await uploadDocxToOneDrive(token, mergedBuffer);
   const pdfBuffer = await downloadPdfFromGraph(token, uploadMeta.id);
+
+  try {
+    await deleteFileFromOneDrive(token, uploadMeta.id);
+    logDebug("[Graph Cleanup] DOCX deleted from OneDrive", { itemId: uploadMeta.id });
+  } catch (err) {
+    logError("[Graph Cleanup] Failed to delete DOCX", {
+      itemId: uploadMeta.id,
+      error: err instanceof Error ? err.message : String(err),
+    });
+  }
+
   return pdfBuffer;
 }
 
@@ -38,10 +49,7 @@ async function uploadDocxToOneDrive(token: string, buffer: Buffer) {
   return meta;
 }
 
-async function downloadPdfFromGraph(
-  token: string,
-  itemId: string
-): Promise<Buffer> {
+async function downloadPdfFromGraph(token: string, itemId: string): Promise<Buffer> {
   const resp = await fetch(
     `https://graph.microsoft.com/v1.0/me/drive/items/${itemId}/content?format=pdf`,
     {
@@ -56,4 +64,18 @@ async function downloadPdfFromGraph(
 
   const arrayBuf = await resp.arrayBuffer();
   return Buffer.from(arrayBuf);
+}
+
+async function deleteFileFromOneDrive(token: string, itemId: string): Promise<void> {
+  const resp = await fetch(
+    `https://graph.microsoft.com/v1.0/me/drive/items/${itemId}`,
+    {
+      method: "DELETE",
+      headers: { Authorization: `Bearer ${token}` },
+    }
+  );
+
+  if (!resp.ok) {
+    throw new Error(`Delete failed: ${resp.status} ${resp.statusText}`);
+  }
 }

@@ -1,7 +1,8 @@
-// src/server/routes/exportPdf.ts
 import { Router } from "express";
-import { renderHtmlToPdf } from "../utils/renderHtmlToPdf.js";
-import { convertDocxToPdf } from "../utils/convertDocxToPdf.js";
+import puppeteer from "puppeteer";
+import { injectCssIntoHtml } from "../injectCssIntoHtml.js";
+import { findCompiledCss } from "../../utils/findCompiledCss.js";
+import { extractTitleFromHtml } from "../../utils/formatTitle.js";
 import { logDebug, logError } from "../../utils/logger.js";
 
 const router = Router();
@@ -11,41 +12,55 @@ router.post("/exportPdf", async (req, res) => {
     keys: Object.keys(req.body || {}),
     filename: req.body?.filename,
     hasHtml: typeof req.body?.html === "string",
-    hasDocxBuffer: !!req.body?.docxBufferBase64,
   });
 
-  const { html, filename, docxBufferBase64 } = req.body as {
+  const { html, filename } = req.body as {
     html?: string;
     filename?: string;
-    docxBufferBase64?: string;
   };
   const resolvedFilename = filename || "retainer.pdf";
 
+  if (!html || typeof html !== "string") {
+    logError("exportPdf.invalidHtml", { htmlType: typeof html });
+    return res.status(400).json({ error: "Invalid HTML payload" });
+  }
+
   try {
-    if (docxBufferBase64) {
-      logDebug("exportPdf.branch.docx", { filename: resolvedFilename });
-      const mergedBuffer = Buffer.from(docxBufferBase64, "base64");
-      const pdfBuffer = await convertDocxToPdf(mergedBuffer);
-      logDebug("exportPdf.success.docx", { size: pdfBuffer.length });
-      res.setHeader("Content-Type", "application/pdf");
-      res.setHeader("Content-Disposition", `attachment; filename="${resolvedFilename}"`);
-      return res.send(pdfBuffer);
-    }
-
-    if (!html || typeof html !== "string") {
-      logError("exportPdf.invalidHtml", { htmlType: typeof html });
-      return res.status(400).json({ error: "Invalid HTML payload" });
-    }
-
     logDebug("exportPdf.branch.html", {
       filename: resolvedFilename,
       htmlPreview: html.slice(0, 80),
     });
-    const pdfBuffer = await renderHtmlToPdf(html);
-    logDebug("exportPdf.success.html", { size: pdfBuffer.length });
+
+    const compiledCss = findCompiledCss();
+    const title = extractTitleFromHtml(html) ?? "RETAINER AGREEMENT";
+    logDebug("exportPdf.metadata", { title, cssLength: compiledCss.length });
+
+    const styledHtml = injectCssIntoHtml(html, compiledCss, title);
+
+    const browser = await puppeteer.launch({ headless: true });
+    logDebug("exportPdf.browserLaunched");
+
+    const page = await browser.newPage();
+    await page.setContent(styledHtml, { waitUntil: "networkidle0" });
+    logDebug("exportPdf.pageContentSet", {
+      contentLength: styledHtml.length,
+    });
+
+    const pdfBuffer = await page.pdf({
+      format: "A4",
+      printBackground: true,
+      preferCSSPageSize: true,
+      margin: { top: "1in", bottom: "1in", left: "1in", right: "1in" },
+    });
+    logDebug("exportPdf.pdfGenerated", { size: pdfBuffer.length });
+
+    await browser.close();
+    logDebug("exportPdf.browserClosed");
+
     res.setHeader("Content-Type", "application/pdf");
     res.setHeader("Content-Disposition", `attachment; filename="${resolvedFilename}"`);
-    res.send(pdfBuffer);
+    res.setHeader("Content-Length", pdfBuffer.length);
+    res.end(pdfBuffer);
   } catch (err) {
     logError("exportPdf.error", {
       message: err instanceof Error ? err.message : String(err),

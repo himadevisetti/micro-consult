@@ -133,12 +133,9 @@ export async function exportRetainer<T extends Record<string, any>>(
   formData: T,
   html?: string,
   customerId?: string,
-  templateId?: string,
-  docxBufferBase64?: string // 🔹 new optional param
+  templateId?: string
 ) {
-  const { client: resolvedClient, purpose: resolvedMatter } =
-    resolveMetadata(formData, formType);
-
+  const { client: resolvedClient } = resolveMetadata(formData, formType);
   const normalizedFormType = slugifyFormType(formType);
   const today = new Date().toISOString();
 
@@ -153,18 +150,21 @@ export async function exportRetainer<T extends Record<string, any>>(
 
   try {
     if (type === "pdf") {
-      // 🔹 Branch: Generate Document flow → send DOCX buffer
-      if (formType === FormType.CustomTemplateGenerate && docxBufferBase64) {
-        const response = await fetch("/api/exportPdf", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ docxBufferBase64, filename }),
-        });
+      if (formType === FormType.CustomTemplateGenerate && customerId && templateId) {
+        // 🔹 Final PDF from backend
+        const response = await fetch(
+          `/api/templates/${encodeURIComponent(customerId)}/${encodeURIComponent(templateId)}/generate`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ variables: formData, format: "pdf" }),
+          }
+        );
         if (!response.ok) throw new Error(`PDF export failed: ${response.statusText}`);
         const arrayBuffer = await response.arrayBuffer();
         blob = new Blob([arrayBuffer], { type: "application/pdf" });
       } else {
-        // 🔹 Other flows → send HTML
+        // 🔸 Preview-based PDF
         if (!html) throw new Error(`Missing HTML for PDF export`);
         const response = await fetch("/api/exportPdf", {
           method: "POST",
@@ -175,27 +175,30 @@ export async function exportRetainer<T extends Record<string, any>>(
         const arrayBuffer = await response.arrayBuffer();
         blob = new Blob([arrayBuffer], { type: "application/pdf" });
       }
-    } else if (type === "docx" && formType === FormType.CustomTemplateGenerate) {
-      if (!customerId || !templateId) {
-        throw new Error("Missing customerId or templateId for custom template export");
+    }
+
+    else if (type === "docx") {
+      if (formType === FormType.CustomTemplateGenerate && customerId && templateId) {
+        // 🔹 Final DOCX from backend
+        const response = await fetch(
+          `/api/templates/${encodeURIComponent(customerId)}/${encodeURIComponent(templateId)}/generate`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ variables: formData, format: "docx" }),
+          }
+        );
+        if (!response.ok)
+          throw new Error(`DOCX export failed: ${response.statusText}`);
+        const arrayBuffer = await response.arrayBuffer();
+        blob = new Blob([arrayBuffer], {
+          type: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        });
+      } else {
+        // 🔸 Preview-based DOCX
+        if (!html) throw new Error(`Missing HTML for DOCX export`);
+        blob = await generateDOCX({ html, filename });
       }
-      const response = await fetch(
-        `/api/templates/${encodeURIComponent(customerId)}/${encodeURIComponent(templateId)}/generate`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ variables: formData, format: "docx" }),
-        }
-      );
-      if (!response.ok)
-        throw new Error(`Custom template DOCX export failed: ${response.statusText}`);
-      const arrayBuffer = await response.arrayBuffer();
-      blob = new Blob([arrayBuffer], {
-        type: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-      });
-    } else if (type === "docx") {
-      if (!html) throw new Error(`Missing HTML for DOCX export`);
-      blob = await generateDOCX({ html, filename });
     }
   } catch (err) {
     console.error(`[Export Error] Failed to generate ${type.toUpperCase()} blob:`, err);
