@@ -28,14 +28,14 @@
 
 import { generateDOCX } from './generateDOCX.js';
 import { getFilename } from '../../utils/generateFilename.js';
-import { FormType, RetainerTypeLabel } from '@/types/FormType';
+import { FormType } from '@/types/FormType';
 
 function slugifyFormType(formType: FormType): string {
   return String(formType)
     .trim()
     .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '-')   // collapse non-alphanumerics to hyphens
-    .replace(/^-+|-+$/g, '');      // trim leading/trailing hyphens
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
 }
 
 function resolveMetadata(formData: Record<string, any>, formType: FormType) {
@@ -52,7 +52,6 @@ function resolveMetadata(formData: Record<string, any>, formType: FormType) {
         providerName: formData.providerName?.trim() || 'Provider',
       };
       break;
-
     case FormType.StandardRetainer:
       client = formData.clientName?.trim() || 'Client';
       purpose = 'Standard retainer agreement';
@@ -60,7 +59,6 @@ function resolveMetadata(formData: Record<string, any>, formType: FormType) {
         providerName: formData.providerName?.trim() || 'Service Provider',
       };
       break;
-
     case FormType.StartupAdvisory:
       client = formData.companyName?.trim() || 'Company';
       purpose = 'Startup advisory agreement';
@@ -68,7 +66,6 @@ function resolveMetadata(formData: Record<string, any>, formType: FormType) {
         advisorName: formData.advisorName?.trim() || 'Advisor',
       };
       break;
-
     case FormType.EmploymentAgreement:
       client = formData.employeeName?.trim() || 'Employee';
       purpose = 'Employment agreement';
@@ -76,22 +73,18 @@ function resolveMetadata(formData: Record<string, any>, formType: FormType) {
         employerName: formData.employerName?.trim() || 'Employer',
       };
       break;
-
     case FormType.LitigationEngagement:
       client = formData.clientName?.trim() || 'Client';
       purpose = 'Litigation engagement agreement';
       break;
-
     case FormType.RealEstateContract:
       client = formData.clientName?.trim() || 'Client';
       purpose = 'Real estate contract';
       break;
-
     case FormType.FamilyLawAgreement:
       client = formData.clientName?.trim() || 'Client';
       purpose = 'Family law agreement';
       break;
-
     case FormType.CustomTemplate:
     case FormType.CustomTemplateGenerate: {
       const candidateKeys = [
@@ -104,7 +97,6 @@ function resolveMetadata(formData: Record<string, any>, formType: FormType) {
         'partyA',
         'partyB',
       ];
-
       let identifier = '';
       for (const key of candidateKeys) {
         if (formData[key]) {
@@ -112,12 +104,10 @@ function resolveMetadata(formData: Record<string, any>, formType: FormType) {
           break;
         }
       }
-
       client = identifier || 'Document';
       purpose = 'Custom document';
       break;
     }
-
     default:
       client = formData.clientName?.trim() || 'Client';
       purpose = 'Legal services agreement';
@@ -151,7 +141,6 @@ export async function exportRetainer<T extends Record<string, any>>(
   try {
     if (type === "pdf") {
       if (formType === FormType.CustomTemplateGenerate && customerId && templateId) {
-        // 🔹 Final PDF from backend
         const response = await fetch(
           `/api/templates/${encodeURIComponent(customerId)}/${encodeURIComponent(templateId)}/generate`,
           {
@@ -164,12 +153,15 @@ export async function exportRetainer<T extends Record<string, any>>(
         const arrayBuffer = await response.arrayBuffer();
         blob = new Blob([arrayBuffer], { type: "application/pdf" });
       } else {
-        // 🔸 Preview-based PDF
         if (!html) throw new Error(`Missing HTML for PDF export`);
         const response = await fetch("/api/exportPdf", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ html, filename }),
+          body: JSON.stringify({
+            html,
+            filename,
+            customerId: customerId ?? "customer-001", // TODO: replace with session user
+          }),
         });
         if (!response.ok) throw new Error(`PDF export failed: ${response.statusText}`);
         const arrayBuffer = await response.arrayBuffer();
@@ -179,7 +171,6 @@ export async function exportRetainer<T extends Record<string, any>>(
 
     else if (type === "docx") {
       if (formType === FormType.CustomTemplateGenerate && customerId && templateId) {
-        // 🔹 Final DOCX from backend
         const response = await fetch(
           `/api/templates/${encodeURIComponent(customerId)}/${encodeURIComponent(templateId)}/generate`,
           {
@@ -195,9 +186,19 @@ export async function exportRetainer<T extends Record<string, any>>(
           type: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
         });
       } else {
-        // 🔸 Preview-based DOCX
         if (!html) throw new Error(`Missing HTML for DOCX export`);
         blob = await generateDOCX({ html, filename });
+
+        // 🔁 Fire-and-forget upload to backend
+        fetch("/api/exportDocx", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            html,
+            filename,
+            customerId: customerId ?? "customer-001", // TODO: replace with session user
+          }),
+        });
       }
     }
   } catch (err) {

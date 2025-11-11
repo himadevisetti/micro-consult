@@ -21,6 +21,7 @@
   "license": "ISC",
   "dependencies": {
     "@azure/ai-form-recognizer": "^5.1.0",
+    "@azure/storage-blob": "^12.29.1",
     "@prisma/client": "^6.13.0",
     "cheerio": "^1.1.2",
     "content-type": "1.0.5",

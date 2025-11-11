@@ -4,6 +4,7 @@ import { injectCssIntoHtml } from "../injectCssIntoHtml.js";
 import { findCompiledCss } from "../../utils/findCompiledCss.js";
 import { extractTitleFromHtml } from "../../utils/formatTitle.js";
 import { logDebug, logError } from "../../utils/logger.js";
+import { uploadToAzureBlob } from "../utils/uploadToAzureBlob.js";
 
 const router = Router();
 
@@ -14,9 +15,10 @@ router.post("/exportPdf", async (req, res) => {
     hasHtml: typeof req.body?.html === "string",
   });
 
-  const { html, filename } = req.body as {
+  const { html, filename, customerId = "default" } = req.body as {
     html?: string;
     filename?: string;
+    customerId?: string;
   };
   const resolvedFilename = filename || "retainer.pdf";
 
@@ -56,6 +58,14 @@ router.post("/exportPdf", async (req, res) => {
 
     await browser.close();
     logDebug("exportPdf.browserClosed");
+
+    const blobUrl = await uploadToAzureBlob(
+      Buffer.from(pdfBuffer),
+      resolvedFilename,
+      customerId,
+      "application/pdf" // ✅ PDF MIME
+    );
+    logDebug("exportPdf.uploadedToAzure", { blobUrl });
 
     res.setHeader("Content-Type", "application/pdf");
     res.setHeader("Content-Disposition", `attachment; filename="${resolvedFilename}"`);

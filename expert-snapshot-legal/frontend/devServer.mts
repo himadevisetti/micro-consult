@@ -6,6 +6,7 @@ import { createServer as createViteServer } from "vite";
 import fs from "fs";
 import { fileURLToPath } from "url";
 import exportPdfRoute from "./src/server/routes/exportPdf.js";
+import exportDocxRoute from "./src/server/routes/exportDocx.js";
 import listTemplatesRoute from "./src/server/routes/listTemplates.js";
 import uploadTemplateRoute from "./src/server/routes/uploadTemplate.js";
 import confirmMappingRoute from "./src/server/routes/confirmMapping.js";
@@ -36,6 +37,7 @@ async function startDevServer() {
 
   // API routes
   app.use("/api", exportPdfRoute);
+  app.use("/api", exportDocxRoute);
   app.use("/api", listTemplatesRoute);
   app.use("/api", uploadTemplateRoute);
   app.use("/api", confirmMappingRoute);
