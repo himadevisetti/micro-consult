@@ -18,6 +18,9 @@ export default function SignatureClause({
   const resolvedAdvisor = advisorName?.trim() || 'Advisor';
   const resolvedDate = dateSigned?.trim() || 'the date of execution';
 
+  const pairStyle = { marginBottom: '4px', lineHeight: '1.2' };
+  const lineStyle = { margin: 0, lineHeight: '1.2', width: '3.5in' };
+
   return (
     <>
       <br />
@@ -29,19 +32,28 @@ export default function SignatureClause({
           <strong>{resolvedDate}</strong>.
         </p>
 
-        <p>__________________________</p>
-        <p>
-          <strong>{resolvedCompanyRep}</strong>
-          <br />
-          {resolvedCompanyTitle}
-        </p>
+        <br />
+        <br />
 
-        <p>__________________________</p>
-        <p>
-          <strong>{resolvedAdvisor}</strong>
-        </p>
+        <div style={pairStyle}>
+          <p style={lineStyle}>__________________________</p>
+          <p style={lineStyle}>
+            <strong>{resolvedCompanyRep}</strong>
+            <br />
+            {resolvedCompanyTitle}
+          </p>
+        </div>
+
+        <br />
+        <br />
+
+        <div style={pairStyle}>
+          <p style={lineStyle}>__________________________</p>
+          <p style={lineStyle}>
+            <strong>{resolvedAdvisor}</strong>
+          </p>
+        </div>
       </section>
     </>
   );
 }
-

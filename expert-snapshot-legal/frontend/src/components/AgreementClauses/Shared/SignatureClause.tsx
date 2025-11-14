@@ -28,12 +28,16 @@ export default function SignatureClause({
           IN WITNESS WHEREOF, the parties have executed this Agreement as of{' '}
           <strong>{resolvedDate}</strong>.
         </p>
+        <br />
+        <br />
         <div style={pairStyle}>
           <p style={lineStyle}>__________________________</p>
           <p style={lineStyle}>
             <strong>{resolvedClient}</strong>
           </p>
         </div>
+        <br />
+        <br />
         <div style={pairStyle}>
           <p style={lineStyle}>__________________________</p>
           <p style={lineStyle}>

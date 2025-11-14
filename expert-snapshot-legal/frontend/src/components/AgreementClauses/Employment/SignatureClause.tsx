@@ -1,3 +1,5 @@
+// src/components/AgreementClauses/Employment/SignatureClause.tsx
+
 type SignatureClauseProps = {
   employerSignatoryName?: string;
   employerSignatoryTitle?: string;
@@ -20,6 +22,9 @@ export default function SignatureClause({
   const resolvedDate =
     dateSigned?.trim() || 'the date of execution';
 
+  const pairStyle = { marginBottom: '4px', lineHeight: '1.2' };
+  const lineStyle = { margin: 0, lineHeight: '1.2', width: '3.5in' };
+
   return (
     <>
       <br />
@@ -31,17 +36,27 @@ export default function SignatureClause({
           <strong>{resolvedDate}</strong>.
         </p>
 
-        <p>__________________________</p>
-        <p>
-          <strong>{resolvedEmployerName}</strong>
-          <br />
-          {resolvedEmployerTitle}
-        </p>
+        <br />
+        <br />
 
-        <p>__________________________</p>
-        <p>
-          <strong>{resolvedEmployeeName}</strong>
-        </p>
+        <div style={pairStyle}>
+          <p style={lineStyle}>__________________________</p>
+          <p style={lineStyle}>
+            <strong>{resolvedEmployerName}</strong>
+            <br />
+            {resolvedEmployerTitle}
+          </p>
+        </div>
+
+        <br />
+        <br />
+
+        <div style={pairStyle}>
+          <p style={lineStyle}>__________________________</p>
+          <p style={lineStyle}>
+            <strong>{resolvedEmployeeName}</strong>
+          </p>
+        </div>
       </section>
     </>
   );

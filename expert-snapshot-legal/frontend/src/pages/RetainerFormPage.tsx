@@ -8,9 +8,10 @@ import EmploymentAgreementFlow from '../components/FormFlows/EmploymentAgreement
 import CustomTemplateFlow from '../components/FormFlows/CustomTemplateFlow';
 import GenerateDocumentFlow from '../components/FormFlows/GenerateDocumentFlow';
 import PageLayout from '../components/PageLayout';
-import { FormType } from '@/types/FormType';
+import { FormType, RetainerTypeLabel } from '@/types/FormType';
 import { formSchemas } from '../schemas/formSchemas';
 import UploadTemplateFlow from '../components/FormFlows/UploadTemplateFlow';
+import PlaceholderFlow from '../components/FormFlows/PlaceholderFlow';
 
 const RetainerFormPage = () => {
   const navigate = useNavigate();
@@ -78,6 +79,11 @@ const RetainerFormPage = () => {
       case FormType.CustomTemplateGenerate:
         return <GenerateDocumentFlow customerId="customer-001" // TODO: replace with session user
         />;
+
+      case FormType.LitigationEngagement:
+      case FormType.RealEstateContract:
+      case FormType.FamilyLawAgreement:
+        return <PlaceholderFlow formType={formType} />;
 
       default:
         return null;

@@ -36,7 +36,7 @@ export async function generateDOCX(input: DOCXInput): Promise<Blob> {
   const cleanedBody = cleanClauseBody(html);
   const formattedLines = formatClauseContent(cleanedBody);
 
-  const paragraphTuples = formattedLines.map(({ text, bold }, index) => {
+  const paragraphTuples = formattedLines.map(({ text, bold, spacingAfter }, index) => {
     const isHeading = bold === true;
     const isLast = index === formattedLines.length - 1;
 
@@ -49,7 +49,7 @@ export async function generateDOCX(input: DOCXInput): Promise<Blob> {
         }),
       ],
       spacing: {
-        after: isHeading ? 300 : isLast ? 600 : 300,
+        after: spacingAfter ?? (isHeading ? 300 : isLast ? 600 : 300),
       },
       keepLines: isHeading,
       keepNext: isHeading,

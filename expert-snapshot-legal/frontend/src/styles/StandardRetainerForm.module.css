@@ -253,6 +253,13 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   cursor: pointer;
   /* makes the whole row feel interactive */
   transition: background-color 0.2s ease;
+  width: 100%;
+  box-sizing: border-box;
+  max-width: 100%;
+}
+
+.clauseToggle {
+  grid-column: span 2;
 }
 
 /* Optional hover effect */
@@ -695,4 +702,21 @@ select[multiple] {
   border: none;
   cursor: pointer;
   font-size: 0.85rem;
+}
+
+.placeholderMessage {
+  font-size: 16px;
+  line-height: 1.5;
+  color: #000;
+  padding: 20px;
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+.placeholderWrapper {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 40px 0;
+  width: 100%;
 }

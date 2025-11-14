@@ -14,6 +14,9 @@ export default function SignatureClause({
   const resolvedProvider = providerName?.trim() || 'Attorney';
   const resolvedDate = executionDate?.trim() || 'the date of execution';
 
+  const pairStyle = { marginBottom: '4px', lineHeight: '1.2' };
+  const lineStyle = { margin: 0, lineHeight: '1.2', width: '3.5in' };
+
   return (
     <>
       <br />
@@ -25,19 +28,26 @@ export default function SignatureClause({
           <strong>{resolvedDate}</strong>.
         </p>
 
+        <br />
+        <br />
+
         {signingParty.map((name, index) => (
-          <div key={`signing-party-${index}`}>
-            <p>__________________________</p>
-            <p>
+          <div key={`signing-party-${index}`} style={pairStyle}>
+            <p style={lineStyle}>__________________________</p>
+            <p style={lineStyle}>
               <strong>{name.trim()}</strong>
             </p>
+            <br />
+            <br />
           </div>
         ))}
 
-        <p>__________________________</p>
-        <p>
-          <strong>{resolvedProvider}</strong>
-        </p>
+        <div style={pairStyle}>
+          <p style={lineStyle}>__________________________</p>
+          <p style={lineStyle}>
+            <strong>{resolvedProvider}</strong>
+          </p>
+        </div>
       </section>
     </>
   );
