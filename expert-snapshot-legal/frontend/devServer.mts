@@ -21,6 +21,11 @@ import {
   indexPath,
 } from "./src/server/config.js";
 
+// Telemetry setup
+import appInsights from "applicationinsights";
+appInsights.setup(process.env.APPINSIGHTS_INSTRUMENTATIONKEY || "").start();
+export const telemetry = appInsights.defaultClient;
+
 // TTL log
 const ttlMs = parseInt(process.env.CANDIDATE_TTL_MS || "", 10) || 60 * 60 * 1000;
 logDebug("server.ttl", { ttlMs });

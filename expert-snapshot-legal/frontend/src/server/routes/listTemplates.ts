@@ -1,4 +1,5 @@
 // src/server/routes/listTemplates.ts
+
 import { Router } from "express";
 import fs from "fs";
 import path from "path";
@@ -8,6 +9,7 @@ import {
   getCustomerManifestPath,
   allowedExtensions,
 } from "../config.js";
+import { track } from "../../../track.js";
 
 const router = Router();
 
@@ -24,6 +26,14 @@ router.get("/templates/:customerId", (req, res) => {
         customerId,
         error: err ? err.message : null,
       });
+
+      // 🔹 Fire telemetry non-blocking
+      track("template_listed", {
+        customerId,
+        templateCount: 0,
+        manifestCount: 0,
+      });
+
       return res.json({ templates: [] });
     }
 
@@ -84,6 +94,14 @@ router.get("/templates/:customerId", (req, res) => {
     const missingManifestCount = templates.length - manifestCount;
 
     logDebug("getTemplates.success", {
+      customerId,
+      templateCount: templates.length,
+      manifestCount,
+      missingManifestCount,
+    });
+
+    // 🔹 Fire telemetry non-blocking
+    track("template_listed", {
       customerId,
       templateCount: templates.length,
       manifestCount,

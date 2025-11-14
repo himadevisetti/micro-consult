@@ -16,7 +16,7 @@ export default defineConfig({
     {
       name: 'force-html-emission',
       transformIndexHtml(html) {
-        return html; // ✅ ensures Vite processes index.html
+        return html; // ensures Vite processes index.html
       },
     },
   ],
@@ -32,6 +32,15 @@ export default defineConfig({
     assetsDir: 'assets',
     rollupOptions: {
       input: 'index.html',
+      external: [
+        'fsevents', // prevent native module bundling
+        'rollup', // exclude Rollup core from frontend bundle
+        'rollup/dist/es/shared/parseAst.js', // exclude Rollup internals that import node:path
+        'node:path', // prevent Vite from shimming node:path in browser
+        'node:fs', // prevent Vite from shimming node:fs
+        'vite/dist/node/constants.js', // exclude Vite internals
+        path.resolve(__dirname, 'telemetryProxy.ts'), // exclude telemetryProxy from frontend bundle
+      ],
     },
     cssCodeSplit: true,
   },
@@ -41,5 +50,13 @@ export default defineConfig({
       scopeBehaviour: 'local',
       generateScopedName: '[name]__[local]___[hash:base64:5]',
     },
+  },
+
+  optimizeDeps: {
+    exclude: [
+      'fsevents', // prevent pre-bundling of native module
+      'rollup', // prevent Rollup from being scanned by Vite
+      'vite', // prevent Vite internals from being scanned
+    ],
   },
 });

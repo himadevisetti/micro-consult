@@ -4,6 +4,7 @@ import { Router } from "express";
 import { logDebug, logError } from "../../utils/logger.js";
 import { generateDOCX } from "../../utils/export/generateDOCX.js";
 import { uploadToAzureBlob } from "../utils/uploadToAzureBlob.js";
+import { track } from "../../../track.js"
 
 const router = Router();
 
@@ -27,6 +28,14 @@ router.post("/exportDocx", async (req, res) => {
   }
 
   try {
+    // 🔹 Track document generation
+    await track("document_generated", {
+      format: "docx",
+      flowName: "ExportDocxRoute",
+      filename: resolvedFilename,
+      customerId,
+    });
+
     logDebug("exportDocx.branch.html", {
       filename: resolvedFilename,
       htmlPreview: html.slice(0, 80),
@@ -40,9 +49,17 @@ router.post("/exportDocx", async (req, res) => {
       buffer,
       resolvedFilename,
       customerId,
-      "application/vnd.openxmlformats-officedocument.wordprocessingml.document" // ✅ DOCX MIME
+      "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
     );
     logDebug("exportDocx.uploadedToAzure", { blobUrl });
+
+    // 🔹 Track document download
+    await track("document_downloaded", {
+      format: "docx",
+      flowName: "ExportDocxRoute",
+      filename: resolvedFilename,
+      customerId,
+    });
 
     res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.wordprocessingml.document");
     res.setHeader("Content-Disposition", `attachment; filename="${resolvedFilename}"`);

@@ -1,3 +1,5 @@
+// src/server/routes/exportPdf.ts
+
 import { Router } from "express";
 import puppeteer from "puppeteer";
 import { injectCssIntoHtml } from "../injectCssIntoHtml.js";
@@ -5,6 +7,7 @@ import { findCompiledCss } from "../../utils/findCompiledCss.js";
 import { extractTitleFromHtml } from "../../utils/formatTitle.js";
 import { logDebug, logError } from "../../utils/logger.js";
 import { uploadToAzureBlob } from "../utils/uploadToAzureBlob.js";
+import { track } from "../../../track.js"
 
 const router = Router();
 
@@ -28,6 +31,14 @@ router.post("/exportPdf", async (req, res) => {
   }
 
   try {
+    // 🔹 Track document generation
+    await track("document_generated", {
+      format: "pdf",
+      flowName: "ExportPdfRoute",
+      filename: resolvedFilename,
+      customerId,
+    });
+
     logDebug("exportPdf.branch.html", {
       filename: resolvedFilename,
       htmlPreview: html.slice(0, 80),
@@ -63,9 +74,17 @@ router.post("/exportPdf", async (req, res) => {
       Buffer.from(pdfBuffer),
       resolvedFilename,
       customerId,
-      "application/pdf" // ✅ PDF MIME
+      "application/pdf"
     );
     logDebug("exportPdf.uploadedToAzure", { blobUrl });
+
+    // 🔹 Track document download
+    await track("document_downloaded", {
+      format: "pdf",
+      flowName: "ExportPdfRoute",
+      filename: resolvedFilename,
+      customerId,
+    });
 
     res.setHeader("Content-Type", "application/pdf");
     res.setHeader("Content-Disposition", `attachment; filename="${resolvedFilename}"`);

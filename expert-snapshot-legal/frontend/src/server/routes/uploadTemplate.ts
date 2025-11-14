@@ -1,4 +1,5 @@
 // src/server/routes/uploadTemplate.ts
+
 import { Router, Request } from "express";
 import fs from "fs";
 import path from "path";
@@ -14,6 +15,7 @@ import { sortCandidatesByDocumentOrder } from "../../utils/candidates/sortCandid
 import { deriveCandidatesFromRead } from "../../utils/candidates/deriveCandidatesFromRead.js";
 import { saveCandidates } from "../../infrastructure/sessionStore.js";
 import { logAllReadFields } from "../../utils/candidates/logAllReadFields.js";
+import { track } from "../../../track.js";
 
 const router = Router();
 
@@ -51,6 +53,13 @@ router.post(
 
     try {
       const templateId = path.parse(file.originalname).name;
+
+      // 🔹 Track template upload
+      await track("template_uploaded", {
+        customerId,
+        templateId,
+        fileType: ext,
+      });
 
       // Read file into Buffer
       const buffer = fs.readFileSync(seedPath);

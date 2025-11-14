@@ -1,4 +1,5 @@
 // src/server/routes/confirmMapping.ts
+
 import { Router } from "express";
 import fs from "fs";
 import path from "path";
@@ -14,6 +15,7 @@ import { mergeMappingWithCandidates } from "../adapters/mergeMappingWithCandidat
 import { placeholderizeDocument } from "../../utils/candidates/placeholderization.js";
 import { enrichMapping } from "../utils/manifestEnrichment.js";
 import { sortCandidatesByDocumentOrder } from "../../utils/candidates/sortCandidatesByDocumentOrder.js";
+import { track } from "../../../track.js";
 
 const router = Router();
 
@@ -147,6 +149,14 @@ router.post(
         placeholders: orderedEnrichedCandidates
           .filter((c) => c.placeholder)
           .map((c) => ({ field: c.schemaField, placeholder: c.placeholder })),
+      });
+
+      // 🔹 Track mapping confirmation
+      await track("mapping_confirmed", {
+        customerId,
+        templateId,
+        seedType,
+        placeholderCount: orderedEnrichedCandidates.length,
       });
 
       return res.json({

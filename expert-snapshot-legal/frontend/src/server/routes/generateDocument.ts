@@ -10,6 +10,7 @@ import { generateDocxFromTemplate } from "../utils/generateDocxFromTemplate.js";
 import { convertDocxToPdf } from "../utils/convertDocxToPdf.js";
 import { uploadToAzureBlob } from "../utils/uploadToAzureBlob.js";
 import mammoth from "mammoth";
+import { track } from "../../../track.js";
 
 const router = Router();
 
@@ -29,6 +30,7 @@ router.post("/templates/:customerId/:templateId/generate", async (req, res) => {
     let templateType: "docx" | "pdf" | null = null;
     let seedType: "docx" | "pdf" | null = null;
 
+    // 🔹 Determine template type
     if (fs.existsSync(docxPath)) {
       templatePath = docxPath;
       templateType = "docx";
@@ -41,6 +43,7 @@ router.post("/templates/:customerId/:templateId/generate", async (req, res) => {
       return res.status(404).json({ success: false, error: "Template not found" });
     }
 
+    // 🔹 Try to read seedType from manifest
     const manifestDir = getCustomerManifestPath(customerId);
     const manifestPath = path.join(manifestDir, `${templateId}.manifest.json`);
     if (fs.existsSync(manifestPath)) {
@@ -64,6 +67,7 @@ router.post("/templates/:customerId/:templateId/generate", async (req, res) => {
       variableCount: variables ? Object.keys(variables).length : 0,
     });
 
+    // 🔹 Log variable keys
     if (!variables) {
       logDebug("generateDocument.variables", { message: "variables is null/undefined" });
     } else {
@@ -73,6 +77,7 @@ router.post("/templates/:customerId/:templateId/generate", async (req, res) => {
       });
     }
 
+    // 🔹 Generate merged DOCX if applicable
     let mergedBuffer: Buffer | null = null;
     if (templateType === "docx") {
       const templateBuffer = fs.readFileSync(templatePath);
@@ -83,6 +88,16 @@ router.post("/templates/:customerId/:templateId/generate", async (req, res) => {
       logDebug("generateDocument.docxMerged", { size: mergedBuffer.length });
     }
 
+    // Track document generation event
+    await track("document_generated", {
+      customerId,
+      templateId,
+      seedType,
+      outputFormat: format,
+      variableCount: variables ? Object.keys(variables).length : 0,
+    });
+
+    // 🔹 Return DOCX
     if (format === "docx" && templateType === "docx") {
       if (!mergedBuffer) {
         logError("generateDocument.noMergedBufferForDocx");
@@ -111,6 +126,7 @@ router.post("/templates/:customerId/:templateId/generate", async (req, res) => {
       return res.send(mergedBuffer);
     }
 
+    // 🔹 Return PDF
     if (format === "pdf") {
       if (templateType === "pdf") {
         res.setHeader("Content-Disposition", `attachment; filename="${templateId}.pdf"`);
@@ -160,6 +176,7 @@ router.post("/templates/:customerId/:templateId/generate", async (req, res) => {
       }
     }
 
+    // 🔹 Return HTML preview
     if (format === "html") {
       if (templateType === "docx") {
         if (!mergedBuffer) {

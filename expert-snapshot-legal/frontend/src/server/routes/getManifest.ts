@@ -1,10 +1,12 @@
 // src/server/routes/getManifest.ts
+
 import { Router } from "express";
 import fs from "fs";
 import path from "path";
 
 import { getCustomerManifestPath, storageBasePath } from "../config.js";
 import { logDebug } from "../../utils/logger.js";
+import { track } from "../../../track.js";
 
 const router = Router();
 
@@ -43,11 +45,15 @@ router.get(
       const pdfPath = path.join(customerTemplatePath, `${templateId}.pdf`);
 
       let templateFile: string | null = null;
+      let fileType: string | null = null;
+
       if (fs.existsSync(docxPath)) {
         // 🔹 Return fully qualified API path
         templateFile = `/api/templates/${customerId}/templates/${templateId}.docx`;
+        fileType = "docx";
       } else if (fs.existsSync(pdfPath)) {
         templateFile = `/api/templates/${customerId}/templates/${templateId}.pdf`;
+        fileType = "pdf";
       }
 
       if (!templateFile) {
@@ -62,6 +68,13 @@ router.get(
         templateId,
         manifestPath,
         templateFile,
+      });
+
+      // ✅ Track manifest fetch event
+      await track("manifest_fetched", {
+        customerId,
+        templateId,
+        fileType,
       });
 
       return res.json({

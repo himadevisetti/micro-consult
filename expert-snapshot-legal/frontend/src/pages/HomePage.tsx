@@ -7,19 +7,28 @@ import { FormType, RetainerTypeLabel } from '@/types/FormType';
 import AppHeader from '../components/AppHeader';
 import type { IconName } from '@/types/IconName';
 import RetainerCard from '../components/RetainerCard';
+import { track } from "../../track";
 
 const HomePage = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
+    // 🔹 Clear any stale session data when landing on homepage
     sessionStorage.clear();
   }, []);
 
-  const handleStart = (templateId: FormType) => {
+  // 🔹 Track card click and navigate to form
+  const handleStart = async (templateId: FormType) => {
+    await track("ui_card_clicked", {
+      cardName: RetainerTypeLabel[templateId],
+      flowType: templateId,
+      customerId: "anonymous", // TODO: Replace with real user ID if available
+    });
+
     navigate(`/form/${templateId}`);
   };
 
-  // Split into two groups for visual separation
+  // 🔹 Core agreement types shown in first card group
   const coreAgreements: { type: FormType; icon: IconName }[] = [
     { type: FormType.StandardRetainer, icon: 'standard-retainer' },
     { type: FormType.IPRightsLicensing, icon: 'ip-rights-licensing' },
@@ -27,6 +36,7 @@ const HomePage = () => {
     { type: FormType.EmploymentAgreement, icon: 'employment-agreement' },
   ];
 
+  // 🔹 Specialised agreement types shown in second card group
   const specialisedAgreements: { type: FormType; icon: IconName }[] = [
     { type: FormType.LitigationEngagement, icon: 'litigation-engagement' },
     { type: FormType.RealEstateContract, icon: 'real-estate-contract' },
@@ -36,8 +46,9 @@ const HomePage = () => {
 
   return (
     <div className={styles.pageWrapper}>
-      {/* Move the main heading into AppHeader */}
+      {/* 🔹 Move the main heading into AppHeader for consistent layout */}
       <AppHeader showHomeButton={false} mainHeading="Welcome to Expert Snapshot Legal" />
+
       <main className={styles.landing}>
         <header className={styles.hero}>
           <p>
@@ -46,8 +57,7 @@ const HomePage = () => {
         </header>
 
         <section className={styles.templateOptions}>
-
-          {/* Core Agreements Group */}
+          {/* 🔹 Core Agreements Group */}
           <div className={styles.cardGroup}>
             <h3>Core Agreements</h3>
             <div className={styles.retainerCardGrid}>
@@ -63,7 +73,7 @@ const HomePage = () => {
             </div>
           </div>
 
-          {/* Specialised Agreements Group */}
+          {/* 🔹 Specialised Agreements Group */}
           <div className={styles.cardGroup}>
             <h3>Specialised Agreements</h3>
             <div className={styles.retainerCardGrid}>
