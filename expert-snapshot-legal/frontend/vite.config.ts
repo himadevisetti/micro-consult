@@ -1,4 +1,5 @@
 // vite.config.ts
+
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import stringPlugin from 'vite-plugin-string';
@@ -38,8 +39,10 @@ export default defineConfig({
         'rollup/dist/es/shared/parseAst.js', // exclude Rollup internals that import node:path
         'node:path', // prevent Vite from shimming node:path in browser
         'node:fs', // prevent Vite from shimming node:fs
+        'node:url', // prevent Vite from shimming node:url
         'vite/dist/node/constants.js', // exclude Vite internals
         path.resolve(__dirname, 'telemetryProxy.ts'), // exclude telemetryProxy from frontend bundle
+        path.resolve(__dirname, 'devServer.mts'), // exclude devServer.mts explicitly
       ],
     },
     cssCodeSplit: true,
@@ -55,8 +58,8 @@ export default defineConfig({
   optimizeDeps: {
     exclude: [
       'fsevents', // prevent pre-bundling of native module
-      'rollup', // prevent Rollup from being scanned by Vite
-      'vite', // prevent Vite internals from being scanned
+      'rollup',   // prevent Rollup from being scanned by Vite
+      'vite',     // prevent Vite internals from being scanned
     ],
   },
 });
