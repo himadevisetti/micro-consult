@@ -19,7 +19,7 @@ import confirmMappingRoute from "./src/server/routes/confirmMapping.js";
 import getManifestRoute from './src/server/routes/getManifest.js';
 import generateDocumentRoute from './src/server/routes/generateDocument.js';
 import runtimeConfigRouter from "./src/server/routes/runtimeConfig.js";
-import { logDebug, logWarn } from "./src/utils/logger.js";
+import { logDebug } from "./src/utils/logger.js";
 
 // Shared config
 import {
@@ -35,48 +35,29 @@ const disableTelemetry = process.env.DISABLE_TELEMETRY === "true";
 const connectionString = process.env.APPLICATIONINSIGHTS_CONNECTION_STRING || "";
 const instrumentationKey = process.env.APPINSIGHTS_INSTRUMENTATIONKEY || "";
 
-logDebug("devServer.telemetry.init", {
-  disableTelemetry,
-  connectionStringPresent: !!connectionString,
-  instrumentationKeyPresent: !!instrumentationKey,
-});
-
 let client = null;
 
-if (disableTelemetry) {
-  logWarn("devServer.telemetry.disabled", { reason: "DISABLE_TELEMETRY=true" });
-} else if (connectionString) {
+// Only initialize if telemetry is enabled and a key is present
+if (!disableTelemetry && (connectionString || instrumentationKey)) {
+  const setup = connectionString || instrumentationKey;
   appInsights
-    .setup(connectionString)
+    .setup(setup)
     .setInternalLogging(false, false)
     .start();
-  logDebug("devServer.telemetry.config", { method: "connectionString" });
-} else if (instrumentationKey) {
-  appInsights
-    .setup(instrumentationKey)
-    .setInternalLogging(false, false)
-    .start();
-  logDebug("devServer.telemetry.config", { method: "instrumentationKey" });
-} else {
-  logWarn("devServer.telemetry.disabled", { reason: "No telemetry key provided" });
+
+  if (appInsights.defaultClient) {
+    (appInsights.defaultClient.config as any).enableAzureVmMetaData = false;
+    client = appInsights.defaultClient;
+  }
 }
 
-if (!disableTelemetry && appInsights.defaultClient) {
-  (appInsights.defaultClient.config as any).enableAzureVmMetaData = false;
-  client = appInsights.defaultClient;
-  logDebug("devServer.telemetry.ready", { context: "defaultClient wired" });
-} else {
-  logWarn("devServer.telemetry.missing", { reason: "defaultClient undefined or disabled" });
-}
-
+// Export telemetry interface for track.ts
 export default {
   trackEvent: (event: { name: string; properties: any }) => {
     if (client) {
       client.trackEvent(event);
-      logDebug("devServer.telemetry.sent", event);
       return true; // ✅ explicitly signal success
     } else {
-      logWarn("devServer.telemetry.noop", { event });
       return false; // ✅ signal that event was skipped
     }
   },
@@ -162,7 +143,9 @@ async function startDevServer() {
       });
     });
   } catch (err) {
-    console.error("Server failed to start:", err);
+    logDebug("server.startFailed", {
+      error: err instanceof Error ? err.message : String(err),
+    });
   }
 }
 

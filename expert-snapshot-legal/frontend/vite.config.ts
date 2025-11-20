@@ -1,5 +1,3 @@
-// vite.config.ts
-
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import stringPlugin from 'vite-plugin-string';
@@ -7,9 +5,17 @@ import path from 'path';
 
 const isTelemetryBuild = process.env.BUILD_TELEMETRY === "true";
 
+// 🔹 Shared telemetry flag injection
+const disableTelemetryFlag = JSON.stringify(
+  (process.env.DISABLE_TELEMETRY || "false").toLowerCase() === "true"
+);
+
 export default defineConfig(isTelemetryBuild
   ? {
     // ✅ Telemetry build
+    define: {
+      __DISABLE_TELEMETRY__: disableTelemetryFlag,
+    },
     build: {
       lib: {
         entry: path.resolve(__dirname, 'telemetryClient.ts'),
@@ -52,7 +58,7 @@ export default defineConfig(isTelemetryBuild
       },
     },
     define: {
-      __DISABLE_TELEMETRY__: JSON.stringify(process.env.DISABLE_TELEMETRY === "true"),
+      __DISABLE_TELEMETRY__: disableTelemetryFlag,
     },
     build: {
       outDir: 'build/frontend',

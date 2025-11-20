@@ -25,8 +25,6 @@ export function injectCssIntoHtml(
     "$1$2 signature-break$3$4"
   );
 
-  console.log("[injectCssIntoHtml] Signature underline <p> spacing collapsed via CSS");
-
   return `
   <!DOCTYPE html>
   <html lang="en">

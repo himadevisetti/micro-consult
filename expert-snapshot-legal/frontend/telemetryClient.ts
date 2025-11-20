@@ -1,14 +1,14 @@
 // telemetryClient.ts
 
 import { ApplicationInsights } from "@microsoft/applicationinsights-web";
-import { logDebug, logWarn } from "./src/utils/logger.js";
+import { logWarn, logDebug } from "./src/utils/logger.js";
+import { logTelemetryEvent } from "./src/utils/logTelemetryEvent.js";
 
 // 🔹 Injected at build time by Vite
 declare const __DISABLE_TELEMETRY__: boolean;
 
 let appInsights: ApplicationInsights | null = null;
 
-// Expose a readiness promise
 let telemetryReady: Promise<void>;
 let resolveReady: () => void;
 
@@ -48,14 +48,6 @@ async function initializeTelemetry() {
 
   appInsights.loadAppInsights();
   resolveReady();
-
-  logDebug("telemetryClient.ready", {
-    method: connectionString
-      ? "connectionString"
-      : instrumentationKey
-        ? "instrumentationKey"
-        : "none",
-  });
 }
 
 initializeTelemetry();
@@ -64,28 +56,26 @@ export async function trackEvent(name: string, properties: Record<string, any>):
   await telemetryReady;
 
   if (typeof window === "undefined") {
-    logDebug("track.noop.server", { name });
+    logTelemetryEvent("noop", "server", name, "not in browser");
     return false;
   }
 
   if (__DISABLE_TELEMETRY__) {
-    logDebug("track.noop.disabled", { name });
+    logTelemetryEvent("noop", "browser", name, "telemetry disabled");
     return false;
   }
 
   if (!appInsights || typeof appInsights.trackEvent !== "function") {
-    logDebug("track.noop.browser", {
-      name,
-      reason: "appInsights.trackEvent missing",
-    });
+    logTelemetryEvent("noop", "browser", name, "appInsights.trackEvent missing");
     return false;
   }
 
   try {
     appInsights.trackEvent({ name, properties });
-    logDebug("track.success.browser", { name });
+    logTelemetryEvent("success", "browser", name);
     return true;
   } catch (err) {
+    logTelemetryEvent("failed", "browser", name, "exception during trackEvent()");
     logWarn("track.failed.browser", {
       name,
       error: err instanceof Error ? err.message : String(err),
