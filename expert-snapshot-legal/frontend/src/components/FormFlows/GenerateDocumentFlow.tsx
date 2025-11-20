@@ -11,6 +11,7 @@ import { parseAndValidateManifestForm } from '../../utils/parseAndValidateManife
 import { useRequiredParam } from '../../hooks/useRequiredParam';
 import { getDefaultValue } from '../../utils/getDefaultValue';
 import { logError } from '../../utils/logger';
+import { track } from '../../../track.js';
 
 interface GenerateDocumentFlowProps {
   customerId: string;
@@ -106,6 +107,13 @@ export default function GenerateDocumentFlow({ customerId }: GenerateDocumentFlo
   );
 
   const handleSubmit = async (values: Record<string, string>) => {
+    // 🔹 Track submission intent
+    await track("document_generate_submitted", {
+      customerId,
+      templateId,
+      fieldCount: Object.keys(values).length,
+    });
+
     try {
       const res = await fetch(
         `/api/templates/${customerId}/${templateId}/generate`,
@@ -121,6 +129,13 @@ export default function GenerateDocumentFlow({ customerId }: GenerateDocumentFlo
       }
 
       const data = await res.json();
+
+      // 🔹 Track successful generation
+      await track("document_generate_completed", {
+        customerId,
+        templateId,
+        fieldCount: Object.keys(values).length,
+      });
 
       navigate(`/preview/${FormType.CustomTemplateGenerate}`, {
         state: {

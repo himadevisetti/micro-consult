@@ -1,0 +1,43 @@
+# ─── Runtime Artifacts ─────────────────────────────────────────────
+# Ignore only frontend's node_modules, not root
+expert-snapshot-legal/frontend/node_modules/
+*.tsbuildinfo
+*.log
+*.bak
+
+# ─── Local Environment and Secrets ─────────────────────────────────
+.env.local
+.env.example
+local.settings.json
+
+# ─── Editor and Platform Clutter ───────────────────────────────────
+.vscode/
+.venv/
+.git/
+.DS_Store
+.nvmrc
+
+# ─── Frontend Build Artifacts to Exclude ───────────────────────────
+expert-snapshot-legal/frontend/deploy/
+expert-snapshot-legal/frontend/frontend.zip
+expert-snapshot-legal/frontend/converted.pdf
+expert-snapshot-legal/frontend/debug.docx
+
+# ─── Frontend Dev/Test Scripts to Exclude ──────────────────────────
+expert-snapshot-legal/frontend/fix-import-extensions.*
+expert-snapshot-legal/frontend/run-codemod.cjs
+expert-snapshot-legal/frontend/run-devServer.mjs
+expert-snapshot-legal/frontend/test-docxtemplater.js
+expert-snapshot-legal/frontend/hello.mts
+expert-snapshot-legal/frontend/cssStub.mjs
+expert-snapshot-legal/frontend/ignore-css-loader.js
+expert-snapshot-legal/frontend/start-server.ts
+expert-snapshot-legal/frontend/devServer.bootstrap.ts
+
+# ─── Docs and Configs Not Needed in Image ──────────────────────────
+CONTRIBUTING.md
+README.md
+prettier.config.js
+jest.config.js
+tsconfig.json
+

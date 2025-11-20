@@ -8,9 +8,10 @@ import type { EmploymentAgreementFormData } from '../../types/EmploymentAgreemen
 import { getSerializedEmploymentAgreementClauses } from '../../utils/serializeEmploymentAgreementClauses';
 import { FormType } from '@/types/FormType';
 import { formatRetainerTitle } from '@/utils/formatTitle';
+import { useFlowCompletedTelemetry } from '../../hooks/useFlowCompletedTelemetry';
 
 export interface EmploymentAgreementPreviewProps {
-  html: string; // still used for PDF export
+  html: string;
   onRefresh: () => void;
   metadata?: Record<string, any>;
   formData: EmploymentAgreementFormData;
@@ -27,6 +28,12 @@ export default function EmploymentAgreementPreview({
   const previewRef = useRef<HTMLDivElement>(null);
 
   const clauseComponents = getSerializedEmploymentAgreementClauses(formData);
+
+  useFlowCompletedTelemetry({
+    flowName: formType,
+    fieldCount: Object.keys(formData).length,
+    customerId: metadata?.customerId,
+  });
 
   const handleExport = async (type: 'pdf' | 'docx') => {
     const content = previewRef.current?.innerHTML;
@@ -57,4 +64,3 @@ export default function EmploymentAgreementPreview({
     </div>
   );
 }
-

@@ -21,7 +21,7 @@ function isDebug(): boolean {
   } else {
     // Server-side: safe to use process.env
     return (
-      process.env.NEXT_PUBLIC_DEBUG_LOGS === "true" ||
+      process.env.DEBUG_LOGS === "true" ||
       process.env.DEBUG === "true" ||
       process.env.NODE_ENV === "development"
     );

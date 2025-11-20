@@ -8,9 +8,10 @@ import type { IPRightsLicensingFormData } from '../../types/IPRightsLicensingFor
 import { getSerializedIPClauses } from '../../utils/serializeIPClauses';
 import { FormType } from '@/types/FormType';
 import { formatRetainerTitle } from '@/utils/formatTitle';
+import { useFlowCompletedTelemetry } from '../../hooks/useFlowCompletedTelemetry';
 
 export interface IPPreviewProps {
-  html: string; // still used for PDF export
+  html: string;
   onRefresh: () => void;
   metadata?: Record<string, any>;
   formData: IPRightsLicensingFormData;
@@ -27,6 +28,12 @@ export default function IPPreview({
   const previewRef = useRef<HTMLDivElement>(null);
 
   const clauseComponents = getSerializedIPClauses(formData);
+
+  useFlowCompletedTelemetry({
+    flowName: formType,
+    fieldCount: Object.keys(formData).length,
+    customerId: metadata?.customerId,
+  });
 
   const handleExport = async (type: 'pdf' | 'docx') => {
     const content = previewRef.current?.innerHTML;
@@ -57,4 +64,3 @@ export default function IPPreview({
     </div>
   );
 }
-

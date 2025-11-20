@@ -15,11 +15,12 @@
   },
   "include": [
     "src",
-    "start-server.ts",
-    "**/*.mts"
+    "start-server.ts"
   ],
   "exclude": [
+    "devServer.mts",
     "node_modules",
+    "build",
     "dist",
     ".next"
   ]

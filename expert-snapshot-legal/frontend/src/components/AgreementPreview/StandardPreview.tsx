@@ -8,9 +8,10 @@ import type { RetainerFormData } from '../../types/RetainerFormData.js';
 import { getSerializedClauses } from '../../utils/serializeClauses';
 import { FormType } from '@/types/FormType';
 import { formatRetainerTitle } from '@/utils/formatTitle';
+import { useFlowCompletedTelemetry } from '../../hooks/useFlowCompletedTelemetry';
 
 export interface PreviewProps {
-  html: string; // still used for PDF export
+  html: string;
   onRefresh: () => void;
   metadata?: Record<string, any>;
   formData: RetainerFormData;
@@ -26,7 +27,14 @@ export default function StandardPreview({
 }: PreviewProps) {
   const previewRef = useRef<HTMLDivElement>(null);
 
-  const clauseComponents = getSerializedClauses(formData); // ✅ clauseTemplates built internally
+  const clauseComponents = getSerializedClauses(formData);
+
+  // 🔹 Fire flow_completed once on mount
+  useFlowCompletedTelemetry({
+    flowName: formType,
+    fieldCount: Object.keys(formData).length,
+    customerId: metadata?.customerId,
+  });
 
   const handleExport = async (type: 'pdf' | 'docx') => {
     const content = previewRef.current?.innerHTML;

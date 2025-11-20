@@ -5,6 +5,7 @@ import { ClauseBlock } from "../../types/ClauseBlock";
 import { logDebug } from "../logger.js";
 import { AugmentedClauseBlock } from "../../types/AugmentedClauseBlock";
 import { spliceParagraphXmlByRuns } from "../spliceParagraphXmlByRuns.js";
+import { track } from "../../../track.js";
 
 const TRACE = process.env.DEBUG_TRACE === "true";
 
@@ -124,6 +125,13 @@ export async function placeholderizeDocx(
   docXml = paragraphs.join("");
   zip.file(docXmlPath, docXml);
   const placeholderBuffer = await zip.generateAsync({ type: "nodebuffer" });
+
+  // Track placeholderization telemetry
+  await track("document_placeholderized", {
+    format: "docx",
+    candidateCount: enrichedCandidates.length,
+    clauseBlockCount: augmentedBlocks.length,
+  });
 
   if (TRACE) {
     logDebug(">>> placeholderizeDocx.summary", {

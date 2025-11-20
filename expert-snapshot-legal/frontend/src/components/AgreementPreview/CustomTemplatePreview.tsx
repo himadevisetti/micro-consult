@@ -6,9 +6,10 @@ import { exportRetainer } from "../../utils/export/exportHandler";
 import DownloadToggle from "../Export/DownloadToggle";
 import { FormType } from "@/types/FormType";
 import { logWarn } from "../../utils/logger";
+import { useFlowCompletedTelemetry } from "../../hooks/useFlowCompletedTelemetry";
 
 export interface CustomTemplatePreviewProps {
-  html: string; // preview HTML returned from /generate
+  html: string;
   onRefresh: () => void;
   formData: Record<string, string>;
   formType: FormType;
@@ -27,6 +28,13 @@ export default function CustomTemplatePreview({
   seedType,
 }: CustomTemplatePreviewProps) {
   const previewRef = useRef<HTMLDivElement>(null);
+
+  useFlowCompletedTelemetry({
+    flowName: formType,
+    fieldCount: Object.keys(formData).length,
+    customerId,
+    templateId,
+  });
 
   const handleExport = async (type: "pdf" | "docx") => {
     try {
@@ -59,8 +67,8 @@ export default function CustomTemplatePreview({
 
       <DownloadToggle
         onDownload={(type) => handleExport(type)}
-        showDocx={seedType === "docx" || seedType === "pdf"} // always allow DOCX export
-        showPdf={seedType === "pdf"}                         // only show PDF if seed was PDF
+        showDocx={seedType === "docx" || seedType === "pdf"}
+        showPdf={seedType === "pdf"}
       />
     </div>
   );

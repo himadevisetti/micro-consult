@@ -1,13 +1,18 @@
 // src/server/routes/exportPdf.ts
+// -----------------------------
+// Route: /exportPdf
+// -----------------------------
+// Converts styled HTML to PDF using Puppeteer and uploads to Azure Blob.
+// This version uses puppeteer-core and an explicit Chrome binary path for Azure compatibility.
 
 import { Router } from "express";
-import puppeteer from "puppeteer";
+import puppeteer from "puppeteer-core";
 import { injectCssIntoHtml } from "../injectCssIntoHtml.js";
 import { findCompiledCss } from "../../utils/findCompiledCss.js";
 import { extractTitleFromHtml } from "../../utils/formatTitle.js";
 import { logDebug, logError } from "../../utils/logger.js";
 import { uploadToAzureBlob } from "../utils/uploadToAzureBlob.js";
-import { track } from "../../../track.js"
+import { track } from "../../../track.js";
 
 const router = Router();
 
@@ -50,7 +55,11 @@ router.post("/exportPdf", async (req, res) => {
 
     const styledHtml = injectCssIntoHtml(html, compiledCss, title);
 
-    const browser = await puppeteer.launch({ headless: true });
+    // Launch Puppeteer with explicit Chrome path
+    const browser = await puppeteer.launch({
+      executablePath: process.env.CHROME_BIN || "/usr/bin/google-chrome",
+      args: ["--no-sandbox", "--disable-setuid-sandbox"],
+    });
     logDebug("exportPdf.browserLaunched");
 
     const page = await browser.newPage();

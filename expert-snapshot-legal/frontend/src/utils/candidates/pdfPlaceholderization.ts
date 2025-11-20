@@ -1,3 +1,4 @@
+// src/utils/candidates/pdfPlaceholderization.ts
 import fs from "fs/promises";
 import { spawn } from "child_process";
 import path from "path";
@@ -5,13 +6,13 @@ import { Candidate } from "../../types/Candidate";
 import type { ClauseBlock } from "../../types/ClauseBlock";
 import { placeholderizeDocx } from "./docxPlaceholderization.js";
 import { logDebug } from "../../utils/logger.js";
+import { track } from "../../../track.js";
 
 // --- Resolve project root and shim path ---
 const projectRoot = process.env.PROJECT_ROOT ?? process.cwd();
 const shimPath = path.join(projectRoot, "scripts/pdf2docx_shim.py");
 
 // --- Resolve Python binary ---
-// If VIRTUAL_ENV is relative (e.g. "./.venv"), normalize it against projectRoot
 let pythonBin: string;
 if (process.env.VIRTUAL_ENV) {
   const venvRoot = path.resolve(projectRoot, process.env.VIRTUAL_ENV);
@@ -20,8 +21,12 @@ if (process.env.VIRTUAL_ENV) {
   pythonBin = "python3";
 }
 
-logDebug("pdfPlaceholderization.pythonBin", { pythonBin });
-logDebug("pdfPlaceholderization.shimPath", { shimPath });
+logDebug("pdfPlaceholderization.env", {
+  projectRoot,
+  VIRTUAL_ENV: process.env.VIRTUAL_ENV,
+  resolvedPythonBin: pythonBin,
+  resolvedShimPath: shimPath,
+});
 
 export async function placeholderizePdf(
   seedFilePath: string,
@@ -85,5 +90,18 @@ export async function placeholderizePdf(
   const docxBuffer = await fs.readFile(tempDocxPath);
 
   // 4. Call placeholderizeDocx() with the converted buffer
-  return placeholderizeDocx(docxBuffer, candidates, clauseBlocks);
+  const { placeholderBuffer, enrichedCandidates } = await placeholderizeDocx(
+    docxBuffer,
+    candidates,
+    clauseBlocks
+  );
+
+  // Track placeholderization telemetry
+  await track("document_placeholderized", {
+    format: "pdf",
+    candidateCount: enrichedCandidates.length,
+    clauseBlockCount: clauseBlocks.length,
+  });
+
+  return { placeholderBuffer, enrichedCandidates };
 }

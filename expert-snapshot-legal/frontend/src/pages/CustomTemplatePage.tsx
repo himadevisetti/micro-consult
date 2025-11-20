@@ -1,4 +1,5 @@
 // src/pages/CustomTemplatePage.tsx
+
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useEffect, useState, useRef } from 'react';
 import homeStyles from '../styles/HomePage.module.css';
@@ -6,6 +7,7 @@ import formStyles from '../styles/StandardRetainerForm.module.css';
 import { FormType, RetainerTypeLabel } from '@/types/FormType';
 import RetainerCard from '../components/RetainerCard';
 import { formatTemplateName } from "../utils/templateNameUtils";
+import { track } from "../../track.js";
 
 type TemplateInfo = {
   id: string;
@@ -25,7 +27,6 @@ const CustomTemplatePage = ({ customerId }: CustomTemplatePageProps) => {
   const [loading, setLoading] = useState(true);
   const [showSpinner, setShowSpinner] = useState(false);
   const [showModal, setShowModal] = useState(false);
-
   const [showSuccess, setShowSuccess] = useState(false);
   const hasFetched = useRef(false);
 
@@ -91,10 +92,19 @@ const CustomTemplatePage = ({ customerId }: CustomTemplatePageProps) => {
     navigate(`/form/${FormType.CustomTemplateUpload}`);
   };
 
-  const handleGenerateClick = () => {
-    if (readyTemplates.length === 1) {
+  const handleGenerateClick = async () => {
+    const templateCount = readyTemplates.length;
+
+    // 🔹 Track generate click
+    await track("document_generate_started", {
+      customerId,
+      templateId: templateCount === 1 ? readyTemplates[0].id : "multiple",
+      templateCount,
+    });
+
+    if (templateCount === 1) {
       navigate(`/form/${FormType.CustomTemplateGenerate}/${readyTemplates[0].id}`);
-    } else if (readyTemplates.length > 1) {
+    } else if (templateCount > 1) {
       setShowModal(true);
     }
   };
@@ -191,9 +201,15 @@ const CustomTemplatePage = ({ customerId }: CustomTemplatePageProps) => {
                       title={displayName}
                       templateId={tpl.id as any}
                       iconSrc="generate-document"
-                      onStart={() =>
-                        navigate(`/form/${FormType.CustomTemplateGenerate}/${tpl.id}`)
-                      }
+                      onStart={async () => {
+                        // 🔹 Track modal selection
+                        await track("document_generate_started", {
+                          customerId,
+                          templateId: tpl.id,
+                          templateCount: readyTemplates.length,
+                        });
+                        navigate(`/form/${FormType.CustomTemplateGenerate}/${tpl.id}`);
+                      }}
                       tooltip={`Generate a document using ${displayName}`}
                       disabled={false}
                     />

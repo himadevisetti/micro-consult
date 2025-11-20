@@ -6,6 +6,7 @@ import FieldMappingReview from '../FieldMappingReview';
 import { TemplateVariable } from '../../types/templates';
 import { NormalizedMapping } from '../../types/confirmMapping';
 import { logDebug, logError } from "../../utils/logger.js";
+import { track } from "../../../track.js";
 import styles from '../../styles/StandardRetainerForm.module.css';
 
 interface Props {
@@ -20,7 +21,7 @@ export default function UploadTemplateFlow({ customerId }: Props) {
 
   const navigate = useNavigate();
 
-  const handleUploadComplete = (
+  const handleUploadComplete = async (
     newTemplateId: string,
     newTemplateName: string,
     detected: TemplateVariable[]
@@ -29,6 +30,14 @@ export default function UploadTemplateFlow({ customerId }: Props) {
     setTemplateName(newTemplateName);
     setCandidates(detected);
     setError(null);
+
+    // 🔹 Track upload completion
+    await track("template_upload_completed", {
+      customerId,
+      templateId: newTemplateId,
+      templateName: newTemplateName,
+      candidateCount: detected.length,
+    });
   };
 
   // 🔹 Return a result object instead of just setting error/navigating
@@ -72,6 +81,14 @@ export default function UploadTemplateFlow({ customerId }: Props) {
         fieldCount: finalMapping.length,
         templateId,
         templateName,
+      });
+
+      // 🔹 Track mapping confirmation
+      await track("template_mapping_confirmed", {
+        customerId,
+        templateId,
+        templateName,
+        fieldCount: finalMapping.length,
       });
 
       // Navigate back to Custom Template landing screen
