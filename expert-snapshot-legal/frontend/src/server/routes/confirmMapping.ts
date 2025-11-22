@@ -84,6 +84,10 @@ router.post(
         })),
       });
 
+      // Note: unanchoredCandidates array includes both
+      // (a) schemaField collisions (e.g. FeeAmount vs RetainerAmount with same rawValue)
+      // (b) candidates missing positional anchors (pageNumber/yPosition) and not deleted from UI
+      // Deleted fields are tracked separately in mergeMappingWithCandidates.ts via deletedFields.
       const unanchored = orderedEnrichedCandidates.filter(c => c.pageNumber == null);
       logDebug("confirmMapping.unanchoredCandidates", {
         count: unanchored.length,

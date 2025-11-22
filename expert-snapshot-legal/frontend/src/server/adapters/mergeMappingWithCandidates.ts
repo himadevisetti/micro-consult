@@ -8,7 +8,7 @@ export function mergeMappingWithCandidates(
   normalized: NormalizedMapping[],
   stored: Candidate[]
 ): Candidate[] {
-  // Deleted fields
+  // // Deleted fields are handled here; unanchoredCandidates are logged later in confirm‑mapping/ route.
   const deletedFields = new Set(
     normalized.filter(n => (n as any).deleted).map(n => n.schemaField ?? "")
   );
