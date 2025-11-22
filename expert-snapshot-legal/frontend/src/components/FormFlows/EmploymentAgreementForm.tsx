@@ -11,6 +11,7 @@ import CustomDatePicker from '../Inputs/CustomDatePicker';
 import styles from '../../styles/StandardRetainerForm.module.css';
 import { FormBlurHandler } from '@/types/FormUtils';
 import { focusFirstError } from '@/utils/focusFirstError';
+import SubmitButton from '../../utils/SubmitButton';
 
 export interface EmploymentAgreementFormProps {
   schema: Record<string, EmploymentAgreementFieldConfig>;
@@ -39,6 +40,7 @@ export default function EmploymentAgreementForm({
 }: EmploymentAgreementFormProps) {
   const formId = getFormDomId(FormType.EmploymentAgreement);
   const [submitted, setSubmitted] = useState(false);
+  const [submitting, setSubmitting] = useState(false); // track submit state
 
   const handleChange = (field: keyof EmploymentAgreementFormData) => (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
@@ -76,6 +78,7 @@ export default function EmploymentAgreementForm({
   const handleFormSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSubmitted(true);
+    setSubmitting(true); // disable + show spinner
 
     Object.keys(schema).forEach((k) => {
       const key = k as keyof EmploymentAgreementFormData;
@@ -86,6 +89,8 @@ export default function EmploymentAgreementForm({
       await onSubmit?.(rawFormData);
     } catch (err) {
       console.error('[EmploymentAgreementForm] Submission failed:', err);
+    } finally {
+      setSubmitting(false); // always re‑enable
     }
   };
 
@@ -637,9 +642,7 @@ export default function EmploymentAgreementForm({
           })}
 
           <div className={styles.submitRow}>
-            <button type="submit" className={styles.submitButton}>
-              Submit
-            </button>
+            <SubmitButton submitting={submitting} label="Submit" />
           </div>
         </form>
       </div>

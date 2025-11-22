@@ -8,6 +8,7 @@ import CustomDatePicker from '../Inputs/CustomDatePicker';
 import styles from '../../styles/StandardRetainerForm.module.css';
 import { FormBlurHandler } from '@/types/FormUtils';
 import { focusFirstError } from '@/utils/focusFirstError';
+import SubmitButton from '../../utils/SubmitButton';
 
 export interface StartupAdvisoryFormProps {
   schema: Record<string, StartupAdvisoryFieldConfig>;
@@ -36,6 +37,7 @@ export default function StartupAdvisoryForm({
 }: StartupAdvisoryFormProps) {
   const formId = getFormDomId(FormType.StartupAdvisory);
   const [submitted, setSubmitted] = useState(false);
+  const [submitting, setSubmitting] = useState(false); // track submit state
 
   const handleChange = (field: keyof StartupAdvisoryFormData) => (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
@@ -73,6 +75,7 @@ export default function StartupAdvisoryForm({
   const handleFormSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSubmitted(true);
+    setSubmitting(true); // disable + show spinner
 
     Object.keys(schema).forEach((k) => {
       const key = k as keyof StartupAdvisoryFormData;
@@ -83,6 +86,8 @@ export default function StartupAdvisoryForm({
       await onSubmit?.(rawFormData);
     } catch (err) {
       console.error('[StartupAdvisoryForm] Submission failed:', err);
+    } finally {
+      setSubmitting(false); // always re‑enable
     }
   };
 
@@ -201,7 +206,6 @@ export default function StartupAdvisoryForm({
     return 0;
   });
 
-
   const rendered = new Set<string>();
 
   const renderField = (
@@ -212,6 +216,7 @@ export default function StartupAdvisoryForm({
   ) => {
     const { suppressError = false } = options || {};
     const value = formData[field];
+
     if (config.type === 'checkbox') {
       return (
         <label className={styles.clauseToggle}>
@@ -241,7 +246,6 @@ export default function StartupAdvisoryForm({
 
     return (
       <>
-
         {!suppressLabel && config.label && (
           <label htmlFor={field} className={styles.label}>
             {config.required === false && !isDependent ? (
@@ -424,9 +428,7 @@ export default function StartupAdvisoryForm({
           })}
 
           <div className={styles.submitRow}>
-            <button type="submit" className={styles.submitButton}>
-              Submit
-            </button>
+            <SubmitButton submitting={submitting} label="Submit" />
           </div>
         </form>
       </div>

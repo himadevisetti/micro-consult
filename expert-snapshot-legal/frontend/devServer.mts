@@ -19,6 +19,8 @@ import confirmMappingRoute from "./src/server/routes/confirmMapping.js";
 import getManifestRoute from './src/server/routes/getManifest.js';
 import generateDocumentRoute from './src/server/routes/generateDocument.js';
 import runtimeConfigRouter from "./src/server/routes/runtimeConfig.js";
+import { checkPortAvailability } from "./src/server/utils/checkPortAvailability.js";
+import { killProcessOnPort } from "./src/server/utils/killProcessOnPort.js";
 import { logDebug } from "./src/utils/logger.js";
 
 // Shared config
@@ -67,6 +69,13 @@ export default {
 const ttlMs = parseInt(process.env.CANDIDATE_TTL_MS || "", 10) || 60 * 60 * 1000;
 logDebug("server.ttl", { ttlMs });
 
+// Assert persistent storage mount exists
+const storageRoot = process.env.STORAGE_PATH || "/storage";
+if (!fs.existsSync(storageRoot)) {
+  console.error(`❌ Startup failed: STORAGE_PATH '${storageRoot}' does not exist.`);
+  process.exit(1);
+}
+
 const isDev = process.env.NODE_ENV !== "production";
 
 async function startDevServer() {
@@ -98,7 +107,24 @@ async function startDevServer() {
   app.use('/api', generateDocumentRoute);
   app.use("/", runtimeConfigRouter);
 
+  // Bind to Azure-injected port and host
+  const PORT = parseInt(process.env.PORT || "8080", 10);
+  const HOST = process.env.BIND_HOST || "127.0.0.1";
+
   if (isDev) {
+    // Check if port is already bound (e.g. orphaned process from previous session)
+    const portAvailable = await checkPortAvailability(PORT, HOST);
+    if (!portAvailable) {
+      try {
+        const pids = killProcessOnPort(PORT);
+        console.warn(`Port ${PORT} was in use. Killed orphaned process(es):`, pids);
+        console.log("Proceeding to restart server...");
+      } catch (err) {
+        console.error("Failed to kill orphaned process:", err);
+        process.exit(1);
+      }
+    }
+
     // Vite in middleware mode handles HMR + frontend assets
     console.log("Running in development mode. Starting Vite middleware...");
     const { createServer: createViteServer } = await import("vite");
@@ -124,29 +150,31 @@ async function startDevServer() {
     });
   }
 
-  // Bind to Azure-injected port and host
-  const PORT = parseInt(process.env.PORT || "3001", 10);
-  const HOST = process.env.BIND_HOST || "127.0.0.1";
-
   // Diagnostic logs for Azure startup probe
   console.log("Attempting to start server...");
   console.log("PORT =", PORT);
   console.log("HOST =", HOST);
 
-  try {
-    app.listen(PORT, HOST, () => {
-      console.log("Server started successfully.");
-      logDebug("server.started", {
-        url: `http://${HOST}:${PORT}`,
-        mode: isDev ? "development" : "production",
-        azureEndpoint: process.env.AZURE_FORM_RECOGNIZER_ENDPOINT,
-      });
+  const server = app.listen(PORT, HOST, () => {
+    console.log("Server started successfully.");
+    logDebug("server.started", {
+      url: `http://${HOST}:${PORT}`,
+      mode: isDev ? "development" : "production",
+      azureEndpoint: process.env.AZURE_FORM_RECOGNIZER_ENDPOINT,
     });
-  } catch (err) {
-    logDebug("server.startFailed", {
-      error: err instanceof Error ? err.message : String(err),
+  });
+
+  // Clean shutdown on SIGINT and SIGTERM
+  const shutdown = (signal: string) => {
+    console.log(`${signal} received. Shutting down server...`);
+    server.close(() => {
+      console.log("Server closed. Exiting process.");
+      process.exit(0);
     });
-  }
+  };
+
+  process.on("SIGINT", () => shutdown("SIGINT"));
+  process.on("SIGTERM", () => shutdown("SIGTERM"));
 }
 
 startDevServer();

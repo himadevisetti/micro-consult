@@ -1,7 +1,9 @@
 // src/components/FormFlows/GenerateDocumentForm.tsx
+import React, { useState } from "react";
 import styles from '../../styles/StandardRetainerForm.module.css';
 import type { ManifestVariable } from '@/types/manifest';
 import CustomDatePicker from '../Inputs/CustomDatePicker';
+import SubmitButton from "../../utils/SubmitButton";
 
 interface GenerateDocumentFormProps {
   variables: ManifestVariable[];
@@ -11,7 +13,7 @@ interface GenerateDocumentFormProps {
   onRawChange: (field: string, value: string) => void;
   onBlur: (field: string, value: string) => void;
   markTouched?: (field: string) => void;
-  onSubmit: (values: Record<string, string>) => void;
+  onSubmit: (values: Record<string, string>) => Promise<void> | void;
 }
 
 const GenerateDocumentForm = ({
@@ -24,15 +26,22 @@ const GenerateDocumentForm = ({
   markTouched,
   onSubmit,
 }: GenerateDocumentFormProps) => {
+  const [submitting, setSubmitting] = useState(false); // track submit state
+
   const handleChange =
     (field: string) =>
       (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
         setFormData((prev) => ({ ...prev, [field]: e.target.value }));
       };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    onSubmit(formData);
+    setSubmitting(true); // disable + show spinner
+    try {
+      await onSubmit(formData);
+    } finally {
+      setSubmitting(false); // always re‑enable
+    }
   };
 
   const renderField = (v: ManifestVariable) => {
@@ -135,9 +144,7 @@ const GenerateDocumentForm = ({
           {variables.map((v) => renderField(v))}
 
           <div className={styles.submitRow}>
-            <button type="submit" className={styles.submitButton}>
-              Submit
-            </button>
+            <SubmitButton submitting={submitting} label="Submit" />
           </div>
         </form>
       </div>

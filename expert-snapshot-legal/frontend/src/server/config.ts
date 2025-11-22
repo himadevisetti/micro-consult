@@ -38,7 +38,7 @@ export const indexPath = path.join(frontendBuildPath, "index.html");
 // Storage path (for templates/manifests)
 // -----------------------------
 export const storageBasePath =
-  process.env.STORAGE_PATH || path.resolve(root, "frontend/storage");
+  process.env.STORAGE_PATH || "/storage";
 
 // -----------------------------
 // Allowed template extensions

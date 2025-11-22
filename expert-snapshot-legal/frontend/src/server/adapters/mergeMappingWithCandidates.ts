@@ -1,3 +1,5 @@
+// src/server/adapters/mergeMappingWithCandidates.ts
+
 import { NormalizedMapping } from "../../types/confirmMapping.js";
 import type { Candidate } from "../../types/Candidate.js";
 import { logDebug } from "../../utils/logger.js";

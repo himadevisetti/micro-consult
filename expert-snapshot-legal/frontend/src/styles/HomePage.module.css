@@ -269,3 +269,43 @@
 .cancelButton:hover {
   background-color: var(--hover-bg);
 }
+
+@keyframes shimmer {
+  0% {
+    background-position: -200px 0;
+  }
+
+  100% {
+    background-position: 200px 0;
+  }
+}
+
+.shimmerCard {
+  pointer-events: none;
+  opacity: 0.6;
+}
+
+.shimmerIcon,
+.shimmerText {
+  background: linear-gradient(90deg,
+      var(--card-bg) 25%,
+      var(--card-bg-hover) 50%,
+      var(--card-bg) 75%);
+  background-size: 400% 100%;
+  animation: shimmer 1.2s infinite;
+  border-radius: 4px;
+}
+
+.shimmerIcon {
+  width: 64px;
+  height: 64px;
+  margin: 0 auto 12px;
+  background-color: var(--card-bg);
+}
+
+.shimmerText {
+  width: 60%;
+  height: 16px;
+  margin: 0 auto;
+  background-color: var(--card-bg);
+}

@@ -1,20 +1,35 @@
 // src/pages/HomePage.tsx
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import styles from '../styles/HomePage.module.css';
 import { FormType, RetainerTypeLabel } from '@/types/FormType';
 import AppHeader from '../components/AppHeader';
 import type { IconName } from '@/types/IconName';
 import RetainerCard from '../components/RetainerCard';
+import ShimmerCard from '../components/ShimmerCard'; // 🔹 New shimmer component
 import { track } from "../../track";
+import { preloadIcons } from '../utils/preloadIcons'; // 🔹 Preload utility
 
 const HomePage = () => {
   const navigate = useNavigate();
+  const [iconsReady, setIconsReady] = useState(false);
 
   useEffect(() => {
     // 🔹 Clear any stale session data when landing on homepage
     sessionStorage.clear();
+
+    // 🔹 Preload all icons before rendering cards
+    preloadIcons([
+      'standard-retainer',
+      'ip-rights-licensing',
+      'startup-advisory',
+      'employment-agreement',
+      'litigation-engagement',
+      'real-estate-contract',
+      'family-law-agreement',
+      'custom-template',
+    ]).then(() => setIconsReady(true));
   }, []);
 
   // 🔹 Track card click and navigate to form
@@ -46,7 +61,6 @@ const HomePage = () => {
 
   return (
     <div className={styles.pageWrapper}>
-      {/* 🔹 Move the main heading into AppHeader for consistent layout */}
       <AppHeader showHomeButton={false} mainHeading="Welcome to Expert Snapshot Legal" />
 
       <main className={styles.landing}>
@@ -57,37 +71,50 @@ const HomePage = () => {
         </header>
 
         <section className={styles.templateOptions}>
-          {/* 🔹 Core Agreements Group */}
-          <div className={styles.cardGroup}>
-            <h3>Core Agreements</h3>
-            <div className={styles.retainerCardGrid}>
-              {coreAgreements.map(({ type, icon }) => (
-                <RetainerCard
-                  key={type}
-                  title={RetainerTypeLabel[type]}
-                  templateId={type}
-                  iconSrc={icon}
-                  onStart={handleStart}
-                />
-              ))}
-            </div>
-          </div>
+          {iconsReady ? (
+            <>
+              {/* 🔹 Core Agreements Group */}
+              <div className={styles.cardGroup}>
+                <h3>Core Agreements</h3>
+                <div className={styles.retainerCardGrid}>
+                  {coreAgreements.map(({ type, icon }) => (
+                    <RetainerCard
+                      key={type}
+                      title={RetainerTypeLabel[type]}
+                      templateId={type}
+                      iconSrc={icon}
+                      onStart={handleStart}
+                    />
+                  ))}
+                </div>
+              </div>
 
-          {/* 🔹 Specialised Agreements Group */}
-          <div className={styles.cardGroup}>
-            <h3>Specialised Agreements</h3>
-            <div className={styles.retainerCardGrid}>
-              {specialisedAgreements.map(({ type, icon }) => (
-                <RetainerCard
-                  key={type}
-                  title={RetainerTypeLabel[type]}
-                  templateId={type}
-                  iconSrc={icon}
-                  onStart={handleStart}
-                />
-              ))}
+              {/* 🔹 Specialised Agreements Group */}
+              <div className={styles.cardGroup}>
+                <h3>Specialised Agreements</h3>
+                <div className={styles.retainerCardGrid}>
+                  {specialisedAgreements.map(({ type, icon }) => (
+                    <RetainerCard
+                      key={type}
+                      title={RetainerTypeLabel[type]}
+                      templateId={type}
+                      iconSrc={icon}
+                      onStart={handleStart}
+                    />
+                  ))}
+                </div>
+              </div>
+            </>
+          ) : (
+            <div className={styles.cardGroup}>
+              <h3>Loading templates...</h3>
+              <div className={styles.retainerCardGrid}>
+                {Array.from({ length: 8 }).map((_, i) => (
+                  <ShimmerCard key={i} />
+                ))}
+              </div>
             </div>
-          </div>
+          )}
         </section>
       </main>
     </div>

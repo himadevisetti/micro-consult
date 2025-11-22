@@ -23,11 +23,13 @@ RUN python3 -m venv /opt/venv \
 ENV VIRTUAL_ENV=/opt/venv
 ENV PYTHON_BIN=/opt/venv/bin/python3
 
-# Install and configure SSH
-RUN apt-get update && apt-get install -y openssh-server \
+# Install and configure SSH + CLI enhancements
+RUN apt-get update && apt-get install -y openssh-server bash-completion less vim \
   && mkdir -p /var/run/sshd || true \
   && echo 'root:Docker!' | chpasswd \
-  && sed -i 's/#PermitRootLogin prohibit-password/PermitRootLogin yes/' /etc/ssh/sshd_config
+  && sed -i 's/#PermitRootLogin prohibit-password/PermitRootLogin yes/' /etc/ssh/sshd_config \
+  && echo 'source /etc/bash_completion' >> /root/.bashrc \
+  && echo 'export PS1="\u@\h:\w\$ "' >> /root/.bashrc
 
 # Expose SSH port for Azure binding
 EXPOSE 2222

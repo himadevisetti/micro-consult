@@ -8,6 +8,7 @@ import { getDateInputValue } from '../../utils/formRenderUtils';
 import CustomDatePicker from '../Inputs/CustomDatePicker';
 import styles from '../../styles/StandardRetainerForm.module.css';
 import { FormBlurHandler } from '@/types/FormUtils';
+import SubmitButton from '../../utils/SubmitButton';
 
 export interface IPRightsLicensingFormProps {
   schema: Record<string, IPRetainerFieldConfig>;
@@ -36,6 +37,7 @@ export default function IPRightsLicensingForm({
 }: IPRightsLicensingFormProps) {
   const formId = getFormDomId(FormType.IPRightsLicensing);
   const [submitted, setSubmitted] = useState(false);
+  const [submitting, setSubmitting] = useState(false); // track submit state
 
   const handleChange = (field: keyof IPRightsLicensingFormData) => (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
@@ -65,6 +67,7 @@ export default function IPRightsLicensingForm({
   const handleFormSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSubmitted(true);
+    setSubmitting(true); // disable + show spinner
 
     Object.keys(schema).forEach((k) => {
       const key = k as keyof IPRightsLicensingFormData;
@@ -75,6 +78,8 @@ export default function IPRightsLicensingForm({
       await onSubmit?.(rawFormData);
     } catch (err) {
       console.error('[IPRightsLicensingForm] Submission failed:', err);
+    } finally {
+      setSubmitting(false); // always re‑enable
     }
   };
 
@@ -231,9 +236,7 @@ export default function IPRightsLicensingForm({
           })}
 
           <div className={styles.submitRow}>
-            <button type="submit" className={styles.submitButton}>
-              Submit
-            </button>
+            <SubmitButton submitting={submitting} label="Submit" />
           </div>
         </form>
       </div>

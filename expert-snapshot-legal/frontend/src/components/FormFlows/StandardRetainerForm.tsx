@@ -7,6 +7,7 @@ import { RetainerFieldConfig } from '@/types/RetainerFieldConfig';
 import { getDateInputValue } from '../../utils/formRenderUtils';
 import CustomDatePicker from '../Inputs/CustomDatePicker';
 import styles from '../../styles/StandardRetainerForm.module.css';
+import SubmitButton from '../../utils/SubmitButton';
 
 export interface StandardRetainerFormProps {
   schema: Record<string, RetainerFieldConfig>;
@@ -35,6 +36,7 @@ export default function StandardRetainerForm({
 }: StandardRetainerFormProps) {
   const formId = getFormDomId(FormType.StandardRetainer);
   const [submitted, setSubmitted] = useState(false);
+  const [submitting, setSubmitting] = useState(false); // track submit state
 
   const handleChange = (field: keyof RetainerFormData) => (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
@@ -62,6 +64,7 @@ export default function StandardRetainerForm({
   const handleFormSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSubmitted(true);
+    setSubmitting(true); // disable + show spinner
 
     Object.keys(schema).forEach((k) => {
       const key = k as keyof RetainerFormData;
@@ -72,6 +75,8 @@ export default function StandardRetainerForm({
       await onSubmit?.(rawFormData);
     } catch (err) {
       console.error('[StandardRetainerForm] Submission failed:', err);
+    } finally {
+      setSubmitting(false); // always re‑enable
     }
   };
 
@@ -206,9 +211,7 @@ export default function StandardRetainerForm({
           })}
 
           <div className={styles.submitRow}>
-            <button type="submit" className={styles.submitButton}>
-              Submit
-            </button>
+            <SubmitButton submitting={submitting} label="Submit" />
           </div>
         </form>
       </div>
