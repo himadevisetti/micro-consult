@@ -17,7 +17,7 @@
     "build-all": "BUILD_TELEMETRY=true npm run build && npm run build",
     "build-devServer": "tsc -p tsconfig.devServer.json",
     "start-dev": "NODE_ENV=development tsx devServer.mts",
-    "start-prod": "NODE_ENV=production exec node build/start-server.js",
+    "start-prod": "NODE_ENV=production node build/start-server.js",
     "start": "node devServer.mjs",
     "postbuild": "rsync -a build/src/ deploy/src/",
     "setup-venv": "python3 -m venv .venv && ./.venv/bin/python3 -m pip install pdf2docx PyMuPDF && echo 'VIRTUAL_ENV=./.venv' > .env.local"
