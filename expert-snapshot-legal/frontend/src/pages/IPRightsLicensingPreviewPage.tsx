@@ -6,6 +6,7 @@ import IPPreview from '../components/AgreementPreview/IPPreview';
 import PageLayout from '../components/PageLayout';
 import { FormType } from '@/types/FormType';
 import type { IPRightsLicensingFormData } from '../types/IPRightsLicensingFormData';
+import { clearFormState } from '@/utils/clearFormState';
 
 export default function IPRightsLicensingPreviewPage() {
   const location = useLocation();
@@ -34,7 +35,7 @@ export default function IPRightsLicensingPreviewPage() {
   }
 
   const onHomeClick = () => {
-    sessionStorage.clear();
+    clearFormState();
     navigate('/');
   };
 

@@ -8,19 +8,25 @@ import EmploymentAgreementFlow from '../components/FormFlows/EmploymentAgreement
 import CustomTemplateFlow from '../components/FormFlows/CustomTemplateFlow';
 import GenerateDocumentFlow from '../components/FormFlows/GenerateDocumentFlow';
 import PageLayout from '../components/PageLayout';
-import { FormType, RetainerTypeLabel } from '@/types/FormType';
+import { FormType } from '@/types/FormType';
 import { formSchemas } from '../schemas/formSchemas';
 import UploadTemplateFlow from '../components/FormFlows/UploadTemplateFlow';
 import PlaceholderFlow from '../components/FormFlows/PlaceholderFlow';
+import { getDecodedToken } from '@/utils/authToken';
+import { clearFormState } from '@/utils/clearFormState';
 
 const RetainerFormPage = () => {
   const navigate = useNavigate();
-  const { type, templateId } = useParams<{ type: string; templateId?: string }>();
+  const { type } = useParams<{ type: string }>();
 
   const isValidType = type && Object.values(FormType).includes(type as FormType);
   const formType = isValidType ? (type as FormType) : FormType.StandardRetainer;
 
   const [isValid, setIsValid] = useState(false);
+
+  // 🔹 Decode once at top
+  const decoded = getDecodedToken();
+  const customerId = decoded?.customerId ?? "anonymous";
 
   useEffect(() => {
     if (!isValidType) {
@@ -31,7 +37,7 @@ const RetainerFormPage = () => {
   }, [isValidType, navigate]);
 
   const handleHomeClick = () => {
-    sessionStorage.clear();
+    clearFormState();
     navigate('/');
   };
 
@@ -69,16 +75,13 @@ const RetainerFormPage = () => {
         return <EmploymentAgreementFlow schema={formSchemas[FormType.EmploymentAgreement]} />;
 
       case FormType.CustomTemplate:
-        return <CustomTemplateFlow customerId="customer-001" // TODO: replace with session user
-        />;
+        return <CustomTemplateFlow customerId={customerId} />;
 
       case FormType.CustomTemplateUpload:
-        return <UploadTemplateFlow customerId="customer-001" // TODO: replace with session user
-        />;
+        return <UploadTemplateFlow customerId={customerId} />;
 
       case FormType.CustomTemplateGenerate:
-        return <GenerateDocumentFlow customerId="customer-001" // TODO: replace with session user
-        />;
+        return <GenerateDocumentFlow customerId={customerId} />;
 
       case FormType.LitigationEngagement:
       case FormType.RealEstateContract:

@@ -22,7 +22,7 @@ router.get(
     try {
       // 1. Locate manifest file
       const manifestDir = getCustomerManifestPath(customerId);
-      const manifestPath = path.join(manifestDir, `${templateId}.manifest.json`);
+      const manifestPath = path.join(manifestDir, `${templateId}-manifest.json`);
 
       if (!fs.existsSync(manifestPath)) {
         return res.status(404).json({
@@ -41,18 +41,18 @@ router.get(
         customerId,
         "templates"
       );
-      const docxPath = path.join(customerTemplatePath, `${templateId}.docx`);
-      const pdfPath = path.join(customerTemplatePath, `${templateId}.pdf`);
+      const docxPath = path.join(customerTemplatePath, `${templateId}-template.docx`);
+      const pdfPath = path.join(customerTemplatePath, `${templateId}-template.pdf`);
 
       let templateFile: string | null = null;
       let fileType: string | null = null;
 
       if (fs.existsSync(docxPath)) {
         // 🔹 Return fully qualified API path
-        templateFile = `/api/templates/${customerId}/templates/${templateId}.docx`;
+        templateFile = `/api/templates/${customerId}/templates/${templateId}-template.docx`;
         fileType = "docx";
       } else if (fs.existsSync(pdfPath)) {
-        templateFile = `/api/templates/${customerId}/templates/${templateId}.pdf`;
+        templateFile = `/api/templates/${customerId}/templates/${templateId}-template.pdf`;
         fileType = "pdf";
       }
 

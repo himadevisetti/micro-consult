@@ -17,7 +17,10 @@ export function formatTemplateName(
   allTemplates: TemplateInfo[]
 ): string {
   // Strip extension
-  const base = templateName.replace(/\.(docx|pdf)$/i, "");
+  let base = templateName.replace(/\.(docx|pdf)$/i, "");
+
+  // Strip -template suffix if present
+  base = base.replace(/-template$/i, "");
 
   // Detect format
   const isDocx = /\.docx$/i.test(templateName);
@@ -28,10 +31,14 @@ export function formatTemplateName(
 
   // Check if both formats exist for this base
   const hasDocx = allTemplates.some(
-    (t) => t.name.toLowerCase().replace(/\.(docx|pdf)$/i, "") === baseKey && /\.docx$/i.test(t.name)
+    (t) =>
+      t.name.toLowerCase().replace(/\.(docx|pdf)$/i, "").replace(/-template$/i, "") === baseKey &&
+      /\.docx$/i.test(t.name)
   );
   const hasPdf = allTemplates.some(
-    (t) => t.name.toLowerCase().replace(/\.(docx|pdf)$/i, "") === baseKey && /\.pdf$/i.test(t.name)
+    (t) =>
+      t.name.toLowerCase().replace(/\.(docx|pdf)$/i, "").replace(/-template$/i, "") === baseKey &&
+      /\.pdf$/i.test(t.name)
   );
 
   let suffix = "";
@@ -41,4 +48,3 @@ export function formatTemplateName(
 
   return base + suffix;
 }
-

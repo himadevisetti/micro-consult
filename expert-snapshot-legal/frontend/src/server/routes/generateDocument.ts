@@ -23,8 +23,9 @@ router.post("/templates/:customerId/:templateId/generate", async (req, res) => {
 
   try {
     const templateDir = path.join(storageBasePath, customerId, "templates");
-    const docxPath = path.join(templateDir, `${templateId}.docx`);
-    const pdfPath = path.join(templateDir, `${templateId}.pdf`);
+    // 🔹 Updated to match new naming convention
+    const docxPath = path.join(templateDir, `${templateId}-template.docx`);
+    const pdfPath = path.join(templateDir, `${templateId}-template.pdf`);
 
     let templatePath: string | null = null;
     let templateType: "docx" | "pdf" | null = null;
@@ -45,7 +46,7 @@ router.post("/templates/:customerId/:templateId/generate", async (req, res) => {
 
     // 🔹 Try to read seedType from manifest
     const manifestDir = getCustomerManifestPath(customerId);
-    const manifestPath = path.join(manifestDir, `${templateId}.manifest.json`);
+    const manifestPath = path.join(manifestDir, `${templateId}-manifest.json`);
     if (fs.existsSync(manifestPath)) {
       try {
         const manifest = JSON.parse(await fs.promises.readFile(manifestPath, "utf-8"));
@@ -112,6 +113,7 @@ router.post("/templates/:customerId/:templateId/generate", async (req, res) => {
           mergedBuffer,
           `${templateId}.docx`,
           customerId,
+          "docx",
           "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
         );
         logDebug("generateDocument.docxUploadedToAzure", { blobUrl });
@@ -152,6 +154,7 @@ router.post("/templates/:customerId/:templateId/generate", async (req, res) => {
               Buffer.from(pdfBuffer),
               `${templateId}.pdf`,
               customerId,
+              "pdf",
               "application/pdf"
             );
             logDebug("generateDocument.pdfUploadedToAzure", { blobUrl });

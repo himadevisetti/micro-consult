@@ -1,3 +1,5 @@
+// src/infrastructure/sessionStore.ts
+
 import type { Candidate } from "../types/Candidate.js";
 import type { ClauseBlock } from "../types/ClauseBlock.js";
 
@@ -49,11 +51,24 @@ export async function deleteCandidates(key: string) {
 
 // ---------- optional background cleanup ----------
 
-setInterval(() => {
-  const now = Date.now();
-  for (const [key, entry] of cache.entries()) {
-    if (now > entry.expiresAt) {
-      cache.delete(key);
+const CLEANUP_INTERVAL_MS =
+  parseInt(process.env.CANDIDATE_CLEANUP_MS || "", 10) || 10 * 60 * 1000;
+
+function scheduleCleanup() {
+  setTimeout(() => {
+    try {
+      const now = Date.now();
+      for (const [key, entry] of cache.entries()) {
+        if (now > entry.expiresAt) {
+          cache.delete(key);
+        }
+      }
+    } finally {
+      // reschedule after finishing this run
+      scheduleCleanup();
     }
-  }
-}, 10 * 60 * 1000).unref();
+  }, CLEANUP_INTERVAL_MS).unref();
+}
+
+// kick off the first cleanup
+scheduleCleanup();

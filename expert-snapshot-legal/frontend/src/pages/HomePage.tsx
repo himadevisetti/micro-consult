@@ -7,18 +7,16 @@ import { FormType, RetainerTypeLabel } from '@/types/FormType';
 import AppHeader from '../components/AppHeader';
 import type { IconName } from '@/types/IconName';
 import RetainerCard from '../components/RetainerCard';
-import ShimmerCard from '../components/ShimmerCard'; // 🔹 New shimmer component
+import ShimmerCard from '../components/ShimmerCard';
 import { track } from "../../track";
-import { preloadIcons } from '../utils/preloadIcons'; // 🔹 Preload utility
+import { preloadIcons } from '../utils/preloadIcons';
+import { getDecodedToken } from '@/utils/authToken';
 
 const HomePage = () => {
   const navigate = useNavigate();
   const [iconsReady, setIconsReady] = useState(false);
 
   useEffect(() => {
-    // 🔹 Clear any stale session data when landing on homepage
-    sessionStorage.clear();
-
     // 🔹 Preload all icons before rendering cards
     preloadIcons([
       'standard-retainer',
@@ -34,13 +32,20 @@ const HomePage = () => {
 
   // 🔹 Track card click and navigate to form
   const handleStart = async (templateId: FormType) => {
+    const decoded = getDecodedToken();
     await track("ui_card_clicked", {
       cardName: RetainerTypeLabel[templateId],
       flowType: templateId,
-      customerId: "anonymous", // TODO: Replace with real user ID if available
+      customerId: decoded?.customerId ?? "anonymous", // 🔹 Use decoded customerId if available
     });
 
     navigate(`/form/${templateId}`);
+  };
+
+  // 🔹 Logout handler clears token and redirects to login
+  const handleLogout = () => {
+    sessionStorage.clear();
+    navigate("/login");
   };
 
   // 🔹 Core agreement types shown in first card group
@@ -61,7 +66,11 @@ const HomePage = () => {
 
   return (
     <div className={styles.pageWrapper}>
-      <AppHeader showHomeButton={false} mainHeading="Welcome to Expert Snapshot Legal" />
+      <AppHeader
+        showHomeButton={false}
+        mainHeading="Welcome to Expert Snapshot Legal"
+        onLogoutClick={handleLogout} // 🔹 Add logout button in header
+      />
 
       <main className={styles.landing}>
         <header className={styles.hero}>

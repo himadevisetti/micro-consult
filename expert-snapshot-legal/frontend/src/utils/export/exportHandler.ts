@@ -29,6 +29,7 @@
 import { generateDOCX } from './generateDOCX.js';
 import { getFilename } from '../../utils/generateFilename.js';
 import { FormType } from '@/types/FormType';
+import { getDecodedToken } from '@/utils/authToken'; // 🔹 decode session user
 
 function slugifyFormType(formType: FormType): string {
   return String(formType)
@@ -129,20 +130,32 @@ export async function exportRetainer<T extends Record<string, any>>(
   const normalizedFormType = slugifyFormType(formType);
   const today = new Date().toISOString();
 
-  const filename = getFilename(
-    type === "pdf" ? "final" : "draft",
-    resolvedClient,
-    today,
-    normalizedFormType
-  );
+  let filename: string;
+
+  if (formType === FormType.CustomTemplateGenerate && templateId) {
+    // Use templateId from metadata directly
+    filename = `${templateId}.${type}`;
+  } else {
+    // Standard flows: keep using getFilename convention
+    filename = getFilename(
+      type === "pdf" ? "final" : "draft",
+      resolvedClient,
+      today,
+      normalizedFormType
+    );
+  }
 
   let blob: Blob | null = null;
 
+  // 🔹 Resolve customerId from session if not provided
+  const decoded = getDecodedToken();
+  const effectiveCustomerId = customerId ?? decoded?.customerId ?? "anonymous";
+
   try {
     if (type === "pdf") {
-      if (formType === FormType.CustomTemplateGenerate && customerId && templateId) {
+      if (formType === FormType.CustomTemplateGenerate && effectiveCustomerId && templateId) {
         const response = await fetch(
-          `/api/templates/${encodeURIComponent(customerId)}/${encodeURIComponent(templateId)}/generate`,
+          `/api/templates/${encodeURIComponent(effectiveCustomerId)}/${encodeURIComponent(templateId)}/generate`,
           {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -160,7 +173,7 @@ export async function exportRetainer<T extends Record<string, any>>(
           body: JSON.stringify({
             html,
             filename,
-            customerId: customerId ?? "customer-001", // TODO: replace with session user
+            customerId: effectiveCustomerId, // ✅ patched
           }),
         });
         if (!response.ok) throw new Error(`PDF export failed: ${response.statusText}`);
@@ -170,9 +183,9 @@ export async function exportRetainer<T extends Record<string, any>>(
     }
 
     else if (type === "docx") {
-      if (formType === FormType.CustomTemplateGenerate && customerId && templateId) {
+      if (formType === FormType.CustomTemplateGenerate && effectiveCustomerId && templateId) {
         const response = await fetch(
-          `/api/templates/${encodeURIComponent(customerId)}/${encodeURIComponent(templateId)}/generate`,
+          `/api/templates/${encodeURIComponent(effectiveCustomerId)}/${encodeURIComponent(templateId)}/generate`,
           {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -196,7 +209,7 @@ export async function exportRetainer<T extends Record<string, any>>(
           body: JSON.stringify({
             html,
             filename,
-            customerId: customerId ?? "customer-001", // TODO: replace with session user
+            customerId: effectiveCustomerId, // ✅ patched
           }),
         });
       }

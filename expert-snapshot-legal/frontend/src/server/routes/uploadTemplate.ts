@@ -16,6 +16,7 @@ import { deriveCandidatesFromRead } from "../../utils/candidates/deriveCandidate
 import { saveCandidates } from "../../infrastructure/sessionStore.js";
 import { logAllReadFields } from "../../utils/candidates/logAllReadFields.js";
 import { track } from "../../../track.js";
+import { createDocument } from "../../models/DocumentRepository.js";
 
 const router = Router();
 
@@ -60,6 +61,23 @@ router.post(
         templateId,
         fileType: ext,
       });
+
+      // ✅ Write into Documents table
+      const documentType = ext === ".pdf" ? "pdf" : "docx";
+      const fileSize = file.size;
+      const storageType = "AzureFiles"; // 🔹 backend type
+      const storagePath = `/storage/${customerId}/_seed/${file.originalname}`; // 🔹 logical path
+
+      await createDocument(
+        customerId,
+        "uploadTemplate", // flowName for traceability
+        documentType,
+        seedPath,          // filePath (actual persisted path)
+        file.originalname, // fileName (user-friendly)
+        fileSize,
+        storageType,
+        storagePath
+      );
 
       // Read file into Buffer
       const buffer = fs.readFileSync(seedPath);

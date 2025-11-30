@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import PlaceholderForm from './PlaceholderForm';
 import { FormType } from '@/types/FormType';
+import { clearFormState } from '@/utils/clearFormState';
 
 interface Props {
   formType: FormType;
@@ -8,7 +9,7 @@ interface Props {
 
 export default function PlaceholderFlow({ formType }: Props) {
   useEffect(() => {
-    sessionStorage.clear();
+    clearFormState();
   }, []);
 
   return <PlaceholderForm formType={formType} />;

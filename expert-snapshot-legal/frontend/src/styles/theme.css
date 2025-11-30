@@ -7,6 +7,10 @@
   --color-creme: #f9f7f2;
   --color-creme-light: #fef6d3;
   --color-white: #ffffff;
+  --color-soft-blue: #cce5ff;
+  --color-soft-blue-hover: #b3daff;
+  --color-soft-blue-focus: #99ccff;
+  --color-forest-hover: #2e7d32;
 
   /* Aliases (preferred app tokens) */
   --forest-green: var(--color-forest);
@@ -14,6 +18,10 @@
   --cream: var(--color-creme);
   --cream-light: var(--color-creme-light);
   --white: var(--color-white);
+  --soft-blue: var(--color-soft-blue);
+  --soft-blue-hover: var(--color-soft-blue-hover);
+  --soft-blue-focus: var(--color-soft-blue-focus);
+  --forest-green-hover: var(--color-forest-hover);
 
   /* UI intent tokens */
   --hover-bg: var(--cream-light);
@@ -38,6 +46,7 @@
   --warning-bg: #fff8e1;
   --error-bg: #ffebee;
   --info-bg: #e3f2fd;
+  --section-bg: rgba(46, 125, 50, 0.05);
 
   /* Neutral borders */
   --border-default: #ccc;

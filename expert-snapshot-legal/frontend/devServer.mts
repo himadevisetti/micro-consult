@@ -1,9 +1,24 @@
 // devServer.mts
+// -----------------------------
+// Development + Production server bootstrap
+// -----------------------------
+// - Loads environment variables and shared config
+// - Sets up telemetry (App Insights)
+// - Asserts storage mount and Azure RBAC credential (via utility)
+// - Configures API routes and SPA fallback
+// - Handles dev (Vite middleware) vs prod (static assets)
+// - Provides clean shutdown hooks
+
+// Load environment variables first
+import {
+  frontendSourcePath,
+  frontendBuildPath,
+  indexPath,
+} from "./src/server/config.js";
 
 // Resolve __dirname for ESM
 import path from "path";
 import { fileURLToPath, pathToFileURL } from "url";
-
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
@@ -16,37 +31,32 @@ import exportDocxRoute from "./src/server/routes/exportDocx.js";
 import listTemplatesRoute from "./src/server/routes/listTemplates.js";
 import uploadTemplateRoute from "./src/server/routes/uploadTemplate.js";
 import confirmMappingRoute from "./src/server/routes/confirmMapping.js";
-import getManifestRoute from './src/server/routes/getManifest.js';
-import generateDocumentRoute from './src/server/routes/generateDocument.js';
+import getManifestRoute from "./src/server/routes/getManifest.js";
+import generateDocumentRoute from "./src/server/routes/generateDocument.js";
 import runtimeConfigRouter from "./src/server/routes/runtimeConfig.js";
+import registerRoute from "./src/server/routes/register.js";
+import loginRoute from "./src/server/routes/login.js";
+import verifyEmailRoute from "./src/server/routes/verifyEmail.js";
+import microsoftLoginRoute from "./src/server/routes/microsoftLogin.js";
+import logoutRoute from "./src/server/routes/logout.js";
 import { checkPortAvailability } from "./src/server/utils/checkPortAvailability.js";
 import { killProcessOnPort } from "./src/server/utils/killProcessOnPort.js";
 import { logDebug } from "./src/utils/logger.js";
 
-// Shared config
-import {
-  frontendSourcePath,
-  frontendBuildPath,
-  indexPath,
-} from "./src/server/config.js";
+// 🔹 Import RBAC assertion utility
+import { assertAzureCredential } from "./src/server/utils/assertAzureCredential.js";
 
-// Telemetry setup
+// Telemetry setup (Application Insights)
 import appInsights from "applicationinsights";
 
 const disableTelemetry = process.env.DISABLE_TELEMETRY === "true";
 const connectionString = process.env.APPLICATIONINSIGHTS_CONNECTION_STRING || "";
-const instrumentationKey = process.env.APPINSIGHTS_INSTRUMENTATIONKEY || "";
+const instrumentationKey = process.env.APPINSIGHTS_INSTRUMENTKEY || "";
 
 let client = null;
-
-// Only initialize if telemetry is enabled and a key is present
 if (!disableTelemetry && (connectionString || instrumentationKey)) {
   const setup = connectionString || instrumentationKey;
-  appInsights
-    .setup(setup)
-    .setInternalLogging(false, false)
-    .start();
-
+  appInsights.setup(setup).setInternalLogging(false, false).start();
   if (appInsights.defaultClient) {
     (appInsights.defaultClient.config as any).enableAzureVmMetaData = false;
     client = appInsights.defaultClient;
@@ -85,14 +95,14 @@ async function startDevServer() {
   // Early boot log for Azure diagnostics
   console.log("Bootstrapping server...");
 
+  // 🔹 Fail fast if RBAC misconfigured
+  await assertAzureCredential();
+
   const app = express();
   app.use(express.json());
 
   // ✅ Serve telemetry files from /app
-  app.use(express.static(__dirname, {
-    extensions: ["js"],
-    index: false,
-  }));
+  app.use(express.static(__dirname, { extensions: ["js"], index: false }));
 
   // Serve styles if needed (dev only)
   app.use("/src/styles", express.static(path.resolve(__dirname, "src/styles")));
@@ -103,9 +113,14 @@ async function startDevServer() {
   app.use("/api", listTemplatesRoute);
   app.use("/api", uploadTemplateRoute);
   app.use("/api", confirmMappingRoute);
-  app.use('/api', getManifestRoute);
-  app.use('/api', generateDocumentRoute);
+  app.use("/api", getManifestRoute);
+  app.use("/api", generateDocumentRoute);
   app.use("/", runtimeConfigRouter);
+  app.use("/api", registerRoute);
+  app.use("/api", loginRoute);
+  app.use("/api", verifyEmailRoute);
+  app.use("/api", microsoftLoginRoute);
+  app.use("/api", logoutRoute);
 
   // Bind to Azure-injected port and host
   const PORT = parseInt(process.env.PORT || "8080", 10);
@@ -144,7 +159,10 @@ async function startDevServer() {
     app.use(express.static(frontendBuildPath));
 
     // SPA fallback for React Router
-    app.get("*", (req, res) => {
+    app.get("*", (req, res, next) => {
+      if (req.path.startsWith("/api/")) {
+        return next(); // ✅ safeguard: API routes never swallowed by SPA fallback
+      }
       logDebug("server.frontendRoute", { url: req.url });
       res.sendFile(indexPath);
     });

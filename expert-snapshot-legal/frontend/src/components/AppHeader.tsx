@@ -8,6 +8,7 @@ interface AppHeaderProps {
   onHomeClick?: () => void;
   onBackClick?: () => void;
   onTemplateClick?: () => void;
+  onLogoutClick?: () => void;
   mainHeading?: string;
 }
 
@@ -16,8 +17,19 @@ const AppHeader: React.FC<AppHeaderProps> = ({
   onHomeClick,
   onBackClick,
   onTemplateClick,
+  onLogoutClick,
   mainHeading,
 }) => {
+  const visibleButtons = [
+    onBackClick,
+    onTemplateClick,
+    onLogoutClick,
+    showHomeButton,
+  ].filter(Boolean).length;
+
+  const buttonGroupClass = `${styles.buttonGroup} ${visibleButtons === 1 ? styles.singleButton : ''
+    }`;
+
   return (
     <header className={styles.header}>
       <div className={styles.logoSlot}>Logo</div>
@@ -27,33 +39,33 @@ const AppHeader: React.FC<AppHeaderProps> = ({
       )}
 
       <div className={styles.navRight}>
-        {onBackClick && (
-          <button
-            className={styles.homeButton}
-            onClick={onBackClick}
-            aria-label="Back to Form"
-          >
-            ⬅️ Back
-          </button>
-        )}
+        <div className={buttonGroupClass}>
+          {onBackClick && (
+            <button className={styles.homeButton} onClick={onBackClick} aria-label="Back to Form">
+              ⬅️ Back
+            </button>
+          )}
 
-        {onTemplateClick && (
-          <button
-            className={styles.homeButton}
-            onClick={onTemplateClick}
-            aria-label="Go to Custom Template"
-          >
-            📑 Template
-          </button>
-        )}
+          {onTemplateClick && (
+            <button className={styles.homeButton} onClick={onTemplateClick} aria-label="Go to Custom Template">
+              📑 Template
+            </button>
+          )}
 
-        <button
-          className={`${styles.homeButton} ${showHomeButton ? styles.visible : styles.hidden}`}
-          onClick={onHomeClick}
-          aria-label="Return to Home"
-        >
-          🏠 Home
-        </button>
+          {onLogoutClick && (
+            <button className={styles.homeButton} onClick={onLogoutClick} aria-label="Logout">
+              🚪 Logout
+            </button>
+          )}
+
+          <button
+            className={`${styles.homeButton} ${showHomeButton ? styles.visible : styles.hidden}`}
+            onClick={onHomeClick}
+            aria-label="Return to Home"
+          >
+            🏠 Home
+          </button>
+        </div>
       </div>
     </header>
   );

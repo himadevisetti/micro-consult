@@ -6,6 +6,7 @@ import StartupPreview from '../components/AgreementPreview/StartupPreview';
 import PageLayout from '../components/PageLayout';
 import { FormType } from '@/types/FormType';
 import type { StartupAdvisoryFormData } from '../types/StartupAdvisoryFormData';
+import { clearFormState } from '@/utils/clearFormState';
 
 export default function StartupAdvisoryPreviewPage() {
   const location = useLocation();
@@ -37,7 +38,7 @@ export default function StartupAdvisoryPreviewPage() {
   }
 
   const onHomeClick = () => {
-    sessionStorage.clear();
+    clearFormState();
     navigate('/');
   };
 

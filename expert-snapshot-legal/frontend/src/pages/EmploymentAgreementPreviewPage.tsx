@@ -6,6 +6,7 @@ import EmploymentAgreementPreview from '../components/AgreementPreview/Employmen
 import PageLayout from '../components/PageLayout';
 import { FormType } from '@/types/FormType';
 import type { EmploymentAgreementFormData } from '../types/EmploymentAgreementFormData';
+import { clearFormState } from '@/utils/clearFormState';
 
 export default function EmploymentAgreementPreviewPage() {
   const location = useLocation();
@@ -37,7 +38,7 @@ export default function EmploymentAgreementPreviewPage() {
   }
 
   const onHomeClick = () => {
-    sessionStorage.clear();
+    clearFormState();
     navigate('/');
   };
 

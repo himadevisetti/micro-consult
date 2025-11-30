@@ -1,5 +1,5 @@
 // src/App.tsx
-import { BrowserRouter, Routes, Route, useParams } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, useParams } from 'react-router-dom';
 import HomePage from './pages/HomePage';
 import RetainerFormPage from './pages/RetainerFormPage';
 import RetainerPreviewPage from './pages/RetainerPreviewPage';
@@ -7,7 +7,16 @@ import IPRightsLicensingPreviewPage from './pages/IPRightsLicensingPreviewPage';
 import StartupAdvisoryPreviewPage from './pages/StartupAdvisoryPreviewPage';
 import EmploymentAgreementPreviewPage from './pages/EmploymentAgreementPreviewPage';
 import CustomTemplatePreviewPage from './pages/CustomTemplatePreviewPage';
+import LoginPage from './pages/LoginPage';
+import RegistrationPage from './pages/RegistrationPage';
+import MicrosoftCallbackPage from './pages/MicrosoftCallbackPage';
 import { FormType } from '@/types/FormType';
+import { ReactNode } from 'react';
+import { isAuthenticated } from "@/utils/authToken";
+
+function ProtectedRoute({ children }: { children: ReactNode }) {
+  return isAuthenticated() ? children : <Navigate to="/login" />;
+}
 
 export default function App() {
   return (
@@ -18,8 +27,10 @@ export default function App() {
       }}
     >
       <Routes>
-        <Route path="/" element={<HomePage />} />
-        {/* ⬇️ allow optional :templateId for generate flow */}
+        <Route path="/login" element={<LoginPage />} />
+        <Route path="/register" element={<RegistrationPage />} />
+        <Route path="/auth/callback/microsoft" element={<MicrosoftCallbackPage />} />
+        <Route path="/" element={<ProtectedRoute><HomePage /></ProtectedRoute>} />
         <Route path="/form/:type/:templateId?" element={<RetainerFormPage />} />
         <Route path="/preview/:type" element={<PreviewRouter />} />
       </Routes>

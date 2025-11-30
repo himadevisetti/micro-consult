@@ -196,7 +196,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   font-size: 1rem;
   border-radius: var(--radius-sm);
   background-color: var(--color-forest);
-  color: white;
+  color: var(--color-white);
   border: none;
   cursor: pointer;
   transition: background-color 0.2s ease;
@@ -204,7 +204,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 }
 
 .submitButton:hover {
-  background-color: var(--color-forest);
+  background-color: var(--color-forest-hover);
 }
 
 .select {

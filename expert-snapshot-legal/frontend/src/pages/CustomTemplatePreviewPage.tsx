@@ -5,6 +5,7 @@ import PageLayout from '../components/PageLayout';
 import CustomTemplatePreview from '../components/AgreementPreview/CustomTemplatePreview';
 import { FormType } from '@/types/FormType';
 import { logDebug } from "../utils/logger";
+import { clearFormState } from '@/utils/clearFormState';
 
 export default function CustomTemplatePreviewPage() {
   const location = useLocation();
@@ -42,7 +43,7 @@ export default function CustomTemplatePreviewPage() {
   }
 
   const onHomeClick = () => {
-    sessionStorage.clear();
+    clearFormState();
     navigate('/');
   };
 

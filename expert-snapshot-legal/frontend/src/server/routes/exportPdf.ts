@@ -83,6 +83,7 @@ router.post("/exportPdf", async (req, res) => {
       Buffer.from(pdfBuffer),
       resolvedFilename,
       customerId,
+      "pdf", // documentType
       "application/pdf"
     );
     logDebug("exportPdf.uploadedToAzure", { blobUrl });

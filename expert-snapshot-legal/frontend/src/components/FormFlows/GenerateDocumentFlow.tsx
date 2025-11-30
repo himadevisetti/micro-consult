@@ -1,4 +1,5 @@
 // src/components/FormFlows/GenerateDocumentFlow.tsx
+
 import { useEffect, useState, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import GenerateDocumentForm from './GenerateDocumentForm';
@@ -14,23 +15,25 @@ import { logError } from '../../utils/logger';
 import { track } from '../../../track.js';
 
 interface GenerateDocumentFlowProps {
-  customerId: string;
+  customerId: string; // 🔹 Provided by parent (decoded from session)
 }
 
 export default function GenerateDocumentFlow({ customerId }: GenerateDocumentFlowProps) {
+  // 🔹 TemplateId is always required from route params
   const templateId = useRequiredParam('templateId');
   const navigate = useNavigate();
 
   const [variables, setVariables] = useState<ManifestVariable[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // fetch manifest on mount
+  // 🔹 Prevent duplicate fetches
   const fetchedRef = useRef(false);
 
   useEffect(() => {
     if (fetchedRef.current) return;
     fetchedRef.current = true;
 
+    // 🔹 Fetch manifest for this template
     fetch(`/api/templates/${customerId}/${templateId}/manifest`)
       .then((res) => {
         if (!res.ok) throw new Error('Failed to fetch manifest');
@@ -38,6 +41,7 @@ export default function GenerateDocumentFlow({ customerId }: GenerateDocumentFlo
       })
       .then((data) => {
         setVariables(data.manifest?.variables || []);
+        // 🔹 Persist identifiers in sessionStorage
         sessionStorage.setItem('customerId', customerId);
         sessionStorage.setItem('templateId', templateId);
       })
@@ -48,7 +52,7 @@ export default function GenerateDocumentFlow({ customerId }: GenerateDocumentFlo
       .finally(() => setLoading(false));
   }, [customerId, templateId]);
 
-  // compute defaults with shared utility
+  // 🔹 Compute defaults for variables
   const hydratedDefaults: Record<string, string> = useMemo(
     () =>
       variables.reduce((acc, v) => {
@@ -58,7 +62,7 @@ export default function GenerateDocumentFlow({ customerId }: GenerateDocumentFlo
     [variables]
   );
 
-  // clear session storage on hard reload
+  // 🔹 Clear draft state on hard reload
   const isHardReload = (() => {
     if (typeof performance === 'undefined') return false;
     const entries = performance.getEntriesByType?.('navigation') as
@@ -75,6 +79,7 @@ export default function GenerateDocumentFlow({ customerId }: GenerateDocumentFlo
     sessionStorage.removeItem('generateDocumentFormData');
   }
 
+  // 🔹 Session-backed form state
   const {
     formData,
     rawFormData,
@@ -86,7 +91,7 @@ export default function GenerateDocumentFlow({ customerId }: GenerateDocumentFlo
     (data) => data
   );
 
-  // hydrate defaults once variables arrive
+  // 🔹 Hydrate defaults once variables arrive
   useEffect(() => {
     if (variables.length > 0) {
       setFormData((prev) => ({ ...hydratedDefaults, ...prev }));
@@ -94,6 +99,7 @@ export default function GenerateDocumentFlow({ customerId }: GenerateDocumentFlo
     }
   }, [variables, hydratedDefaults, setFormData, setRawFormData]);
 
+  // 🔹 Hook for validation + touched state
   const { handleSubmit: baseHandleSubmit, markTouched } = useRetainerState<Record<string, string>>(
     rawFormData,
     formData,
@@ -106,8 +112,9 @@ export default function GenerateDocumentFlow({ customerId }: GenerateDocumentFlo
     'generateDocumentFormData'
   );
 
+  // 🔹 Submit handler
   const handleSubmit = async (values: Record<string, string>) => {
-    // 🔹 Track submission intent
+    // Track submission intent
     await track("document_generate_submitted", {
       customerId,
       templateId,
@@ -130,13 +137,14 @@ export default function GenerateDocumentFlow({ customerId }: GenerateDocumentFlo
 
       const data = await res.json();
 
-      // 🔹 Track successful generation
+      // Track successful generation
       await track("document_generate_completed", {
         customerId,
         templateId,
         fieldCount: Object.keys(values).length,
       });
 
+      // Navigate to preview
       navigate(`/preview/${FormType.CustomTemplateGenerate}`, {
         state: {
           formData: values,
@@ -153,6 +161,7 @@ export default function GenerateDocumentFlow({ customerId }: GenerateDocumentFlo
     baseHandleSubmit(values);
   };
 
+  // 🔹 Restore saved form data if present
   useEffect(() => {
     const saved = sessionStorage.getItem('generateDocumentFormData');
     if (saved) {

@@ -1,4 +1,9 @@
 // src/server/routes/confirmMapping.ts
+// -----------------------------
+// Route: /templates/:customerId/:templateId/confirm-mapping
+// -----------------------------
+// Confirms field mapping for a template, saves manifest, placeholderizes the seed,
+// and persists both manifest + template into the Documents table.
 
 import { Router } from "express";
 import fs from "fs";
@@ -16,6 +21,7 @@ import { placeholderizeDocument } from "../../utils/candidates/placeholderizatio
 import { enrichMapping } from "../utils/manifestEnrichment.js";
 import { sortCandidatesByDocumentOrder } from "../../utils/candidates/sortCandidatesByDocumentOrder.js";
 import { track } from "../../../track.js";
+import { createDocument } from "../../models/DocumentRepository.js";
 
 const router = Router();
 
@@ -56,6 +62,7 @@ router.post(
         : seedFilePathPdf;
       const buffer = await fs.promises.readFile(seedFilePath);
       const ext = path.extname(seedFilePath).toLowerCase();
+      const outExt = ext === ".pdf" ? ".docx" : ext;
 
       // 🔹 Derive seedType from extension
       const seedType = ext === ".pdf" ? "pdf" : "docx";
@@ -95,11 +102,12 @@ router.post(
       });
 
       // 4. Build manifest from enriched candidates
+      const templateName = `${templateId}-template${outExt}`;
       const manifest = {
-        templateId,
+        templateId: templateName,
         customerId,
         createdAt: new Date().toISOString(),
-        seedType, // 🔹 include original upload type
+        seedType,
         variables: orderedEnrichedCandidates.map(enrichMapping),
       };
 
@@ -108,7 +116,7 @@ router.post(
       await fs.promises.mkdir(customerManifestPath, { recursive: true });
       const manifestPath = path.join(
         customerManifestPath,
-        `${templateId}.manifest.json`
+        `${templateId}-manifest.json`
       );
       await fs.promises.writeFile(
         manifestPath,
@@ -122,28 +130,46 @@ router.post(
         seedType,
       });
 
+      // Write manifest into Documents table
+      const manifestStats = await fs.promises.stat(manifestPath);
+      await createDocument(
+        customerId,
+        "confirmMapping",
+        "json",
+        manifestPath,
+        path.basename(manifestPath),
+        manifestStats.size,
+        "AzureFiles",
+        `/storage/${customerId}/manifests/${path.basename(manifestPath)}`
+      );
+
       // 6. Placeholderize with enriched candidates + clauseBlocks
       const { placeholderBuffer } = await placeholderizeDocument(
         buffer,
         orderedEnrichedCandidates,
-        ext.replace(".", ""), // pass "pdf" or "docx"
+        ext.replace(".", ""),
         clauseBlocks,
         seedFilePath
       );
 
       // 7. Save placeholderized copy
-      const customerTemplatePath = path.join(
-        storageBasePath,
-        customerId,
-        "templates"
-      );
+      const customerTemplatePath = path.join(storageBasePath, customerId, "templates");
       await fs.promises.mkdir(customerTemplatePath, { recursive: true });
-      const outExt = ext === ".pdf" ? ".docx" : ext;
-      const templatePath = path.join(
-        customerTemplatePath,
-        `${templateId}${outExt}`
-      );
+      const templatePath = path.join(customerTemplatePath, templateName);
       await fs.promises.writeFile(templatePath, placeholderBuffer);
+
+      // Write placeholderized template into Documents table
+      const templateStats = await fs.promises.stat(templatePath);
+      await createDocument(
+        customerId,
+        "confirmMapping",
+        seedType,
+        templatePath,
+        templateName,
+        templateStats.size,
+        "AzureFiles",
+        `/storage/${customerId}/templates/${templateName}`
+      );
 
       // 8. Clean up session store
       await deleteCandidates(`candidates:${templateId}`);
@@ -155,7 +181,7 @@ router.post(
           .map((c) => ({ field: c.schemaField, placeholder: c.placeholder })),
       });
 
-      // 🔹 Track mapping confirmation
+      // 9. Telemetry
       await track("mapping_confirmed", {
         customerId,
         templateId,

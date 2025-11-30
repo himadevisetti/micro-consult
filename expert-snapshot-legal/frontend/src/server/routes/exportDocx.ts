@@ -49,6 +49,7 @@ router.post("/exportDocx", async (req, res) => {
       buffer,
       resolvedFilename,
       customerId,
+      "docx", // documentType
       "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
     );
     logDebug("exportDocx.uploadedToAzure", { blobUrl });

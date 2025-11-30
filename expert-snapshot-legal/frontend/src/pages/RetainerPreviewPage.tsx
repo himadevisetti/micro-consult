@@ -3,6 +3,7 @@ import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import StandardPreview from '../components/AgreementPreview/StandardPreview';
 import PageLayout from '../components/PageLayout';
 import { FormType } from '@/types/FormType';
+import { clearFormState } from '@/utils/clearFormState';
 
 export default function RetainerPreviewPage() {
   const location = useLocation();
@@ -30,7 +31,7 @@ export default function RetainerPreviewPage() {
   }
 
   const onHomeClick = () => {
-    sessionStorage.clear();
+    clearFormState();
     navigate('/');
   };
 

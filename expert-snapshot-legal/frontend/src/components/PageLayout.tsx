@@ -2,7 +2,7 @@
 import React from 'react';
 import AppHeader from './AppHeader';
 import styles from '../styles/PageLayout.module.css';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 
 interface PageLayoutProps {
   children: React.ReactNode;
@@ -12,6 +12,7 @@ interface PageLayoutProps {
   onTemplateClick?: () => void;
   scrollable?: boolean;
   mainHeading?: string;
+  onLogoutClick?: () => void;
 }
 
 const PageLayout: React.FC<PageLayoutProps> = ({
@@ -22,14 +23,23 @@ const PageLayout: React.FC<PageLayoutProps> = ({
   onTemplateClick,
   scrollable = false,
   mainHeading,
+  onLogoutClick,
 }) => {
   const location = useLocation();
-  const isHomePage = location.pathname === '/';
+  const navigate = useNavigate();
 
+  const isHomePage = location.pathname === '/';
   const shouldShowHomeButton = showHomeButton ?? !isHomePage;
 
+  // Default Home handler: always go back to dashboard, never clear token
+  const handleHomeClick = () => {
+    navigate('/');
+  };
+
   // detect if we are on Custom Template Preview page
-  const isCustomTemplatePreview = location.pathname.startsWith('/preview/custom-template-generate');
+  const isCustomTemplatePreview = location.pathname.startsWith(
+    '/preview/custom-template-generate'
+  );
 
   return (
     <div
@@ -37,9 +47,10 @@ const PageLayout: React.FC<PageLayoutProps> = ({
     >
       <AppHeader
         showHomeButton={shouldShowHomeButton}
-        onHomeClick={onHomeClick}
+        onHomeClick={onHomeClick ?? handleHomeClick}
         onBackClick={onBackClick}
         onTemplateClick={isCustomTemplatePreview ? onTemplateClick : undefined}
+        onLogoutClick={onLogoutClick}
         mainHeading={mainHeading}
       />
       <main

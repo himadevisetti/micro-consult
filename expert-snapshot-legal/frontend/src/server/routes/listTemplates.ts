@@ -44,7 +44,8 @@ router.get("/templates/:customerId", (req, res) => {
       })
       .map((f) => {
         const id = path.parse(f).name;
-        const manifestPath = path.join(customerManifestPath, `${id}.manifest.json`);
+        const baseId = id.replace(/-template$/, "");
+        const manifestPath = path.join(customerManifestPath, `${baseId}-manifest.json`);
         const hasManifest = fs.existsSync(manifestPath);
 
         let createdAt: string | null = null;
@@ -78,7 +79,7 @@ router.get("/templates/:customerId", (req, res) => {
         }
 
         return {
-          id,
+          id: baseId,
           name: f,
           hasManifest,
           createdAt,
