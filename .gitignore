@@ -108,3 +108,9 @@ expert-snapshot-legal/frontend/storage/**
 expert-snapshot-legal/frontend/deploy/
 expert-snapshot-legal/frontend/frontend.zip
 expert-snapshot-legal/frontend/frontend/
+
+# Ignore environment variables formatted as json
+# This file is used by main.bicep to update App settings of Azure App server 
+main.parameters.json
+
+
