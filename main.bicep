@@ -17,6 +17,7 @@ param CHROME_BIN string
 param PYTHON_BIN string
 param DISABLE_TELEMETRY string
 param AZURE_FORM_RECOGNIZER_ENDPOINT string
+@secure()
 param AZURE_FORM_RECOGNIZER_KEY string
 param GRAPH_CLIENT_ID string
 param GRAPH_REFRESH_TOKEN string
@@ -28,17 +29,22 @@ param APPLICATIONINSIGHTS_CONNECTION_STRING string
 param AZURE_SQL_SERVER string
 param AZURE_SQL_DATABASE string
 param AZURE_SQL_USER string
+@secure()
 param AZURE_SQL_PASSWORD string
+@secure()
 param JWT_SECRET string
 param JWT_EXPIRES_IN string
 param VERIFICATION_TOKEN_TTL_HOURS string
+@secure()
 param ACS_CONNECTION_STRING string
 param APP_BASE_URL string
 param AZURE_CLIENT_ID string
+@secure()
 param AZURE_CLIENT_SECRET string
 param AZURE_TENANT_ID string
 param AZURE_SIGNIN_REDIRECT_URI string
 param AZURE_SIGNIN_CLIENT_ID string
+@secure()
 param AZURE_SIGNIN_CLIENT_SECRET string
 param FRONTEND_MICROSOFT_CALLBACK_URL string
 
@@ -89,4 +95,3 @@ resource appSettings 'Microsoft.Web/sites/config@2021-02-01' = {
     FRONTEND_MICROSOFT_CALLBACK_URL: FRONTEND_MICROSOFT_CALLBACK_URL
   }
 }
-
