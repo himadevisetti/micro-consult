@@ -7,7 +7,9 @@ const config = {
   database: process.env.AZURE_SQL_DATABASE!,
   user: process.env.AZURE_SQL_USER!,
   password: process.env.AZURE_SQL_PASSWORD!,
-  options: { encrypt: true }
+  options: { encrypt: true },
+  connectionTimeout: parseInt(process.env.SQL_CONNECTION_TIMEOUT || "30000", 10),
+  requestTimeout: parseInt(process.env.SQL_REQUEST_TIMEOUT || "30000", 10),
 };
 
 const requiredKeys = ["AZURE_SQL_SERVER", "AZURE_SQL_DATABASE", "AZURE_SQL_USER"];

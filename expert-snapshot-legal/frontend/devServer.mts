@@ -39,6 +39,8 @@ import loginRoute from "./src/server/routes/login.js";
 import verifyEmailRoute from "./src/server/routes/verifyEmail.js";
 import microsoftLoginRoute from "./src/server/routes/microsoftLogin.js";
 import logoutRoute from "./src/server/routes/logout.js";
+import dashboardRoute from "./src/server/routes/dashboard.js";
+import downloadRoute from "./src/server/routes/download.js";
 import { checkPortAvailability } from "./src/server/utils/checkPortAvailability.js";
 import { killProcessOnPort } from "./src/server/utils/killProcessOnPort.js";
 import { logDebug } from "./src/utils/logger.js";
@@ -121,6 +123,8 @@ async function startDevServer() {
   app.use("/api", verifyEmailRoute);
   app.use("/api", microsoftLoginRoute);
   app.use("/api", logoutRoute);
+  app.use("/api", dashboardRoute);
+  app.use("/api", downloadRoute);
 
   // Bind to Azure-injected port and host
   const PORT = parseInt(process.env.PORT || "8080", 10);

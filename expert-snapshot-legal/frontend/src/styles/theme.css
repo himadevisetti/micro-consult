@@ -57,6 +57,8 @@
   /* Text colors */
   --text-dark: #1a1a1a;
   /* strong neutral for legibility */
+  --text-muted: #e0e0e0;
+  /* muted text token */
 
   /* Disabled state */
   --disabled-bg: #e0e0e0;

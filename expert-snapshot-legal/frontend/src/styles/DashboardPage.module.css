@@ -1,0 +1,65 @@
+/* src/styles/DashboardPage.module.css */
+
+.pageWrapper {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+.dashboardMain {
+  flex: 1;
+  padding: 1rem 2rem;
+}
+
+/* 🔹 Updated table styling to match Review Variables screen */
+.docTable {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 1rem;
+  font-family: var(--font-sans);
+}
+
+.docTable thead th {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background-color: var(--cream-light);
+  /* 🔹 lighter header */
+  font-weight: 600;
+  border-bottom: 2px solid var(--border-strong);
+  /* 🔹 stronger bottom border */
+  padding: 0.75rem 1rem;
+  text-align: left;
+}
+
+.docTable th,
+.docTable td {
+  padding: 0.3rem 0.5rem;
+  text-align: left;
+  vertical-align: middle;
+  background-color: var(--cream);
+  /* 🔹 soft background */
+  border: 1px solid var(--border-default);
+  /* 🔹 themed border */
+}
+
+/* 🔹 Row hover effect */
+.docTable tbody tr:hover td {
+  background-color: var(--hover-bg);
+}
+
+/* 🔹 Download button matches secondary style */
+.downloadButton {
+  background-color: var(--forest-green);
+  color: var(--white);
+  border: none;
+  border-radius: var(--radius-sm);
+  padding: 0.3rem 0.6rem;
+  cursor: pointer;
+  font-family: var(--font-sans);
+  transition: background-color 0.2s ease;
+}
+
+.downloadButton:hover {
+  background-color: var(--forest-green-hover);
+}

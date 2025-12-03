@@ -1,6 +1,4 @@
-// src/middleware/auth.ts
-
-import { Request, Response, NextFunction } from "express";
+import { RequestHandler } from "express";
 import jwt from "jsonwebtoken";
 
 /**
@@ -19,11 +17,7 @@ import jwt from "jsonwebtoken";
  *   - Attaches the decoded payload ({ userId, customerId }) to req.user.
  *   - Rejects requests with missing, invalid, or expired tokens.
  */
-export interface AuthRequest extends Request {
-  user?: { userId: number; customerId: string };
-}
-
-export function authenticateToken(req: AuthRequest, res: Response, next: NextFunction) {
+export const authenticateToken: RequestHandler = (req, res, next) => {
   const authHeader = req.headers["authorization"];
   const token = authHeader && authHeader.split(" ")[1]; // Bearer <token>
 
@@ -32,7 +26,6 @@ export function authenticateToken(req: AuthRequest, res: Response, next: NextFun
   }
 
   try {
-    // Explicitly cast secret to string so TS knows it's valid
     const decoded = jwt.verify(token, process.env.JWT_SECRET as string) as {
       userId: number;
       customerId: string;
@@ -40,7 +33,7 @@ export function authenticateToken(req: AuthRequest, res: Response, next: NextFun
 
     req.user = decoded;
     next();
-  } catch (err) {
+  } catch {
     return res.status(403).json({ success: false, error: "Invalid or expired token" });
   }
-}
+};

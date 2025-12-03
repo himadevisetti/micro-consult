@@ -48,6 +48,15 @@ const HomePage = () => {
     navigate("/login");
   };
 
+  // 🔹 Dashboard handler navigates to dashboard view
+  const handleDashboardClick = () => {
+    navigate("/dashboard");
+  };
+
+  // 🔹 Decode token once for header info
+  const decoded = getDecodedToken();
+  const userEmail = decoded?.email || decoded?.upn || ""; // 🔹 Prefer email, fallback to UPN
+
   // 🔹 Core agreement types shown in first card group
   const coreAgreements: { type: FormType; icon: IconName }[] = [
     { type: FormType.StandardRetainer, icon: 'standard-retainer' },
@@ -70,6 +79,8 @@ const HomePage = () => {
         showHomeButton={false}
         mainHeading="Welcome to Expert Snapshot Legal"
         onLogoutClick={handleLogout} // 🔹 Add logout button in header
+        onDashboardClick={handleDashboardClick} // 🔹 Add dashboard button in header
+        userEmail={userEmail} // 🔹 Pass decoded email into header
       />
 
       <main className={styles.landing}>

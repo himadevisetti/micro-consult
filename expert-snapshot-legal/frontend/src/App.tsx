@@ -10,6 +10,7 @@ import CustomTemplatePreviewPage from './pages/CustomTemplatePreviewPage';
 import LoginPage from './pages/LoginPage';
 import RegistrationPage from './pages/RegistrationPage';
 import MicrosoftCallbackPage from './pages/MicrosoftCallbackPage';
+import DashboardPage from './pages/DashboardPage';
 import { FormType } from '@/types/FormType';
 import { ReactNode } from 'react';
 import { isAuthenticated } from "@/utils/authToken";
@@ -31,6 +32,7 @@ export default function App() {
         <Route path="/register" element={<RegistrationPage />} />
         <Route path="/auth/callback/microsoft" element={<MicrosoftCallbackPage />} />
         <Route path="/" element={<ProtectedRoute><HomePage /></ProtectedRoute>} />
+        <Route path="/dashboard" element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
         <Route path="/form/:type/:templateId?" element={<RetainerFormPage />} />
         <Route path="/preview/:type" element={<PreviewRouter />} />
       </Routes>

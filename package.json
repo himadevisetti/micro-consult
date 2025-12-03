@@ -45,6 +45,7 @@
   "dependencies": {
     "@azure/communication-email": "^1.1.0",
     "@azure/functions": "^4.7.2",
+    "@azure/storage-file-share": "^12.29.1",
     "array-flatten": "^3.0.0",
     "bcrypt": "^6.0.0",
     "bytes": "^3.1.2",

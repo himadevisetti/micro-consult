@@ -54,7 +54,11 @@ router.post("/login", async (req, res) => {
     };
 
     const token = jwt.sign(
-      { userId: user.id, customerId: user.customerId },
+      {
+        userId: user.id,
+        customerId: user.customerId,
+        email, // 🔹 include email in JWT payload
+      },
       process.env.JWT_SECRET as string,
       options
     );
@@ -75,16 +79,40 @@ router.post("/login", async (req, res) => {
       message: "Login successful",
       userId: user.id,
       customerId: user.customerId,
+      email, // 🔹 include email in response
       createdAt: user.createdAt,
       token,
     });
-  } catch (err) {
-    // Step 8: Handle unexpected errors
+  } catch (err: any) {
+    const message = err instanceof Error ? err.message : String(err);
+
+    if (message.includes("Failed to connect")) {
+      logError("login.dbConnectionError", {
+        message,
+        stack: err instanceof Error ? err.stack : undefined,
+      });
+      return res.status(503).json({
+        success: false,
+        error: "We couldn’t reach the database server. Please try again later.",
+      });
+    }
+
+    if (err.code === "ELOGIN") {
+      logError("login.invalidCredentials", { email });
+      return res.status(401).json({
+        success: false,
+        error: "Invalid email or password.",
+      });
+    }
+
     logError("login.error", {
-      message: err instanceof Error ? err.message : String(err),
+      message,
       stack: err instanceof Error ? err.stack : undefined,
     });
-    return res.status(500).json({ success: false, error: "Failed to login" });
+    return res.status(500).json({
+      success: false,
+      error: "An unexpected error occurred. Please contact support.",
+    });
   }
 });
 

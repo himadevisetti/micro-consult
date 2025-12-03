@@ -46,6 +46,11 @@ export const storageBasePath =
 export const allowedExtensions = new Set([".docx", ".pdf"]);
 
 // -----------------------------
+// Retention policy (in days)
+// -----------------------------
+export const RETENTION_DAYS = parseInt(process.env.RETENTION_DAYS || "180", 10);
+
+// -----------------------------
 // Azure Form Recognizer client
 // -----------------------------
 const endpoint = process.env.AZURE_FORM_RECOGNIZER_ENDPOINT;

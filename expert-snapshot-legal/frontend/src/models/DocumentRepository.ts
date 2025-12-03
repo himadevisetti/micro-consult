@@ -2,6 +2,7 @@
 
 import { poolPromise } from "../db/connection.js";
 import sql from "mssql";
+import type { DocumentRow } from "@/types/DocumentRow";
 
 /**
  * Insert a new document record.
@@ -49,20 +50,45 @@ export async function createDocument(
 }
 
 /**
- * Find a document by its ID.
+ * Find a document by its ID, enforcing retention window.
  */
-export async function findDocumentById(documentId: number) {
+export async function findDocumentById(
+  customerId: string,
+  documentId: number,
+  retentionDays: number
+): Promise<DocumentRow | null> {
   const pool = await poolPromise;
   const result = await pool.request()
+    .input("customerId", sql.NVarChar(50), customerId)
     .input("documentId", sql.Int, documentId)
-    .query(`SELECT * FROM Documents WHERE id = @documentId`);
-  return result.recordset[0];
+    .query(`
+      SELECT id, customerId, flowName, documentType,
+             filePath, fileName, fileSize,
+             storageType, storagePath, metadata,
+             createdAt, updatedAt
+      FROM Documents
+      WHERE id = @documentId
+        AND customerId = @customerId
+        AND createdAt >= DATEADD(DAY, -${retentionDays}, GETDATE())
+    `);
+
+  const row = result.recordset[0];
+  if (!row) return null;
+
+  return {
+    ...row,
+    createdAt: row.createdAt instanceof Date ? row.createdAt.toISOString() : row.createdAt,
+    updatedAt: row.updatedAt instanceof Date ? row.updatedAt.toISOString() : row.updatedAt,
+  };
 }
 
 /**
- * Find all documents for a given customer.
+ * Find all documents for a given customer, enforcing retention window.
  */
-export async function findDocumentsByCustomer(customerId: string) {
+export async function findDocumentsByCustomer(
+  customerId: string,
+  retentionDays: number
+): Promise<DocumentRow[]> {
   const pool = await poolPromise;
   const result = await pool.request()
     .input("customerId", sql.NVarChar(50), customerId)
@@ -73,9 +99,15 @@ export async function findDocumentsByCustomer(customerId: string) {
              createdAt, updatedAt
       FROM Documents
       WHERE customerId = @customerId
+        AND createdAt >= DATEADD(DAY, -${retentionDays}, GETDATE())
       ORDER BY createdAt DESC
     `);
-  return result.recordset;
+
+  return result.recordset.map(row => ({
+    ...row,
+    createdAt: row.createdAt instanceof Date ? row.createdAt.toISOString() : row.createdAt,
+    updatedAt: row.updatedAt instanceof Date ? row.updatedAt.toISOString() : row.updatedAt,
+  }));
 }
 
 /**

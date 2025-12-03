@@ -98,20 +98,32 @@ router.get(
       logDebug("microsoftLogin.preJWT.user", {
         userId: user?.id,
         customerId: user?.customerId,
+        email: user?.email,
+        upn: user?.upn,
       });
 
       const token = jwt.sign(
-        { userId: user.id, customerId: user.customerId },
+        {
+          userId: user.id,
+          customerId: user.customerId,
+          email: user.email, // 🔹 include email in JWT payload
+          upn: user.upn,     // 🔹 include UPN for guest accounts
+        },
         process.env.JWT_SECRET as string,
         options
       );
 
-      logDebug("microsoftLogin.success", { userId: user.id, customerId: user.customerId });
+      logDebug("microsoftLogin.success", {
+        userId: user.id,
+        customerId: user.customerId,
+        email: user.email,
+      });
 
       await track("user_logged_in", {
         flowName: "MicrosoftLoginRoute",
         userId: user.id,
         customerId: user.customerId,
+        email: user.email,
       });
 
       // 🔹 Redirect back to frontend callback page with token
