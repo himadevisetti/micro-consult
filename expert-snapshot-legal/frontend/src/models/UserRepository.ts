@@ -137,7 +137,7 @@ export function isTokenExpired(record: { createdAt: Date }) {
  * - If not found, inserts a new user with isVerified = 1 (since Microsoft login is trusted).
  */
 export async function findOrCreateMicrosoftUser(profile: any, params: any) {
-  const email = profile?.upn || profile?.email;
+  const email = profile?.email || profile?.upn;
   if (!email) {
     throw new Error("Microsoft profile missing email/UPN");
   }
@@ -148,13 +148,21 @@ export async function findOrCreateMicrosoftUser(profile: any, params: any) {
   const existing = await pool.request()
     .input("email", sql.NVarChar, email)
     .query(`
-      SELECT id, customerId, createdAt, isVerified, updatedAt
+      SELECT id, customerId, createdAt, isVerified, updatedAt, email
       FROM Users
       WHERE email = @email
     `);
 
   if (existing.recordset.length > 0) {
-    return existing.recordset[0]; // { id, customerId, createdAt, isVerified, updatedAt }
+    const user = existing.recordset[0];
+    // 🔹 Merge enriched profile fields into returned object
+    return {
+      ...user,
+      email: profile.email || user.email,
+      upn: profile.upn,
+      firstName: profile.given_name || "",
+      lastName: profile.family_name || ""
+    };
   }
 
   // Step 2: Insert new user (minimal fields, no passwordHash)
@@ -170,11 +178,12 @@ export async function findOrCreateMicrosoftUser(profile: any, params: any) {
         customerId UNIQUEIDENTIFIER,
         createdAt DATETIME,
         updatedAt DATETIME,
-        isVerified BIT
+        isVerified BIT,
+        email NVARCHAR(256)
       );
 
       INSERT INTO Users (firstName, lastName, email, passwordHash, createdAt, updatedAt, isVerified)
-      OUTPUT INSERTED.id, INSERTED.customerId, INSERTED.createdAt, INSERTED.updatedAt, INSERTED.isVerified INTO @InsertedUsers
+      OUTPUT INSERTED.id, INSERTED.customerId, INSERTED.createdAt, INSERTED.updatedAt, INSERTED.isVerified, INSERTED.email INTO @InsertedUsers
       VALUES (@firstName, @lastName, @email, @passwordHash, GETDATE(), CURRENT_TIMESTAMP, @isVerified);
 
       SELECT id FROM @InsertedUsers;
@@ -189,10 +198,18 @@ export async function findOrCreateMicrosoftUser(profile: any, params: any) {
   const final = await pool.request()
     .input("id", sql.Int, insertedId)
     .query(`
-      SELECT id, customerId, createdAt, isVerified, updatedAt
+      SELECT id, customerId, createdAt, isVerified, updatedAt, email
       FROM Users
       WHERE id = @id
     `);
 
-  return final.recordset[0]; // { id, customerId, createdAt, isVerified, updatedAt }
+  const user = final.recordset[0];
+  // 🔹 Merge enriched profile fields into returned object
+  return {
+    ...user,
+    email: profile.email || user.email,
+    upn: profile.upn,
+    firstName: profile.given_name || "",
+    lastName: profile.family_name || ""
+  };
 }
