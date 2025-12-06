@@ -1,0 +1,12 @@
+{
+  "clientId": "94dfed5e-ec48-437a-8f5b-394d12f53a3d",
+  "id": "/subscriptions/bb452d16-1e92-4afd-af21-c2808944be28/resourcegroups/rg-legal-ai-dev/providers/Microsoft.ManagedIdentity/userAssignedIdentities/expert-snapshot-legal-uami",
+  "location": "westus3",
+  "name": "expert-snapshot-legal-uami",
+  "principalId": "528669eb-943e-4cfc-bddf-307b7d767eae",
+  "resourceGroup": "rg-legal-ai-dev",
+  "systemData": null,
+  "tags": {},
+  "tenantId": "3188f024-fce9-420f-bc71-264d7ffb403e",
+  "type": "Microsoft.ManagedIdentity/userAssignedIdentities"
+}

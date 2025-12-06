@@ -1,0 +1,282 @@
+[
+  {
+    "name": "APP_BASE_URL",
+    "slotSetting": false,
+    "value": "https://expert-snapshot-legal-docker-dvbvcmajcpetekb5.westus3-01.azurewebsites.net"
+  },
+  {
+    "name": "APPINSIGHTS_INSTRUMENTATIONKEY",
+    "slotSetting": true,
+    "value": "96254770-45a9-495e-9fde-5ccd587225e9"
+  },
+  {
+    "name": "APPINSIGHTS_PROFILERFEATURE_VERSION",
+    "slotSetting": true,
+    "value": "1.0.0"
+  },
+  {
+    "name": "APPINSIGHTS_SNAPSHOTFEATURE_VERSION",
+    "slotSetting": true,
+    "value": "1.0.0"
+  },
+  {
+    "name": "APPLICATIONINSIGHTS_CONFIGURATION_CONTENT",
+    "slotSetting": true,
+    "value": ""
+  },
+  {
+    "name": "APPLICATIONINSIGHTS_CONNECTION_STRING",
+    "slotSetting": false,
+    "value": "InstrumentationKey=96254770-45a9-495e-9fde-5ccd587225e9;IngestionEndpoint=https://westus3-1.in.applicationinsights.azure.com/;LiveEndpoint=https://westus3.livediagnostics.monitor.azure.com/;ApplicationId=5dd3d2b5-bf46-49ea-bb1d-d170238aa326"
+  },
+  {
+    "name": "ApplicationInsightsAgent_EXTENSION_VERSION",
+    "slotSetting": true,
+    "value": "~3"
+  },
+  {
+    "name": "AZURE_CLIENT_ID",
+    "slotSetting": false,
+    "value": "94dfed5e-ec48-437a-8f5b-394d12f53a3d"
+  },
+  {
+    "name": "AZURE_FORM_RECOGNIZER_ENDPOINT",
+    "slotSetting": false,
+    "value": "https://legal-ai-foundry-dev.services.ai.azure.com/"
+  },
+  {
+    "name": "AZURE_SIGNIN_CLIENT_ID",
+    "slotSetting": false,
+    "value": "facb92f0-86db-4116-99c7-071c469c5718"
+  },
+  {
+    "name": "AZURE_SIGNIN_REDIRECT_URI",
+    "slotSetting": false,
+    "value": "https://expert-snapshot-legal-docker-dvbvcmajcpetekb5.westus3-01.azurewebsites.net/api/auth/callback/microsoft"
+  },
+  {
+    "name": "AZURE_SQL_DATABASE",
+    "slotSetting": false,
+    "value": "expert-snapshot-legal-db-dev"
+  },
+  {
+    "name": "AZURE_SQL_SERVER",
+    "slotSetting": false,
+    "value": "microconsult-sqlserver-dev.database.windows.net"
+  },
+  {
+    "name": "AZURE_SQL_USER",
+    "slotSetting": false,
+    "value": "sqladmin"
+  },
+  {
+    "name": "AZURE_STORAGE_ACCOUNT_NAME",
+    "slotSetting": false,
+    "value": "retainerdocs"
+  },
+  {
+    "name": "AZURE_STORAGE_CONNECTION_STRING",
+    "slotSetting": false,
+    "value": "BlobEndpoint=https://retainerdocs.blob.core.windows.net/;QueueEndpoint=https://retainerdocs.queue.core.windows.net/;FileEndpoint=https://retainerdocs.file.core.windows.net/;TableEndpoint=https://retainerdocs.table.core.windows.net/;SharedAccessSignature=sv=2024-11-04&ss=bfqt&srt=co&sp=rwltfx&se=2025-11-22T10:43:47Z&st=2025-11-11T02:28:47Z&spr=https&sig=F7RZ9pWzmhl%2B2z4oi%2BJNbg4HfURGsfQC5S9wC9Y8Jyw%3D"
+  },
+  {
+    "name": "AZURE_STORAGE_CONTAINER_NAME",
+    "slotSetting": false,
+    "value": "documents"
+  },
+  {
+    "name": "AZURE_TENANT_ID",
+    "slotSetting": false,
+    "value": "3188f024-fce9-420f-bc71-264d7ffb403e"
+  },
+  {
+    "name": "BIND_HOST",
+    "slotSetting": false,
+    "value": "0.0.0.0"
+  },
+  {
+    "name": "CANDIDATE_TTL_MS",
+    "slotSetting": false,
+    "value": "86400000"
+  },
+  {
+    "name": "CHROME_BIN",
+    "slotSetting": false,
+    "value": "/usr/bin/google-chrome"
+  },
+  {
+    "name": "DEBUG_LOGS",
+    "slotSetting": false,
+    "value": "true"
+  },
+  {
+    "name": "DEBUG_READ_FIELDS",
+    "slotSetting": false,
+    "value": "true"
+  },
+  {
+    "name": "DEBUG_TRACE",
+    "slotSetting": false,
+    "value": "false"
+  },
+  {
+    "name": "DiagnosticServices_EXTENSION_VERSION",
+    "slotSetting": true,
+    "value": "~3"
+  },
+  {
+    "name": "DISABLE_TELEMETRY",
+    "slotSetting": false,
+    "value": "false"
+  },
+  {
+    "name": "DOCKER_REGISTRY_SERVER_PASSWORD",
+    "slotSetting": false,
+    "value": null
+  },
+  {
+    "name": "DOCKER_REGISTRY_SERVER_URL",
+    "slotSetting": false,
+    "value": "ghcr.io"
+  },
+  {
+    "name": "DOCKER_REGISTRY_SERVER_USERNAME",
+    "slotSetting": false,
+    "value": "himadevisetti"
+  },
+  {
+    "name": "FRONTEND_BUILD_PATH",
+    "slotSetting": false,
+    "value": "/app/frontend"
+  },
+  {
+    "name": "FRONTEND_MICROSOFT_CALLBACK_URL",
+    "slotSetting": false,
+    "value": "https://expert-snapshot-legal-docker-dvbvcmajcpetekb5.westus3-01.azurewebsites.net/auth/callback/microsoft"
+  },
+  {
+    "name": "GRAPH_CLIENT_ID",
+    "slotSetting": false,
+    "value": "4afe5d49-f775-42d7-a625-7fabce4df597"
+  },
+  {
+    "name": "GRAPH_REFRESH_TOKEN",
+    "slotSetting": false,
+    "value": "M.C562_SN1.0.U.-Ci!HcUnvlJgUY3cuKcbbVyrG9B05PVOWCiGrcRjkg6LCag9lQBzIjtN0ju!bWs4g0ZqsMlWzYfAuW4kCStQusBD7pq*Xl84G8CPYDETEELTe9B9m42pixpxd16aFL9jX0j*Dk4UMhoDRZo8sGxXjSFm6nYxoRkCJa3y9C0L4cS4dmjaeT4zUY8LsE!CIC!fnLRTD7d3Mn4ETOqEWAh5j6i5kQevTzP4VE!g8diepPz!3Yie9rJ7FJk7c0SiNKJHez9c39UfrMX7eiKo6dIXP4F*!qDOo1YKi!5PoaKdYUOo6E!B6ra6GvjRq2ffOUEVeE7EhoeIqm6yKgylQvtIQLd3TUT3!NHMg0Mxwi7HkxU92"
+  },
+  {
+    "name": "GRAPH_TENANT",
+    "slotSetting": false,
+    "value": "consumers"
+  },
+  {
+    "name": "InstrumentationEngine_EXTENSION_VERSION",
+    "slotSetting": true,
+    "value": "disabled"
+  },
+  {
+    "name": "JWT_EXPIRES_IN",
+    "slotSetting": false,
+    "value": "8h"
+  },
+  {
+    "name": "NEXT_PUBLIC_DEBUG_LOGS",
+    "slotSetting": false,
+    "value": "true"
+  },
+  {
+    "name": "NODE_ENV",
+    "slotSetting": false,
+    "value": "production"
+  },
+  {
+    "name": "PYTHON_BIN",
+    "slotSetting": false,
+    "value": "/opt/venv/bin/python3"
+  },
+  {
+    "name": "RETENTION_DAYS",
+    "slotSetting": false,
+    "value": "180"
+  },
+  {
+    "name": "SnapshotDebugger_EXTENSION_VERSION",
+    "slotSetting": true,
+    "value": "disabled"
+  },
+  {
+    "name": "SQL_CONNECTION_TIMEOUT",
+    "slotSetting": false,
+    "value": "30000"
+  },
+  {
+    "name": "SQL_REQUEST_TIMEOUT",
+    "slotSetting": false,
+    "value": "30000"
+  },
+  {
+    "name": "STORAGE_PATH",
+    "slotSetting": false,
+    "value": "/storage"
+  },
+  {
+    "name": "VERIFICATION_TOKEN_TTL_HOURS",
+    "slotSetting": false,
+    "value": "24"
+  },
+  {
+    "name": "WEBSITE_HTTPLOGGING_RETENTION_DAYS",
+    "slotSetting": false,
+    "value": "2"
+  },
+  {
+    "name": "WEBSITES_ENABLE_APP_SERVICE_STORAGE",
+    "slotSetting": false,
+    "value": "false"
+  },
+  {
+    "name": "WEBSITES_PORT",
+    "slotSetting": false,
+    "value": "8080"
+  },
+  {
+    "name": "XDT_MicrosoftApplicationInsights_BaseExtensions",
+    "slotSetting": true,
+    "value": "disabled"
+  },
+  {
+    "name": "XDT_MicrosoftApplicationInsights_Mode",
+    "slotSetting": true,
+    "value": "recommended"
+  },
+  {
+    "name": "XDT_MicrosoftApplicationInsights_PreemptSdk",
+    "slotSetting": true,
+    "value": "disabled"
+  },
+  {
+    "name": "ACS_CONNECTION_STRING",
+    "slotSetting": false,
+    "value": "@Microsoft.KeyVault(SecretUri=https://kv-expert-snapshot-legal.vault.azure.net/secrets/acs-connection-string)"
+  },
+  {
+    "name": "AZURE_FORM_RECOGNIZER_KEY",
+    "slotSetting": false,
+    "value": "@Microsoft.KeyVault(SecretUri=https://kv-expert-snapshot-legal.vault.azure.net/secrets/azure-form-recognizer-key)"
+  },
+  {
+    "name": "AZURE_SIGNIN_CLIENT_SECRET",
+    "slotSetting": false,
+    "value": "@Microsoft.KeyVault(SecretUri=https://kv-expert-snapshot-legal.vault.azure.net/secrets/azure-signin-client-secret)"
+  },
+  {
+    "name": "AZURE_SQL_PASSWORD",
+    "slotSetting": false,
+    "value": "@Microsoft.KeyVault(SecretUri=https://kv-expert-snapshot-legal.vault.azure.net/secrets/azure-sql-password)"
+  },
+  {
+    "name": "JWT_SECRET",
+    "slotSetting": false,
+    "value": "@Microsoft.KeyVault(SecretUri=https://kv-expert-snapshot-legal.vault.azure.net/secrets/jwt-secret)"
+  }
+]

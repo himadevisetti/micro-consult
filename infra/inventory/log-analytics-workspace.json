@@ -1,0 +1,29 @@
+{
+  "createdDate": "2025-11-14T01:13:28.3399561Z",
+  "customerId": "d030e843-e963-4624-b295-4dd272841e72",
+  "etag": "\"000085ac-0000-4d00-0000-6917915b0000\"",
+  "features": {
+    "enableLogAccessUsingOnlyResourcePermissions": true,
+    "legacy": 0,
+    "searchVersion": 1
+  },
+  "id": "/subscriptions/bb452d16-1e92-4afd-af21-c2808944be28/resourceGroups/rg-legal-ai-dev/providers/Microsoft.OperationalInsights/workspaces/DefaultWorkspace-bb452d16-1e92-4afd-af21-c2808944be28-USW3",
+  "location": "westus3",
+  "modifiedDate": "2025-11-14T20:30:19.0347412Z",
+  "name": "DefaultWorkspace-bb452d16-1e92-4afd-af21-c2808944be28-USW3",
+  "provisioningState": "Succeeded",
+  "publicNetworkAccessForIngestion": "Enabled",
+  "publicNetworkAccessForQuery": "Enabled",
+  "resourceGroup": "rg-legal-ai-dev",
+  "retentionInDays": 30,
+  "sku": {
+    "lastSkuUpdate": "2025-11-14T01:13:28.3399561Z",
+    "name": "PerGB2018"
+  },
+  "type": "Microsoft.OperationalInsights/workspaces",
+  "workspaceCapping": {
+    "dailyQuotaGb": -1.0,
+    "dataIngestionStatus": "RespectQuota",
+    "quotaNextResetTime": "2025-11-14T16:00:00Z"
+  }
+}

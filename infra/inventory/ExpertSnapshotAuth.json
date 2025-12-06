@@ -1,0 +1,117 @@
+{
+  "@odata.context": "https://graph.microsoft.com/v1.0/$metadata#applications/$entity",
+  "addIns": [],
+  "api": {
+    "acceptMappedClaims": null,
+    "knownClientApplications": [],
+    "oauth2PermissionScopes": [],
+    "preAuthorizedApplications": [],
+    "requestedAccessTokenVersion": 2
+  },
+  "appId": "facb92f0-86db-4116-99c7-071c469c5718",
+  "appRoles": [],
+  "applicationTemplateId": null,
+  "certification": null,
+  "createdDateTime": "2025-11-29T05:04:42Z",
+  "defaultRedirectUri": null,
+  "deletedDateTime": null,
+  "description": null,
+  "disabledByMicrosoftStatus": null,
+  "displayName": "ExpertSnapshotAuth",
+  "groupMembershipClaims": null,
+  "id": "d54a51f4-a3e1-4f0e-a3e9-966be8f121e7",
+  "identifierUris": [],
+  "info": {
+    "logoUrl": null,
+    "marketingUrl": null,
+    "privacyStatementUrl": null,
+    "supportUrl": null,
+    "termsOfServiceUrl": null
+  },
+  "isDeviceOnlyAuthSupported": null,
+  "isFallbackPublicClient": null,
+  "keyCredentials": [],
+  "nativeAuthenticationApisEnabled": null,
+  "notes": null,
+  "optionalClaims": null,
+  "parentalControlSettings": {
+    "countriesBlockedForMinors": [],
+    "legalAgeGroupRule": "Allow"
+  },
+  "passwordCredentials": [
+    {
+      "customKeyIdentifier": null,
+      "displayName": "Sign-in secret for ExpertSnapshotAuth",
+      "endDateTime": "2026-11-30T01:57:26.446Z",
+      "hint": "3aa",
+      "keyId": "16d6bde6-a720-4838-91fb-0f9a414d89ba",
+      "secretText": null,
+      "startDateTime": "2025-11-30T01:57:26.446Z"
+    }
+  ],
+  "publicClient": {
+    "redirectUris": []
+  },
+  "publisherDomain": "himabindudeviyahoo.onmicrosoft.com",
+  "requestSignatureVerification": null,
+  "requiredResourceAccess": [
+    {
+      "resourceAccess": [
+        {
+          "id": "e1fe6dd8-ba31-4d61-89e7-88639da4683d",
+          "type": "Scope"
+        }
+      ],
+      "resourceAppId": "00000003-0000-0000-c000-000000000000"
+    }
+  ],
+  "samlMetadataUrl": null,
+  "serviceManagementReference": null,
+  "servicePrincipalLockConfiguration": {
+    "allProperties": true,
+    "credentialsWithUsageSign": true,
+    "credentialsWithUsageVerify": true,
+    "identifierUris": false,
+    "isEnabled": true,
+    "tokenEncryptionKeyId": true
+  },
+  "signInAudience": "AzureADandPersonalMicrosoftAccount",
+  "spa": {
+    "redirectUris": []
+  },
+  "tags": [],
+  "tokenEncryptionKeyId": null,
+  "uniqueName": null,
+  "verifiedPublisher": {
+    "addedDateTime": null,
+    "displayName": null,
+    "verifiedPublisherId": null
+  },
+  "web": {
+    "homePageUrl": null,
+    "implicitGrantSettings": {
+      "enableAccessTokenIssuance": false,
+      "enableIdTokenIssuance": false
+    },
+    "logoutUrl": "https://expert-snapshot-legal-docker-dvbvcmajcpetekb5.westus3-01.azurewebsites.net/logout",
+    "redirectUriSettings": [
+      {
+        "index": null,
+        "uri": "https://expert-snapshot-legal-docker-dvbvcmajcpetekb5.westus3-01.azurewebsites.net/api/auth/callback/microsoft"
+      },
+      {
+        "index": null,
+        "uri": "https://expert-snapshot-legal-docker.azurewebsites.net/api/auth/callback/microsoft"
+      },
+      {
+        "index": null,
+        "uri": "http://localhost:8080/api/auth/callback/microsoft"
+      }
+    ],
+    "redirectUris": [
+      "https://expert-snapshot-legal-docker-dvbvcmajcpetekb5.westus3-01.azurewebsites.net/api/auth/callback/microsoft",
+      "https://expert-snapshot-legal-docker.azurewebsites.net/api/auth/callback/microsoft",
+      "http://localhost:8080/api/auth/callback/microsoft"
+    ]
+  }
+}

@@ -1,0 +1,18 @@
+{
+  "dataLocation": "United States",
+  "id": "/subscriptions/bb452d16-1e92-4afd-af21-c2808944be28/resourceGroups/rg-microConsult-dev/providers/Microsoft.Communication/emailServices/acs-email-microConsult",
+  "location": "global",
+  "name": "acs-email-microConsult",
+  "provisioningState": "Succeeded",
+  "resourceGroup": "rg-microConsult-dev",
+  "systemData": {
+    "createdAt": "2025-11-26T06:12:27.3963787Z",
+    "createdBy": "himabindudevi@yahoo.com",
+    "createdByType": "User",
+    "lastModifiedAt": "2025-11-26T06:12:27.3963787Z",
+    "lastModifiedBy": "himabindudevi@yahoo.com",
+    "lastModifiedByType": "User"
+  },
+  "tags": {},
+  "type": "microsoft.communication/emailservices"
+}

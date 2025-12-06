@@ -1,0 +1,24 @@
+{
+  "dataLocation": "United States",
+  "hostName": "acs-core-microconsult.unitedstates.communication.azure.com",
+  "id": "/subscriptions/bb452d16-1e92-4afd-af21-c2808944be28/resourceGroups/rg-microConsult-dev/providers/Microsoft.Communication/CommunicationServices/acs-core-microConsult",
+  "immutableResourceId": "3402c990-22d0-4c8e-90fb-7567448739ee",
+  "linkedDomains": [
+    "/subscriptions/bb452d16-1e92-4afd-af21-c2808944be28/resourceGroups/rg-microConsult-dev/providers/Microsoft.Communication/emailServices/acs-email-microConsult/domains/AzureManagedDomain",
+    "/subscriptions/bb452d16-1e92-4afd-af21-c2808944be28/resourceGroups/rg-microConsult-dev/providers/Microsoft.Communication/emailServices/acs-email-microConsult/domains/microconsultnetwork.com"
+  ],
+  "location": "global",
+  "name": "acs-core-microConsult",
+  "provisioningState": "Succeeded",
+  "resourceGroup": "rg-microConsult-dev",
+  "systemData": {
+    "createdAt": "2025-11-26T06:40:48.357231Z",
+    "createdBy": "himabindudevi@yahoo.com",
+    "createdByType": "User",
+    "lastModifiedAt": "2025-11-29T03:50:28.4914799Z",
+    "lastModifiedBy": "himabindudevi@yahoo.com",
+    "lastModifiedByType": "User"
+  },
+  "tags": {},
+  "type": "microsoft.communication/communicationservices"
+}
