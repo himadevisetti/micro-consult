@@ -11,7 +11,7 @@ interface AppHeaderProps {
   onLogoutClick?: () => void;
   onDashboardClick?: () => void;
   mainHeading?: string;
-  userEmail?: string; // 🔹 New prop for email display
+  userEmail?: string;
 }
 
 const AppHeader: React.FC<AppHeaderProps> = ({
@@ -36,7 +36,13 @@ const AppHeader: React.FC<AppHeaderProps> = ({
 
   return (
     <header className={styles.header}>
-      <div className={styles.logoSlot}>Logo</div>
+      <div className={styles.logoSlot}>
+        <img
+          src="/logo.png"
+          alt="App Logo"
+          className={styles.logoImage}
+        />
+      </div>
 
       {mainHeading && (
         <h1 className={styles.mainHeading}>{mainHeading}</h1>
@@ -98,7 +104,6 @@ const AppHeader: React.FC<AppHeaderProps> = ({
           </button>
         </div>
 
-        {/* 🔹 Email aligned below buttons */}
         {userEmail && (
           <span className={styles.userEmail}>{userEmail}</span>
         )}
