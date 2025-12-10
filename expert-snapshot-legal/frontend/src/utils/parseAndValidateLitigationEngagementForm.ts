@@ -84,10 +84,12 @@ export function parseAndValidateLitigationEngagementForm(
   }
 
   // Filed Date ordering rule: if filedDate is present, must be valid and <= executionDate
+  let isFiledValid = false;
   if (!isEmptyValue(parsedFormData.filedDate)) {
     const filed = new Date(parsedFormData.filedDate as string);
+    isFiledValid = !isNaN(filed.getTime());
 
-    if (isNaN(filed.getTime())) {
+    if (!isFiledValid) {
       errors.filedDate = "Filed Date must be a valid calendar date in YYYY-MM-DD format.";
     } else if (!isEmptyValue(parsedFormData.executionDate)) {
       const execution = new Date(parsedFormData.executionDate as string);
@@ -97,8 +99,8 @@ export function parseAndValidateLitigationEngagementForm(
     }
   }
 
-  // Post-filing rules: if filedDate is present, enforce all case/court fields
-  if (!isEmptyValue(parsedFormData.filedDate)) {
+  // Post-filing rules: only run if filedDate is valid
+  if (isFiledValid) {
     if (isEmptyValue(parsedFormData.caseCaption)) {
       errors.caseCaption = "Case Caption is required once case is filed.";
     }
