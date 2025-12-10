@@ -25,7 +25,8 @@
     "src",
     "devServer.mts",
     "telemetryClient.ts",
-    "track.ts"
+    "track.ts",
+    "start-server.ts"
   ],
   "exclude": [
     "node_modules",

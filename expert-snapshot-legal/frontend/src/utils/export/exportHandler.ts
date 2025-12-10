@@ -75,8 +75,13 @@ function resolveMetadata(formData: Record<string, any>, formType: FormType) {
       };
       break;
     case FormType.LitigationEngagement:
-      client = formData.clientName?.trim() || 'Client';
-      purpose = 'Litigation engagement agreement';
+      client = formData.clientName?.trim() || "Client";
+      purpose = "Litigation engagement agreement";
+      extraMetadata = {
+        providerName: formData.providerName?.trim() || "Attorney",
+        caseCaption: formData.caseCaption?.trim() || "", // optional at intake
+        courtName: formData.courtName?.trim() || "",
+      };
       break;
     case FormType.RealEstateContract:
       client = formData.clientName?.trim() || 'Client';

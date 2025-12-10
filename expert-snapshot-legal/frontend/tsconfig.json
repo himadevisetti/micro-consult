@@ -21,14 +21,14 @@
       ]
     },
     "esModuleInterop": true,
-    "allowImportingTsExtensions": true,
     "allowSyntheticDefaultImports": true,
     "resolveJsonModule": true,
     "isolatedModules": true,
     "forceConsistentCasingInFileNames": true,
     "strict": true,
     "skipLibCheck": true,
-    "noEmit": true,
+    "noEmit": false, // allow emit so JS files are generated
+    "outDir": "./build", // compiled output goes into build/
     "allowJs": true,
     "incremental": true
   },
@@ -37,12 +37,13 @@
   },
   "include": [
     "src",
-    "*.mts"
+    "*.mts",
+    "start-server.ts" // explicitly include server entry point
   ],
   "exclude": [
     "node_modules",
     "dist",
-    ".next",
-    "build"
+    ".next"
+    // 🔹 removed "build" from exclude so compiler can write into build/
   ]
 }

@@ -57,6 +57,10 @@ const LoginPage = () => {
         if (data.token) {
           sessionStorage.setItem("token", data.token);
         }
+
+        // 🔹 Clear any stale navigation flags so forms can't be accessed directly
+        sessionStorage.removeItem("formNavigationAllowed");
+
         setStatus("Login successful! Redirecting...");
         navigate("/");
       } else {
@@ -95,7 +99,6 @@ const LoginPage = () => {
         <AppHeader showHomeButton={false} />
 
         <main className={styles.landing}>
-
           <h2 className={styles.formTitle}>👤 Sign in to Expert Snapshot Legal</h2>
 
           {showBanner && (

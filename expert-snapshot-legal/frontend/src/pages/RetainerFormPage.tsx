@@ -5,6 +5,7 @@ import StandardRetainerFlow from '../components/FormFlows/StandardRetainerFlow';
 import IPRightsLicensingFlow from '../components/FormFlows/IPRightsLicensingFlow';
 import StartupAdvisoryFlow from '../components/FormFlows/StartupAdvisoryFlow';
 import EmploymentAgreementFlow from '../components/FormFlows/EmploymentAgreementFlow';
+import LitigationEngagementFlow from '../components/FormFlows/LitigationEngagementFlow';
 import CustomTemplateFlow from '../components/FormFlows/CustomTemplateFlow';
 import GenerateDocumentFlow from '../components/FormFlows/GenerateDocumentFlow';
 import PageLayout from '../components/PageLayout';
@@ -29,33 +30,43 @@ const RetainerFormPage = () => {
   const customerId = decoded?.customerId ?? "anonymous";
 
   useEffect(() => {
-    if (!isValidType) {
-      navigate('/');
+    // 🔹 Guard: must come from HomePage
+    const allowed = sessionStorage.getItem("formNavigationAllowed") === "true";
+    if (!allowed) {
+      navigate("/"); // force back to Home
       return;
     }
+
+    if (!isValidType) {
+      navigate("/");
+      return;
+    }
+
     setIsValid(true);
   }, [isValidType, navigate]);
 
   const handleHomeClick = () => {
     clearFormState();
-    navigate('/');
+    sessionStorage.removeItem("formNavigationAllowed"); // 🔹 clear when leaving
+    navigate("/");
   };
 
   const handleBackClick = () => {
+    sessionStorage.removeItem("formNavigationAllowed"); // 🔹 clear when leaving
     switch (formType) {
       case FormType.CustomTemplateGenerate:
       case FormType.CustomTemplateUpload:
-        navigate('/form/custom-template');
+        navigate("/form/custom-template");
         break;
       default:
-        navigate('/');
+        navigate("/");
         break;
     }
   };
 
   const getMainHeading = () => {
     if (formType === FormType.CustomTemplate) {
-      return 'Custom Template';
+      return "Custom Template";
     }
     return undefined;
   };
@@ -73,6 +84,9 @@ const RetainerFormPage = () => {
 
       case FormType.EmploymentAgreement:
         return <EmploymentAgreementFlow schema={formSchemas[FormType.EmploymentAgreement]} />;
+
+      case FormType.LitigationEngagement:
+        return <LitigationEngagementFlow schema={formSchemas[FormType.LitigationEngagement]} />;
 
       case FormType.CustomTemplate:
         return <CustomTemplateFlow customerId={customerId} />;

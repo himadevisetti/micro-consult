@@ -39,6 +39,9 @@ const HomePage = () => {
       customerId: decoded?.customerId ?? "anonymous", // 🔹 Use decoded customerId if available
     });
 
+    // 🔹 Explicitly mark that navigation came from HomePage
+    sessionStorage.setItem("formNavigationAllowed", "true");
+
     navigate(`/form/${templateId}`);
   };
 

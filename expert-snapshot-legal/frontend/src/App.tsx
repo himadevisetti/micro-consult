@@ -7,6 +7,7 @@ import IPRightsLicensingPreviewPage from './pages/IPRightsLicensingPreviewPage';
 import StartupAdvisoryPreviewPage from './pages/StartupAdvisoryPreviewPage';
 import EmploymentAgreementPreviewPage from './pages/EmploymentAgreementPreviewPage';
 import CustomTemplatePreviewPage from './pages/CustomTemplatePreviewPage';
+import LitigationEngagementPreviewPage from './pages/LitigationEngagementPreviewPage';
 import LoginPage from './pages/LoginPage';
 import RegistrationPage from './pages/RegistrationPage';
 import MicrosoftCallbackPage from './pages/MicrosoftCallbackPage';
@@ -33,8 +34,14 @@ export default function App() {
         <Route path="/auth/callback/microsoft" element={<MicrosoftCallbackPage />} />
         <Route path="/" element={<ProtectedRoute><HomePage /></ProtectedRoute>} />
         <Route path="/dashboard" element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
-        <Route path="/form/:type/:templateId?" element={<RetainerFormPage />} />
-        <Route path="/preview/:type" element={<PreviewRouter />} />
+        <Route
+          path="/form/:type/:templateId?"
+          element={<ProtectedRoute><RetainerFormPage /></ProtectedRoute>}
+        />
+        <Route
+          path="/preview/:type"
+          element={<ProtectedRoute><PreviewRouter /></ProtectedRoute>}
+        />
       </Routes>
     </BrowserRouter>
   );
@@ -52,6 +59,8 @@ function PreviewRouter() {
       return <StartupAdvisoryPreviewPage />;
     case FormType.EmploymentAgreement:
       return <EmploymentAgreementPreviewPage />;
+    case FormType.LitigationEngagement:
+      return <LitigationEngagementPreviewPage />;
     case FormType.CustomTemplateGenerate:
       return <CustomTemplatePreviewPage />;
     default:
