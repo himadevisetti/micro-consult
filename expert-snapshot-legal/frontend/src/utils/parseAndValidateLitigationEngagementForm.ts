@@ -65,6 +65,38 @@ export function parseAndValidateLitigationEngagementForm(
   // --- Cross-field business rules ---
   const parsedFormData = parsedRaw as LitigationEngagementFormData;
 
+  // Filed Date presence rule: if any case/court fields are present, filedDate must be provided and valid
+  if (
+    !isEmptyValue(parsedFormData.caseCaption) ||
+    !isEmptyValue(parsedFormData.caseNumber) ||
+    !isEmptyValue(parsedFormData.courtName) ||
+    !isEmptyValue(parsedFormData.courtAddress) ||
+    !isEmptyValue(parsedFormData.countyName)
+  ) {
+    if (isEmptyValue(parsedFormData.filedDate)) {
+      errors.filedDate = "Filed Date is required once case details are provided.";
+    } else {
+      const filed = new Date(parsedFormData.filedDate as string);
+      if (isNaN(filed.getTime())) {
+        errors.filedDate = "Filed Date must be a valid calendar date in YYYY-MM-DD format.";
+      }
+    }
+  }
+
+  // Filed Date ordering rule: if filedDate is present, must be valid and <= executionDate
+  if (!isEmptyValue(parsedFormData.filedDate)) {
+    const filed = new Date(parsedFormData.filedDate as string);
+
+    if (isNaN(filed.getTime())) {
+      errors.filedDate = "Filed Date must be a valid calendar date in YYYY-MM-DD format.";
+    } else if (!isEmptyValue(parsedFormData.executionDate)) {
+      const execution = new Date(parsedFormData.executionDate as string);
+      if (filed > execution) {
+        errors.filedDate = "Filed Date must be on or before Execution Date.";
+      }
+    }
+  }
+
   // Post-filing rules: if filedDate is present, enforce all case/court fields
   if (!isEmptyValue(parsedFormData.filedDate)) {
     if (isEmptyValue(parsedFormData.caseCaption)) {
