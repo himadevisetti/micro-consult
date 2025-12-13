@@ -1,4 +1,5 @@
 // src/App.tsx
+
 import { BrowserRouter, Routes, Route, Navigate, useParams } from 'react-router-dom';
 import HomePage from './pages/HomePage';
 import RetainerFormPage from './pages/RetainerFormPage';
@@ -8,6 +9,7 @@ import StartupAdvisoryPreviewPage from './pages/StartupAdvisoryPreviewPage';
 import EmploymentAgreementPreviewPage from './pages/EmploymentAgreementPreviewPage';
 import CustomTemplatePreviewPage from './pages/CustomTemplatePreviewPage';
 import LitigationEngagementPreviewPage from './pages/LitigationEngagementPreviewPage';
+import RealEstateContractPreviewPage from './pages/RealEstateContractPreviewPage';
 import LoginPage from './pages/LoginPage';
 import RegistrationPage from './pages/RegistrationPage';
 import MicrosoftCallbackPage from './pages/MicrosoftCallbackPage';
@@ -61,6 +63,8 @@ function PreviewRouter() {
       return <EmploymentAgreementPreviewPage />;
     case FormType.LitigationEngagement:
       return <LitigationEngagementPreviewPage />;
+    case FormType.RealEstateContract:
+      return <RealEstateContractPreviewPage />;
     case FormType.CustomTemplateGenerate:
       return <CustomTemplatePreviewPage />;
     default:

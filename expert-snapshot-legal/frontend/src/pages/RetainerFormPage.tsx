@@ -1,4 +1,5 @@
 // src/pages/RetainerFormPage.tsx
+
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import StandardRetainerFlow from '../components/FormFlows/StandardRetainerFlow';
@@ -6,6 +7,7 @@ import IPRightsLicensingFlow from '../components/FormFlows/IPRightsLicensingFlow
 import StartupAdvisoryFlow from '../components/FormFlows/StartupAdvisoryFlow';
 import EmploymentAgreementFlow from '../components/FormFlows/EmploymentAgreementFlow';
 import LitigationEngagementFlow from '../components/FormFlows/LitigationEngagementFlow';
+import RealEstateContractFlow from '../components/FormFlows/RealEstateContractFlow';
 import CustomTemplateFlow from '../components/FormFlows/CustomTemplateFlow';
 import GenerateDocumentFlow from '../components/FormFlows/GenerateDocumentFlow';
 import PageLayout from '../components/PageLayout';
@@ -25,15 +27,13 @@ const RetainerFormPage = () => {
 
   const [isValid, setIsValid] = useState(false);
 
-  // 🔹 Decode once at top
   const decoded = getDecodedToken();
   const customerId = decoded?.customerId ?? "anonymous";
 
   useEffect(() => {
-    // 🔹 Guard: must come from HomePage
     const allowed = sessionStorage.getItem("formNavigationAllowed") === "true";
     if (!allowed) {
-      navigate("/"); // force back to Home
+      navigate("/");
       return;
     }
 
@@ -47,12 +47,12 @@ const RetainerFormPage = () => {
 
   const handleHomeClick = () => {
     clearFormState();
-    sessionStorage.removeItem("formNavigationAllowed"); // 🔹 clear when leaving
+    sessionStorage.removeItem("formNavigationAllowed");
     navigate("/");
   };
 
   const handleBackClick = () => {
-    sessionStorage.removeItem("formNavigationAllowed"); // 🔹 clear when leaving
+    sessionStorage.removeItem("formNavigationAllowed");
     switch (formType) {
       case FormType.CustomTemplateGenerate:
       case FormType.CustomTemplateUpload:
@@ -88,6 +88,9 @@ const RetainerFormPage = () => {
       case FormType.LitigationEngagement:
         return <LitigationEngagementFlow schema={formSchemas[FormType.LitigationEngagement]} />;
 
+      case FormType.RealEstateContract:
+        return <RealEstateContractFlow schema={formSchemas[FormType.RealEstateContract]} />;
+
       case FormType.CustomTemplate:
         return <CustomTemplateFlow customerId={customerId} />;
 
@@ -97,8 +100,6 @@ const RetainerFormPage = () => {
       case FormType.CustomTemplateGenerate:
         return <GenerateDocumentFlow customerId={customerId} />;
 
-      case FormType.LitigationEngagement:
-      case FormType.RealEstateContract:
       case FormType.FamilyLawAgreement:
         return <PlaceholderFlow formType={formType} />;
 

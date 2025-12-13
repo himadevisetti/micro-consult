@@ -86,6 +86,10 @@ function resolveMetadata(formData: Record<string, any>, formType: FormType) {
     case FormType.RealEstateContract:
       client = formData.clientName?.trim() || 'Client';
       purpose = 'Real estate contract';
+      extraMetadata = {
+        propertyAddress: formData.propertyAddress?.trim() || '',
+        brokerName: formData.brokerName?.trim() || '',
+      };
       break;
     case FormType.FamilyLawAgreement:
       client = formData.clientName?.trim() || 'Client';
