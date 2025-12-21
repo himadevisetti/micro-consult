@@ -8,7 +8,7 @@ import type { RealEstateContractFormData } from '../../types/RealEstateContractF
 import { defaultRealEstateContractFormData } from '../../types/RealEstateContractFormData';
 import {
   normalizeRawRealEstateContractFormData,
-  normalizeRealEstateContractFormData
+  normalizeRealEstateContractFormData,
 } from '../../utils/normalizeRealEstateContractFormData';
 import { formatDateMMDDYYYY } from '../../utils/formatDate';
 import { RealEstateContractFieldConfig } from '@/types/RealEstateContractFieldConfig';
@@ -25,34 +25,22 @@ export default function RealEstateContractFlow({ schema }: Props) {
   const today = new Date();
   const formattedToday = formatDateMMDDYYYY(today);
 
+  // Initial, one-time defaults only (like Employment flow)
   const hydratedDefaults: RealEstateContractFormData = {
     ...defaultRealEstateContractFormData,
     executionDate: formattedToday,
-    ...(defaultRealEstateContractFormData.contractType === 'Lease' && {
-      leaseStartDate: formattedToday,
-      leaseEndDate: formatDateMMDDYYYY(
-        new Date(today.setFullYear(today.getFullYear() + 1))
-      ),
-    }),
-    ...(defaultRealEstateContractFormData.contractType === 'Purchase' && {
-      closingDate: formatDateMMDDYYYY(
-        new Date(today.setDate(today.getDate() + 30))
-      ),
-      possessionDate: formatDateMMDDYYYY(
-        new Date(today.setDate(today.getDate() + 31))
-      ),
-    }),
-    ...(defaultRealEstateContractFormData.contractType === 'Listing' && {
-      listingStartDate: formattedToday,
-      listingExpirationDate: formatDateMMDDYYYY(
-        new Date(today.setDate(today.getDate() + 90))
-      ),
-    }),
-    ...(defaultRealEstateContractFormData.contractType === 'Option' && {
-      optionExpirationDate: formatDateMMDDYYYY(
-        new Date(today.setMonth(today.getMonth() + 6))
-      ),
-    }),
+    closingDate:
+      defaultRealEstateContractFormData.contractType === 'Purchase'
+        ? formatDateMMDDYYYY(
+          new Date(new Date().setDate(new Date().getDate() + 30))
+        )
+        : undefined,
+    possessionDate:
+      defaultRealEstateContractFormData.contractType === 'Purchase'
+        ? formatDateMMDDYYYY(
+          new Date(new Date().setDate(new Date().getDate() + 31))
+        )
+        : undefined,
   };
 
   // Clear persisted state only on hard reload
@@ -111,7 +99,32 @@ export default function RealEstateContractFlow({ schema }: Props) {
     field: keyof RealEstateContractFormData,
     value: string | number | boolean | Date
   ) => {
-    setFormData((prev) => ({ ...prev, [field]: value }));
+    if (field === 'contractType') {
+      // Update contractType safely
+      setFormData(prev => ({
+        ...prev,
+        contractType: value as RealEstateContractFormData['contractType'],
+      }));
+
+      // Clear validation state
+      Object.keys(errors).forEach((key) => {
+        const k = key as keyof RealEstateContractFormData;
+        delete errors[k];
+      });
+
+      Object.keys(touched).forEach((key) => {
+        const k = key as keyof RealEstateContractFormData;
+        touched[k] = false;
+      });
+
+      // Call after clearing so banner state can react
+      updateField(field, value);
+
+      return;
+    }
+
+    // Normal update
+    setFormData(prev => ({ ...prev, [field]: value }));
     updateField(field, value);
   };
 
