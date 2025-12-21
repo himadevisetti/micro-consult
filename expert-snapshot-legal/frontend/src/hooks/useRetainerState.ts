@@ -97,5 +97,7 @@ export function useRetainerState<T extends Record<string, any>>(
     handleSubmit,
     previewHtml,
     metadata,
+    setErrors,
+    setTouched,
   };
 }

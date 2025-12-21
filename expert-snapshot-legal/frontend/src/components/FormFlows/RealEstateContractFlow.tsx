@@ -83,6 +83,7 @@ export default function RealEstateContractFlow({ schema }: Props) {
     touched,
     markTouched,
     handleSubmit,
+    setErrors,
   } = useRetainerState<RealEstateContractFormData>(
     rawFormData,
     formData,
@@ -106,27 +107,18 @@ export default function RealEstateContractFlow({ schema }: Props) {
         contractType: value as RealEstateContractFormData['contractType'],
       }));
 
-      // Clear validation state
-      Object.keys(errors).forEach((key) => {
-        const k = key as keyof RealEstateContractFormData;
-        delete errors[k];
-      });
+      // Clear validation state (banner + field errors)
+      setErrors({});   // use the setter exposed from useRetainerState
 
-      Object.keys(touched).forEach((key) => {
-        const k = key as keyof RealEstateContractFormData;
-        touched[k] = false;
-      });
-
-      // Call after clearing so banner state can react
       updateField(field, value);
-
       return;
     }
 
-    // Normal update
+    // Normal update path
     setFormData(prev => ({ ...prev, [field]: value }));
     updateField(field, value);
   };
+
 
   useEffect(() => {
     const saved = sessionStorage.getItem('realEstateContractFormData');

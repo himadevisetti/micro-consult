@@ -162,6 +162,17 @@ export async function exportRetainer<T extends Record<string, any>>(
   if (formType === FormType.CustomTemplateGenerate && templateId) {
     // Use templateId from metadata directly
     filename = `${templateId}.${type}`;
+  } else if (formType === FormType.RealEstateContract) {
+    // Use contractType in the filename instead of generic "real-estate-contract"
+    const contractTypeLabel = formData.contractType
+      ? `${formData.contractType.charAt(0).toUpperCase()}${formData.contractType.slice(1)}-Contract` : 'Contract';
+
+    filename = getFilename(
+      type === "pdf" ? "final" : "draft",
+      resolvedClient,
+      today,
+      contractTypeLabel   // use Purchase, Lease, Option, Listing
+    );
   } else {
     // Standard flows: keep using getFilename convention
     filename = getFilename(
