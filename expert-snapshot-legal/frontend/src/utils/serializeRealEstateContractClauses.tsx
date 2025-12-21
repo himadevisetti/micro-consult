@@ -90,7 +90,7 @@ export function getSerializedRealEstateContractClauses(
 
   let formattedLeaseDuration = '';
   if (normalized.leaseStartDate && normalized.leaseEndDate) {
-    formattedLeaseDuration = `${formatDateLong(normalized.leaseStartDate)} → ${formatDateLong(normalized.leaseEndDate)}`;
+    formattedLeaseDuration = `${formatDateLong(normalized.leaseStartDate)} to ${formatDateLong(normalized.leaseEndDate)}`;
   }
 
   const enrichedFormData: EnrichedRealEstateContractFormData = {

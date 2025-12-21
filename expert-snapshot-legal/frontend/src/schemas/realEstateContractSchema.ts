@@ -15,52 +15,61 @@ export const realEstateContractSchema: Record<string, RealEstateContractFieldCon
   buyerName: {
     label: 'Buyer Name',
     type: 'text',
-    required: false,
+    requiredIf: (form) => form.contractType === 'Purchase' || form.contractType === 'Option',
     placeholder: 'e.g. Jane Doe',
     clauseTemplate: 'The Buyer is {{buyerName}}.',
     group: 'main',
-    validate: validateText
+    validate: validateText,
+    showIf: (form: RealEstateContractFormData) =>
+      form.contractType === 'Purchase' || form.contractType === 'Option',
   },
   sellerName: {
     label: 'Seller Name',
     type: 'text',
-    required: false,
+    requiredIf: (form) =>
+      form.contractType === 'Purchase' || form.contractType === 'Option' || form.contractType === 'Listing',
     placeholder: 'e.g. John Smith',
     clauseTemplate: 'The Seller is {{sellerName}}.',
     group: 'main',
-    validate: validateText
+    validate: validateText,
+    showIf: (form: RealEstateContractFormData) =>
+      form.contractType === 'Purchase' || form.contractType === 'Option' || form.contractType === 'Listing',
   },
   tenantName: {
     label: 'Tenant Name',
     type: 'text',
-    required: false,
+    requiredIf: (form) => form.contractType === 'Lease',
     placeholder: 'Tenant full name',
     clauseTemplate: 'The Tenant is {{tenantName}}.',
     group: 'main',
-    validate: validateText
+    validate: validateText,
+    showIf: (form: RealEstateContractFormData) => form.contractType === 'Lease',
   },
   landlordName: {
     label: 'Landlord Name',
     type: 'text',
-    required: false,
+    requiredIf: (form) => form.contractType === 'Lease',
     placeholder: 'Landlord full name',
     clauseTemplate: 'The Landlord is {{landlordName}}.',
     group: 'main',
-    validate: validateText
+    validate: validateText,
+    showIf: (form: RealEstateContractFormData) => form.contractType === 'Lease',
   },
   brokerName: {
     label: 'Broker Name',
     type: 'text',
-    required: false,
+    requiredIf: (form) => form.contractType === 'Listing',
     placeholder: 'Broker full name',
     clauseTemplate: 'The Broker is {{brokerName}}.',
     group: 'main',
-    validate: validateText
+    validate: validateText,
+    showIf: (form: RealEstateContractFormData) =>
+      form.contractType === 'Listing' || form.contractType === 'Purchase',
   },
   propertyAddress: {
     label: 'Property Address',
     type: 'textarea',
-    required: true,
+    required: true, // always required
     placeholder: 'Full property address',
     clauseTemplate: 'The property is located at {{propertyAddress}}.',
     group: 'main',
@@ -69,7 +78,7 @@ export const realEstateContractSchema: Record<string, RealEstateContractFieldCon
   legalDescription: {
     label: 'Legal Description',
     type: 'textarea',
-    required: false,
+    required: false, // always optional
     placeholder: 'Lot/block, parcel ID, metes and bounds',
     clauseTemplate: 'The legal description of the property is: {{legalDescription}}.',
     group: 'main',
@@ -80,7 +89,7 @@ export const realEstateContractSchema: Record<string, RealEstateContractFieldCon
   contractType: {
     label: 'Contract Type',
     type: 'dropdown',
-    required: true,
+    required: true, // always required
     options: ['Purchase', 'Lease', 'Option', 'Listing'],
     placeholder: 'Select contract type',
     clauseTemplate: 'This is a {{contractType}} agreement.',
@@ -90,7 +99,7 @@ export const realEstateContractSchema: Record<string, RealEstateContractFieldCon
   executionDate: {
     label: 'Execution Date',
     type: 'date',
-    required: true,
+    required: true, // always required
     placeholder: 'MM/DD/YYYY',
     clauseTemplate: 'This contract was executed on {{executionDate}}.',
     validate: validateDate,
@@ -99,7 +108,7 @@ export const realEstateContractSchema: Record<string, RealEstateContractFieldCon
   closingDate: {
     label: 'Closing Date',
     type: 'date',
-    required: false,
+    requiredIf: (form) => form.contractType === 'Purchase',
     placeholder: 'MM/DD/YYYY',
     clauseTemplate: 'The closing date is {{closingDate}}.',
     showIf: (form: RealEstateContractFormData) => form.contractType === 'Purchase',
@@ -109,7 +118,7 @@ export const realEstateContractSchema: Record<string, RealEstateContractFieldCon
   possessionDate: {
     label: 'Possession Date',
     type: 'date',
-    required: false,
+    requiredIf: (form) => form.contractType === 'Purchase',
     placeholder: 'MM/DD/YYYY',
     clauseTemplate: 'Possession will be delivered on {{possessionDate}}.',
     showIf: (form: RealEstateContractFormData) =>
@@ -120,7 +129,7 @@ export const realEstateContractSchema: Record<string, RealEstateContractFieldCon
   leaseStartDate: {
     label: 'Lease Start Date',
     type: 'date',
-    required: false,
+    requiredIf: (form) => form.contractType === 'Lease',
     placeholder: 'MM/DD/YYYY',
     clauseTemplate: 'The lease begins on {{leaseStartDate}}.',
     showIf: (form: RealEstateContractFormData) => form.contractType === 'Lease',
@@ -130,7 +139,7 @@ export const realEstateContractSchema: Record<string, RealEstateContractFieldCon
   leaseEndDate: {
     label: 'Lease End Date',
     type: 'date',
-    required: false,
+    requiredIf: (form) => form.contractType === 'Lease',
     placeholder: 'MM/DD/YYYY',
     clauseTemplate: 'The lease ends on {{leaseEndDate}}.',
     showIf: (form: RealEstateContractFormData) => form.contractType === 'Lease',
@@ -140,7 +149,7 @@ export const realEstateContractSchema: Record<string, RealEstateContractFieldCon
   optionExpirationDate: {
     label: 'Option Expiration Date',
     type: 'date',
-    required: false,
+    requiredIf: (form) => form.contractType === 'Option',
     placeholder: 'MM/DD/YYYY',
     clauseTemplate: 'The option expires on {{optionExpirationDate}}.',
     showIf: (form: RealEstateContractFormData) => form.contractType === 'Option',
@@ -150,7 +159,7 @@ export const realEstateContractSchema: Record<string, RealEstateContractFieldCon
   listingStartDate: {
     label: 'Listing Start Date',
     type: 'date',
-    required: false,
+    requiredIf: (form) => form.contractType === 'Listing',
     placeholder: 'MM/DD/YYYY',
     clauseTemplate: 'The listing begins on {{listingStartDate}}.',
     showIf: (form: RealEstateContractFormData) => form.contractType === 'Listing',
@@ -160,7 +169,7 @@ export const realEstateContractSchema: Record<string, RealEstateContractFieldCon
   listingExpirationDate: {
     label: 'Listing Expiration Date',
     type: 'date',
-    required: false,
+    requiredIf: (form) => form.contractType === 'Listing',
     placeholder: 'MM/DD/YYYY',
     clauseTemplate: 'The listing expires on {{listingExpirationDate}}.',
     showIf: (form: RealEstateContractFormData) => form.contractType === 'Listing',
@@ -172,7 +181,7 @@ export const realEstateContractSchema: Record<string, RealEstateContractFieldCon
   purchasePrice: {
     label: 'Purchase Price',
     type: 'number',
-    required: false,
+    requiredIf: (form) => form.contractType === 'Purchase' || form.contractType === 'Option',
     placeholder: 'e.g. 500000',
     clauseTemplate: 'The purchase price is {{purchasePrice}}.',
     showIf: (form: RealEstateContractFormData) =>
@@ -183,7 +192,7 @@ export const realEstateContractSchema: Record<string, RealEstateContractFieldCon
   earnestMoneyDeposit: {
     label: 'Earnest Money Deposit',
     type: 'number',
-    required: false,
+    requiredIf: (form) => false, // optional even for Purchase
     placeholder: 'e.g. 20000',
     clauseTemplate: 'The earnest money deposit is {{earnestMoneyDeposit}}.',
     showIf: (form: RealEstateContractFormData) => form.contractType === 'Purchase',
@@ -193,7 +202,7 @@ export const realEstateContractSchema: Record<string, RealEstateContractFieldCon
   financingTerms: {
     label: 'Financing Terms',
     type: 'textarea',
-    required: false,
+    requiredIf: (form) => form.contractType === 'Purchase',
     placeholder: 'Describe financing terms',
     clauseTemplate: 'Financing terms: {{financingTerms}}.',
     showIf: (form: RealEstateContractFormData) => form.contractType === 'Purchase',
@@ -203,7 +212,7 @@ export const realEstateContractSchema: Record<string, RealEstateContractFieldCon
   rentAmount: {
     label: 'Rent Amount',
     type: 'number',
-    required: false,
+    requiredIf: (form) => form.contractType === 'Lease',
     placeholder: 'e.g. 2000',
     clauseTemplate: 'The rent amount is {{rentAmount}}.',
     showIf: (form: RealEstateContractFormData) => form.contractType === 'Lease',
@@ -214,7 +223,7 @@ export const realEstateContractSchema: Record<string, RealEstateContractFieldCon
   securityDeposit: {
     label: 'Security Deposit',
     type: 'number',
-    required: false,
+    requiredIf: (form) => form.contractType === 'Lease',
     placeholder: 'e.g. 2000',
     clauseTemplate: 'The security deposit is {{securityDeposit}}.',
     showIf: (form: RealEstateContractFormData) => form.contractType === 'Lease',
@@ -224,7 +233,7 @@ export const realEstateContractSchema: Record<string, RealEstateContractFieldCon
   paymentFrequency: {
     label: 'Payment Frequency',
     type: 'dropdown',
-    required: false,
+    requiredIf: (form) => form.contractType === 'Lease',
     options: ['Monthly', 'Quarterly', 'Annually'],
     default: 'Monthly',
     clauseTemplate: 'Rent will be paid {{paymentFrequency}}.',
@@ -235,7 +244,7 @@ export const realEstateContractSchema: Record<string, RealEstateContractFieldCon
   optionFee: {
     label: 'Option Fee',
     type: 'number',
-    required: false,
+    requiredIf: (form) => form.contractType === 'Option',
     placeholder: 'e.g. 5000',
     clauseTemplate: 'The option fee is {{optionFee}}.',
     showIf: (form: RealEstateContractFormData) => form.contractType === 'Option',
@@ -245,7 +254,7 @@ export const realEstateContractSchema: Record<string, RealEstateContractFieldCon
   rentCreditTowardPurchase: {
     label: 'Rent Credit Toward Purchase',
     type: 'number',
-    required: false,
+    requiredIf: (form) => form.contractType === 'Option',
     placeholder: 'e.g. 500',
     clauseTemplate: 'Rent credit toward purchase: {{rentCreditTowardPurchase}}.',
     showIf: (form: RealEstateContractFormData) => form.contractType === 'Option',
@@ -255,7 +264,7 @@ export const realEstateContractSchema: Record<string, RealEstateContractFieldCon
   commissionValue: {
     label: 'Commission',
     type: 'number',
-    required: false,
+    requiredIf: (form) => form.contractType === 'Listing',
     placeholder: 'e.g. 5',
     clauseTemplate: 'The commission is {{commissionValue}} {{commissionUnit}}.',
     showIf: (form: RealEstateContractFormData) => form.contractType === 'Listing',
@@ -266,7 +275,7 @@ export const realEstateContractSchema: Record<string, RealEstateContractFieldCon
   commissionUnit: {
     label: 'Unit',
     type: 'dropdown',
-    required: false,
+    requiredIf: (form) => form.contractType === 'Listing',
     options: ['Percentage', 'FlatFee'],
     default: 'Percentage',
     group: 'main',
@@ -278,7 +287,7 @@ export const realEstateContractSchema: Record<string, RealEstateContractFieldCon
   inspectionContingency: {
     label: 'Include Inspection Contingency',
     type: 'checkbox',
-    required: false,
+    requiredIf: (form) => form.contractType === 'Purchase',
     clauseTemplate: 'This agreement is contingent upon inspection.',
     default: 'false',
     showIf: (form: RealEstateContractFormData) => form.contractType === 'Purchase',
@@ -287,7 +296,7 @@ export const realEstateContractSchema: Record<string, RealEstateContractFieldCon
   appraisalContingency: {
     label: 'Include Appraisal Contingency',
     type: 'checkbox',
-    required: false,
+    requiredIf: (form) => form.contractType === 'Purchase',
     clauseTemplate: 'This agreement is contingent upon appraisal.',
     default: 'false',
     showIf: (form: RealEstateContractFormData) => form.contractType === 'Purchase',
@@ -296,7 +305,7 @@ export const realEstateContractSchema: Record<string, RealEstateContractFieldCon
   financingContingency: {
     label: 'Include Financing Contingency',
     type: 'checkbox',
-    required: false,
+    requiredIf: (form) => form.contractType === 'Purchase',
     clauseTemplate: 'This agreement is contingent upon financing.',
     default: 'false',
     showIf: (form: RealEstateContractFormData) => form.contractType === 'Purchase',
@@ -305,7 +314,7 @@ export const realEstateContractSchema: Record<string, RealEstateContractFieldCon
   titleClearance: {
     label: 'Include Title Clearance',
     type: 'checkbox',
-    required: false,
+    requiredIf: (form) => form.contractType === 'Purchase',
     clauseTemplate: 'This agreement requires clear title.',
     default: 'false',
     showIf: (form: RealEstateContractFormData) => form.contractType === 'Purchase',
@@ -314,7 +323,7 @@ export const realEstateContractSchema: Record<string, RealEstateContractFieldCon
   renewalOptions: {
     label: 'Renewal Option',
     type: 'dropdown',
-    required: false,
+    requiredIf: (form) => form.contractType === 'Lease',
     options: ['Automatic', 'Fixed-Term', 'Month-to-Month', 'Negotiated', 'None'],
     default: 'None',
     clauseTemplate: 'The renewal option is {{renewalOptions}}.',
@@ -326,17 +335,18 @@ export const realEstateContractSchema: Record<string, RealEstateContractFieldCon
   disclosureAcknowledgment: {
     label: 'Include Disclosure Acknowledgment',
     type: 'checkbox',
-    required: false,
+    required: false, // always optional
     clauseTemplate: 'Disclosure acknowledgment is included.',
     default: 'false',
-    group: 'clauses'
+    group: 'clauses',
+    // always shown, so no showIf needed
   },
 
   // Escrow / Closing
   escrowAgencyName: {
     label: 'Escrow Agency Name',
     type: 'text',
-    required: false,
+    requiredIf: (form) => form.contractType === 'Purchase',
     placeholder: 'e.g. Title Company Inc.',
     clauseTemplate: 'Escrow will be handled by {{escrowAgencyName}}.',
     showIf: (form: RealEstateContractFormData) => form.contractType === 'Purchase',
@@ -346,7 +356,7 @@ export const realEstateContractSchema: Record<string, RealEstateContractFieldCon
   closingCostsResponsibility: {
     label: 'Closing Costs Responsibility',
     type: 'dropdown',
-    required: false,
+    requiredIf: (form) => form.contractType === 'Purchase',
     options: ['Buyer', 'Seller', 'Split'],
     default: 'Buyer',
     clauseTemplate: 'Closing costs will be paid by {{closingCostsResponsibility}}.',
@@ -359,70 +369,78 @@ export const realEstateContractSchema: Record<string, RealEstateContractFieldCon
   terminationClause: {
     label: 'Termination Clause',
     type: 'textarea',
-    required: false,
+    required: false, // optional across all types
     placeholder: 'Describe termination conditions',
     clauseTemplate: 'Termination clause: {{terminationClause}}.',
     group: 'main',
-    validate: validateText
+    validate: validateText,
+    showIf: (form: RealEstateContractFormData) =>
+      ['Purchase', 'Lease', 'Option', 'Listing'].includes(form.contractType),
   },
   defaultRemedies: {
     label: 'Default Remedies',
     type: 'textarea',
-    required: false,
+    required: false, // optional across all types
     placeholder: 'Describe remedies for default',
     clauseTemplate: 'Default remedies: {{defaultRemedies}}.',
     group: 'main',
-    validate: validateText
+    validate: validateText,
+    showIf: (form) => form.contractType === 'Purchase',
   },
   disputeResolution: {
     label: 'Dispute Resolution',
     type: 'dropdown',
-    required: true,
+    required: true, // always required
     options: ['Arbitration', 'Mediation', 'Court'],
     default: 'Arbitration',
     clauseTemplate: 'Disputes will be resolved via {{disputeResolution}}.',
     group: 'main',
-    validate: (val: string) => validateDropdown(val, ['Arbitration', 'Mediation', 'Court'])
+    validate: (val: string) => validateDropdown(val, ['Arbitration', 'Mediation', 'Court']),
+    // always shown
   },
 
   // Miscellaneous
   governingLaw: {
     label: 'Governing Law',
     type: 'dropdown',
-    required: true,
+    required: true, // always required
     options: ['California', 'New York', 'Texas', 'Other'],
     default: 'California',
     clauseTemplate: 'This agreement is governed by the laws of {{governingLaw}}.',
     group: 'main',
-    validate: (val: string) => validateDropdown(val, ['California', 'New York', 'Texas', 'Other'])
+    validate: (val: string) => validateDropdown(val, ['California', 'New York', 'Texas', 'Other']),
+    // always shown
   },
   additionalProvisions: {
     label: 'Additional Provisions',
     type: 'textarea',
-    required: false,
+    required: false, // always optional
     placeholder: 'Any additional terms or provisions',
     clauseTemplate: 'Additional provisions: {{additionalProvisions}}.',
     group: 'main',
-    validate: validateText
+    validate: validateText,
+    // always shown
   },
 
   // Signatures
   partySignatoryName: {
     label: 'Signatory Name',
     type: 'text',
-    required: true,
+    required: true, // always required
     placeholder: 'e.g. Jane Doe',
     clauseTemplate: 'Signed by {{partySignatoryName}}.',
     group: 'main',
-    validate: validateText
+    validate: validateText,
+    // always shown
   },
   partySignatoryRole: {
     label: 'Signatory Role',
     type: 'text',
-    required: true,
+    required: true, // always required
     placeholder: 'e.g. Buyer, Seller, Tenant, Broker',
     clauseTemplate: 'Role: {{partySignatoryRole}}.',
     group: 'main',
-    validate: validateText
+    validate: validateText,
+    // always shown
   }
 };

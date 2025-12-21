@@ -27,6 +27,7 @@ export function parseAndValidateRealEstateContractForm(
     const rawValue = rawFormData[field];
     let parsedValue: unknown = rawValue;
 
+    // Normalize values by type
     if (config.type === 'number') {
       parsedValue = rawValue !== undefined ? Number(rawValue) : undefined;
     }
@@ -40,20 +41,30 @@ export function parseAndValidateRealEstateContractForm(
 
     parsedRaw[field] = parsedValue as RealEstateContractFormData[typeof field];
 
-    // Skip validation if field is hidden
+    // Snapshot with parsed values for conditional checks
     const formSnapshot = { ...rawFormData, ...parsedRaw } as RealEstateContractFormData;
+
+    // 🔹 Skip validation entirely if field is hidden
     const isVisible =
-      typeof (config as any).showIf === 'function'
-        ? !!(config as any).showIf(formSnapshot)
+      typeof config.showIf === 'function'
+        ? !!config.showIf(formSnapshot)
         : true;
 
-    if (!isVisible) continue;
+    if (!isVisible) {
+      continue; // hidden fields are ignored completely
+    }
 
-    if (config.required && isEmptyValue(parsedValue)) {
+    // 🔹 Evaluate required and requiredIf only for visible fields
+    const isRequired =
+      config.required === true ||
+      (typeof config.requiredIf === 'function' && config.requiredIf(formSnapshot));
+
+    if (isRequired && isEmptyValue(parsedValue)) {
       errors[field] = `${config.label} is required.`;
       continue;
     }
 
+    // 🔹 Run field-specific validation if provided
     if (config.validate) {
       const normalized = normalizeForValidation(parsedValue, config.type);
       const result = config.validate(normalized, formSnapshot);
@@ -66,7 +77,7 @@ export function parseAndValidateRealEstateContractForm(
   // --- Combined inline pair validation helpers ---
   const formSnapshot = { ...rawFormData, ...parsedRaw } as RealEstateContractFormData;
 
-  // Required pairs
+  // Required pairs (but only validated if visible in schema)
   validateInlinePair(
     formSnapshot,
     errors,
@@ -86,9 +97,6 @@ export function parseAndValidateRealEstateContractForm(
     false,
     schema
   );
-
-  // Optional pairs (if any defined in schema)
-  // e.g. validateInlinePair(formSnapshot, errors, 'depositAmount', 'depositUnit', 'Deposit', false, schema);
 
   return {
     parsed: parsedRaw as RealEstateContractFormData,

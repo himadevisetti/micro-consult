@@ -235,12 +235,15 @@ export default function RealEstateContractForm({
     }
 
     const isDependent = typeof config.showIf === 'function';
+    const isRequired =
+      config.required === true ||
+      (typeof config.requiredIf === 'function' && config.requiredIf(formData));
 
     return (
       <>
         {!suppressLabel && config.label && (
           <label htmlFor={field} className={styles.label}>
-            {config.required === false && !isDependent ? (
+            {!isRequired ? (
               <>
                 {config.label}
                 <br />
@@ -292,7 +295,7 @@ export default function RealEstateContractForm({
           <textarea
             id={field}
             name={field}
-            value={value as string}
+            value={String(value ?? '')}
             onChange={handleChange(field)}
             onBlur={handleBlur(field)}
             placeholder={config.placeholder}
@@ -302,7 +305,7 @@ export default function RealEstateContractForm({
           <select
             id={field}
             name={field}
-            value={value as string}
+            value={String(value ?? '')}
             onChange={handleChange(field)}
             onBlur={handleBlur(field)}
             className={styles.select}
@@ -319,7 +322,7 @@ export default function RealEstateContractForm({
             id={field}
             name={field}
             type={config.type}
-            value={value as string}
+            value={String(value ?? '')}
             onChange={handleChange(field)}
             onBlur={handleBlur(field)}
             placeholder={config.placeholder}

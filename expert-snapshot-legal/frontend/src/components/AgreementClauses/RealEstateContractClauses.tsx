@@ -75,17 +75,20 @@ export function getRealEstateContractClauses(
         />
       ),
     },
-    ...(formData.escrowAgencyName?.trim() || formData.closingCostsResponsibility?.trim()
-      ? [{
-        id: 'escrowClause',
-        render: (fd) => (
-          <EscrowClause
-            escrowAgencyName={fd.escrowAgencyName}
-            closingCostsResponsibility={fd.closingCostsResponsibility}
-          />
-        ),
-      }] satisfies RealEstateContractClauseTemplate[]
-      : []),
+    ...(
+      formData.contractType === 'Purchase' &&
+        (formData.escrowAgencyName?.trim() || formData.closingCostsResponsibility?.trim())
+        ? [{
+          id: 'escrowClause',
+          render: (fd) => (
+            <EscrowClause
+              escrowAgencyName={fd.escrowAgencyName}
+              closingCostsResponsibility={fd.closingCostsResponsibility}
+            />
+          ),
+        }] satisfies RealEstateContractClauseTemplate[]
+        : []
+    ),
     ...(formData.terminationClause?.trim() || formData.defaultRemedies?.trim()
       ? [{
         id: 'terminationClause',

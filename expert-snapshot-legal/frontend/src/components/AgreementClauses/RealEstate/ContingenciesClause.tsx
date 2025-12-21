@@ -32,19 +32,24 @@ export default function ContingenciesClause({
     clauses.push('clearance of title to the property');
   }
   if (renewalOptions && renewalOptions !== 'None') {
-    clauses.push(`renewal option: ${renewalOptions}`);
+    clauses.push(`the renewal option selected (${renewalOptions})`);
   }
   if (disclosureAcknowledgment) {
     clauses.push('acknowledgment of required disclosures');
   }
 
+  const formatted =
+    clauses.length === 1
+      ? clauses[0]
+      : clauses.length > 1
+        ? clauses.slice(0, -1).join(', ') + ' and ' + clauses[clauses.length - 1]
+        : '';
+
   return (
     <section>
       <h3 style={{ fontWeight: 'bold' }}>Contingencies</h3>
       {clauses.length > 0 ? (
-        <p>
-          This Agreement is contingent upon {clauses.join(', ')}.
-        </p>
+        <p>This Agreement is contingent upon {formatted}.</p>
       ) : (
         <p>No contingencies or conditions are specified for this Agreement.</p>
       )}

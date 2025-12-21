@@ -84,7 +84,25 @@ function resolveMetadata(formData: Record<string, any>, formType: FormType) {
       };
       break;
     case FormType.RealEstateContract:
-      client = formData.clientName?.trim() || 'Client';
+      let identifier = '';
+      switch (formData.contractType) {
+        case 'Purchase':
+          identifier = formData.buyerName?.trim() || formData.sellerName?.trim() || 'Client';
+          break;
+        case 'Lease':
+          identifier = formData.tenantName?.trim() || formData.landlordName?.trim() || 'Client';
+          break;
+        case 'Option':
+          identifier = formData.buyerName?.trim() || formData.sellerName?.trim() || 'Client';
+          break;
+        case 'Listing':
+          identifier = formData.sellerName?.trim() || formData.brokerName?.trim() || 'Client';
+          break;
+        default:
+          identifier = 'Client';
+      }
+
+      client = identifier;
       purpose = 'Real estate contract';
       extraMetadata = {
         propertyAddress: formData.propertyAddress?.trim() || '',

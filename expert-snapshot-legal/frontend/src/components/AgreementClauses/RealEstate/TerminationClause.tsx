@@ -5,14 +5,20 @@ type TerminationClauseProps = {
   defaultRemedies?: string;
 };
 
+// Utility to strip trailing periods
+function normalizeSentence(input?: string, fallback?: string): string {
+  const trimmed = input?.trim();
+  if (!trimmed) return fallback ?? '';
+  return trimmed.replace(/\.*$/, '');
+}
+
 export default function TerminationClause({
   terminationClause,
   defaultRemedies,
 }: TerminationClauseProps) {
   const resolvedTermination =
-    terminationClause?.trim() || 'Termination rights as agreed between the parties';
-  const resolvedRemedies =
-    defaultRemedies?.trim() || 'Remedies available under applicable law';
+    normalizeSentence(terminationClause, 'Termination rights as agreed between the parties');
+  const resolvedRemedies = normalizeSentence(defaultRemedies);
 
   return (
     <section>
