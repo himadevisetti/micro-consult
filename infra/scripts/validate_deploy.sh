@@ -38,7 +38,7 @@ sqlcmd -S microconsult-sqlserver-dev.database.windows.net \
 
 echo "🔎 Testing ACS email send..."
 az communication email send \
-  --sender "DoNotReply@microconsultnetwork.com" \
+  --sender "support@microconsultnetwork.com" \
   --recipient "test@yourdomain.com" \
   --subject "Validation Email" \
   --body-plain-text "Deployment validation successful." \

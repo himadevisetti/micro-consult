@@ -42,7 +42,7 @@ function AppRoutes() {
 
   return (
     <Routes>
-      <Route path="/login" element={<LoginPage />} />
+      <Route path="/login" element={isAuthenticated() ? <Navigate to="/" replace /> : <LoginPage />} />
       <Route path="/register" element={<RegistrationPage />} />
       <Route path="/auth/callback/microsoft" element={<MicrosoftCallbackPage />} />
       <Route path="/forgot-password" element={<ForgotPasswordPage />} />

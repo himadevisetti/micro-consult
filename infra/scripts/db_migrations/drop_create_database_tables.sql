@@ -34,7 +34,9 @@ CREATE TABLE dbo.Users (
     createdAt DATETIME NULL CONSTRAINT DF_Users_createdAt DEFAULT (GETDATE()),
     customerId NVARCHAR(100) COLLATE SQL_Latin1_General_CP1_CI_AS NULL,
     isVerified BIT NOT NULL CONSTRAINT DF_Users_isVerified DEFAULT ((0)),
-    updatedAt DATETIME NULL CONSTRAINT DF_Users_updatedAt DEFAULT (GETDATE())
+    updatedAt DATETIME NULL CONSTRAINT DF_Users_updatedAt DEFAULT (GETDATE()),
+    resetToken NVARCHAR(64) NULL,
+    resetTokenExpiry DATETIME NULL
 );
 
 -- Unique constraints

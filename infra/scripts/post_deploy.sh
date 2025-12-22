@@ -54,6 +54,7 @@ az webapp config appsettings set \
     SQL_REQUEST_TIMEOUT="30000" \
     JWT_EXPIRES_IN="8h" \
     VERIFICATION_TOKEN_TTL_HOURS="24" \
+    RESET_TOKEN_TTL_HOURS="1" \
     APP_BASE_URL="https://microconsultnetwork.com" \
     AZURE_CLIENT_ID="94dfed5e-ec48-437a-8f5b-394d12f53a3d" \
     AZURE_TENANT_ID="3188f024-fce9-420f-bc71-264d7ffb403e" \

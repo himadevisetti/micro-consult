@@ -6,6 +6,7 @@ import { MicrosoftLoginButton } from "../components/Auth/MicrosoftLoginButton";
 import AppHeader from "../components/AppHeader";
 import styles from "../styles/LoginPage.module.css";
 import { focusFirstError } from "../utils/focusFirstError";
+import { isAuthenticated } from "@/utils/authToken";
 
 const LoginPage = () => {
   const [formData, setFormData] = useState({ email: "", password: "" });
@@ -16,6 +17,24 @@ const LoginPage = () => {
   const [showBanner, setShowBanner] = useState(false);
 
   const navigate = useNavigate();
+
+  // 🔹 Auto‑redirect if already authenticated
+  useEffect(() => {
+    if (isAuthenticated()) {
+      navigate("/", { replace: true });
+    }
+  }, [navigate]);
+
+  // 🔹 Listen for token changes across tabs
+  useEffect(() => {
+    const handler = (e: StorageEvent) => {
+      if (e.key === "token" && e.newValue) {
+        navigate("/", { replace: true });
+      }
+    };
+    window.addEventListener("storage", handler);
+    return () => window.removeEventListener("storage", handler);
+  }, [navigate]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;

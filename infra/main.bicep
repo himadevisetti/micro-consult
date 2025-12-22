@@ -56,6 +56,7 @@ resource appService 'Microsoft.Web/sites@2022-03-01' = {
         { name: 'SQL_REQUEST_TIMEOUT'; value: '30000' }
         { name: 'JWT_EXPIRES_IN'; value: '8h' }
         { name: 'VERIFICATION_TOKEN_TTL_HOURS'; value: '24' }
+        { name: 'RESET_TOKEN_TTL_HOURS'; value: '1' }
         { name: 'APP_BASE_URL'; value: 'https://expert-snapshot-legal-docker-dvbvcmajcpetekb5.westus3-01.azurewebsites.net' }
         { name: 'AZURE_CLIENT_ID'; value: '94dfed5e-ec48-437a-8f5b-394d12f53a3d' }
         { name: 'AZURE_TENANT_ID'; value: '3188f024-fce9-420f-bc71-264d7ffb403e' }
