@@ -7,6 +7,7 @@ import { logDebug, logError } from "../../utils/logger.js";
 import { findDocumentById } from "../../models/DocumentRepository.js";
 import { RETENTION_DAYS } from "../config.js";
 import { track } from "../../../track.js";
+import { authenticateToken } from "../../middleware/auth.js";
 
 const router = Router();
 
@@ -14,7 +15,7 @@ const router = Router();
  * GET /api/download/:customerId/:docId
  * Secure download route for AzureBlob documents only
  */
-router.get("/download/:customerId/:docId", async (req, res) => {
+router.get("/download/:customerId/:docId", authenticateToken, async (req, res) => {
   const { customerId, docId } = req.params;
 
   try {

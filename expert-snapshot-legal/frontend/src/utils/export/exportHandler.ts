@@ -153,6 +153,7 @@ export async function exportRetainer<T extends Record<string, any>>(
   customerId?: string,
   templateId?: string
 ) {
+  // 🔹 Resolve metadata for filename conventions
   const { client: resolvedClient } = resolveMetadata(formData, formType);
   const normalizedFormType = slugifyFormType(formType);
   const today = new Date().toISOString();
@@ -165,7 +166,8 @@ export async function exportRetainer<T extends Record<string, any>>(
   } else if (formType === FormType.RealEstateContract) {
     // Use contractType in the filename instead of generic "real-estate-contract"
     const contractTypeLabel = formData.contractType
-      ? `${formData.contractType.charAt(0).toUpperCase()}${formData.contractType.slice(1)}-Contract` : 'Contract';
+      ? `${formData.contractType.charAt(0).toUpperCase()}${formData.contractType.slice(1)}-Contract`
+      : "Contract";
 
     filename = getFilename(
       type === "pdf" ? "final" : "draft",
@@ -189,14 +191,25 @@ export async function exportRetainer<T extends Record<string, any>>(
   const decoded = getDecodedToken();
   const effectiveCustomerId = customerId ?? decoded?.customerId ?? "anonymous";
 
+  // 🔹 Retrieve JWT token from localStorage for authenticated requests
+  const token = localStorage.getItem("token");
+  if (!token) {
+    alert("You are not authenticated. Please log in again.");
+    return;
+  }
+
   try {
     if (type === "pdf") {
       if (formType === FormType.CustomTemplateGenerate && effectiveCustomerId && templateId) {
+        // 🔹 Generate PDF from custom template via backend
         const response = await fetch(
           `/api/templates/${encodeURIComponent(effectiveCustomerId)}/${encodeURIComponent(templateId)}/generate`,
           {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`, // ✅ attach JWT
+            },
             body: JSON.stringify({ variables: formData, format: "pdf" }),
           }
         );
@@ -205,9 +218,13 @@ export async function exportRetainer<T extends Record<string, any>>(
         blob = new Blob([arrayBuffer], { type: "application/pdf" });
       } else {
         if (!html) throw new Error(`Missing HTML for PDF export`);
+        // 🔹 Generate PDF from HTML via backend
         const response = await fetch("/api/exportPdf", {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`, // ✅ attach JWT
+          },
           body: JSON.stringify({
             html,
             filename,
@@ -222,11 +239,15 @@ export async function exportRetainer<T extends Record<string, any>>(
 
     else if (type === "docx") {
       if (formType === FormType.CustomTemplateGenerate && effectiveCustomerId && templateId) {
+        // 🔹 Generate DOCX from custom template via backend
         const response = await fetch(
           `/api/templates/${encodeURIComponent(effectiveCustomerId)}/${encodeURIComponent(templateId)}/generate`,
           {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`, // ✅ attach JWT
+            },
             body: JSON.stringify({ variables: formData, format: "docx" }),
           }
         );
@@ -238,12 +259,16 @@ export async function exportRetainer<T extends Record<string, any>>(
         });
       } else {
         if (!html) throw new Error(`Missing HTML for DOCX export`);
+        // 🔹 Generate DOCX locally in browser
         blob = await generateDOCX({ html, filename });
 
         // 🔁 Fire-and-forget upload to backend
         fetch("/api/exportDocx", {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`, // ✅ attach JWT
+          },
           body: JSON.stringify({
             html,
             filename,
@@ -253,12 +278,14 @@ export async function exportRetainer<T extends Record<string, any>>(
       }
     }
   } catch (err) {
+    // 🔹 Error handling with user feedback
     console.error(`[Export Error] Failed to generate ${type.toUpperCase()} blob:`, err);
     alert("Export failed. Please try again or contact support.");
     return;
   }
 
   if (blob) {
+    // 🔹 Trigger browser download with generated blob
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;

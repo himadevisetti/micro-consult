@@ -13,10 +13,11 @@ import { extractTitleFromHtml } from "../../utils/formatTitle.js";
 import { logDebug, logError } from "../../utils/logger.js";
 import { uploadToAzureBlob } from "../utils/uploadToAzureBlob.js";
 import { track } from "../../../track.js";
+import { authenticateToken } from "../../middleware/auth.js";
 
 const router = Router();
 
-router.post("/exportPdf", async (req, res) => {
+router.post("/exportPdf", authenticateToken, async (req, res) => {
   logDebug("exportPdf.request.received", {
     keys: Object.keys(req.body || {}),
     filename: req.body?.filename,

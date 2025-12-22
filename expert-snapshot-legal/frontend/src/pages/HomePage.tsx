@@ -47,6 +47,7 @@ const HomePage = () => {
 
   // 🔹 Logout handler clears token and redirects to login
   const handleLogout = () => {
+    localStorage.removeItem("token");
     sessionStorage.clear();
     navigate("/login");
   };

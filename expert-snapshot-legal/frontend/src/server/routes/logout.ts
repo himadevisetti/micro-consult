@@ -11,10 +11,10 @@ const router = Router();
  *
  * 🔹 This route complements the stateless JWT middleware in auth.ts.
  *     - auth.ts validates JWTs only; there is no server-side session store.
- *     - All authentication state lives in the browser's sessionStorage.
+ *     - All authentication state lives in the browser's localStorage.
  *
  * 🔹 Frontend logout (HomePage.tsx):
- *     - Clears sessionStorage and navigates to /login.
+ *     - Clears localStorage, sessionStorage and navigates to /login.
  *     - Does not call this route directly, but achieves the same effect.
  *
  * 🔹 Microsoft Front-Channel Logout:

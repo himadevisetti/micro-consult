@@ -1,21 +1,22 @@
-// src/pages/LoginPage.tsx
+// src/pages/ResetPasswordPage.tsx
 
 import { useState, useEffect } from "react";
-import { useNavigate, Link } from "react-router-dom";
-import { MicrosoftLoginButton } from "../components/Auth/MicrosoftLoginButton";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import AppHeader from "../components/AppHeader";
 import styles from "../styles/LoginPage.module.css";
 import { focusFirstError } from "../utils/focusFirstError";
 
-const LoginPage = () => {
-  const [formData, setFormData] = useState({ email: "", password: "" });
-  const [errors, setErrors] = useState<{ email?: string; password?: string }>({});
+const ResetPasswordPage = () => {
+  const [formData, setFormData] = useState({ newPassword: "", confirmPassword: "" });
+  const [errors, setErrors] = useState<{ newPassword?: string; confirmPassword?: string }>({});
   const [submitted, setSubmitted] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [status, setStatus] = useState<null | string>(null);
   const [showBanner, setShowBanner] = useState(false);
 
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const token = searchParams.get("token");
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -30,8 +31,11 @@ const LoginPage = () => {
     setShowBanner(false);
 
     const newErrors: typeof errors = {};
-    if (!formData.email.trim()) newErrors.email = "Email is required.";
-    if (!formData.password.trim()) newErrors.password = "Password is required.";
+    if (!formData.newPassword.trim()) newErrors.newPassword = "New password is required.";
+    if (!formData.confirmPassword.trim()) newErrors.confirmPassword = "Confirm password is required.";
+    if (formData.newPassword && formData.confirmPassword && formData.newPassword !== formData.confirmPassword) {
+      newErrors.confirmPassword = "Passwords do not match.";
+    }
 
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
@@ -43,28 +47,18 @@ const LoginPage = () => {
     setStatus(null);
 
     try {
-      const res = await fetch("/api/login", {
+      const res = await fetch("/api/reset-password", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          email: formData.email,
-          password: formData.password,
-        }),
+        body: JSON.stringify({ token, newPassword: formData.newPassword }),
       });
 
       const data = await res.json();
-      if (res.ok) {
-        if (data.token) {
-          localStorage.setItem("token", data.token);
-        }
-
-        // 🔹 Clear any stale navigation flags so forms can't be accessed directly
-        sessionStorage.removeItem("formNavigationAllowed");
-
-        setStatus("Login successful! Redirecting...");
-        navigate("/");
+      if (res.ok && data.success) {
+        setStatus("Password reset successful! Redirecting to login...");
+        setTimeout(() => navigate("/login"), 2000);
       } else {
-        setStatus(data.error || "Login failed. Please check your credentials.");
+        setStatus(data.error || "Failed to reset password.");
       }
     } catch {
       setStatus("Network error. Please try again.");
@@ -75,11 +69,11 @@ const LoginPage = () => {
 
   // Focus first editable field on mount
   useEffect(() => {
-    const formEl = document.getElementById("loginForm");
+    const formEl = document.getElementById("resetPasswordForm");
     if (!formEl) return;
 
     const editable = formEl.querySelector(
-      'input:not([type="hidden"]):not([disabled]):not([tabindex="-1"]), textarea:not([disabled]), select:not([disabled])'
+      'input:not([type="hidden"]):not([disabled]):not([tabindex="-1"])'
     ) as HTMLElement | null;
 
     editable?.focus();
@@ -89,7 +83,7 @@ const LoginPage = () => {
   useEffect(() => {
     if (!submitted || Object.keys(errors).length === 0) return;
 
-    focusFirstError("loginForm", errors as Record<string, string>);
+    focusFirstError("resetPasswordForm", errors as Record<string, string>);
     setSubmitted(false);
   }, [submitted, errors]);
 
@@ -99,7 +93,7 @@ const LoginPage = () => {
         <AppHeader showHomeButton={false} />
 
         <main className={styles.landing}>
-          <h2 className={styles.formTitle}>👤 Sign in to Expert Snapshot Legal</h2>
+          <h2 className={styles.formTitle}>🔒 Reset your password</h2>
 
           {showBanner && (
             <div className={styles.errorBanner}>
@@ -110,55 +104,37 @@ const LoginPage = () => {
 
           <div className={styles.cardGroup}>
             <div className={styles.formColumn}>
-              <MicrosoftLoginButton />
-
-              <div className={styles.dividerRow}>
-                <hr className={styles.dividerLine} />
-                <span className={styles.dividerText}>or</span>
-                <hr className={styles.dividerLine} />
-              </div>
-
               <form
-                id="loginForm"
+                id="resetPasswordForm"
                 onSubmit={handleSubmit}
                 style={{ all: "unset", display: "contents" }}
               >
                 <input
-                  type="email"
-                  name="email"
-                  value={formData.email}
+                  type="password"
+                  name="newPassword"
+                  value={formData.newPassword}
                   onChange={handleChange}
                   className={styles.input}
-                  placeholder="Email"
-                  autoComplete="username"
+                  placeholder="New Password"
+                  autoComplete="new-password"
                 />
-                {errors.email && <span className={styles.error}>{errors.email}</span>}
+                {errors.newPassword && <span className={styles.error}>{errors.newPassword}</span>}
 
                 <input
                   type="password"
-                  name="password"
-                  value={formData.password}
+                  name="confirmPassword"
+                  value={formData.confirmPassword}
                   onChange={handleChange}
                   className={styles.input}
-                  placeholder="Password"
-                  autoComplete="current-password"
+                  placeholder="Confirm Password"
+                  autoComplete="new-password"
                 />
-                {errors.password && <span className={styles.error}>{errors.password}</span>}
-
-                <div className={styles.forgotRow}>
-                  <a href="/forgot-password" className={styles.forgotLink}>
-                    Forgot password?
-                  </a>
-                </div>
+                {errors.confirmPassword && <span className={styles.error}>{errors.confirmPassword}</span>}
 
                 <button type="submit" className={styles.submitButton} disabled={submitting}>
-                  {submitting ? "Signing in..." : "Sign in"}
+                  {submitting ? "Resetting..." : "Reset Password"}
                 </button>
               </form>
-
-              <div className={styles.loginFooter}>
-                Don’t have an account? <Link to="/register">Sign up</Link>
-              </div>
             </div>
           </div>
         </main>
@@ -167,4 +143,5 @@ const LoginPage = () => {
   );
 };
 
-export default LoginPage;
+export default ResetPasswordPage;
+

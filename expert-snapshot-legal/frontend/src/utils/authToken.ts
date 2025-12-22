@@ -5,11 +5,11 @@ import { DecodedToken } from "@/types/Auth";
 import { logError, logWarn } from "@/utils/logger";
 
 /**
- * Safely decode the JWT from sessionStorage.
+ * Safely decode the JWT from localStorage.
  * Returns null if missing, invalid, or expired.
  */
 export function getDecodedToken(): DecodedToken | null {
-  const token = sessionStorage.getItem("token");
+  const token = localStorage.getItem("token");
   if (!token) return null;
 
   try {
@@ -21,12 +21,12 @@ export function getDecodedToken(): DecodedToken | null {
     } else {
       // ⚠️ Expired or missing exp
       logWarn("AuthToken.tokenExpiredOrInvalid", { decoded });
-      sessionStorage.removeItem("token");
+      localStorage.removeItem("token");
       return null;
     }
   } catch (err) {
     logError("AuthToken.decodeError", { error: err });
-    sessionStorage.removeItem("token");
+    localStorage.removeItem("token");
     return null;
   }
 }

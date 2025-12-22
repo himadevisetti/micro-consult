@@ -7,6 +7,7 @@ import AppHeader from "../components/AppHeader";
 import { getDecodedToken } from "@/utils/authToken";
 import type { DocumentRow } from "@/types/DocumentRow";
 import { logDebug, logWarn, logError } from "@/utils/logger";
+import { downloadWithAuth } from "@/utils/downloadWithAuth";
 
 const DashboardPage = () => {
   const navigate = useNavigate();
@@ -30,11 +31,26 @@ const DashboardPage = () => {
         setLoading(false);
         return;
       }
+
+      const token = localStorage.getItem("token");
+      if (!token) {
+        navigate("/login");
+        return;
+      }
+
       try {
-        const token = sessionStorage.getItem("token");
         const res = await fetch(`/api/dashboard/${customerId}`, {
           headers: { Authorization: `Bearer ${token}` },
         });
+
+        if (!res.ok) {
+          if (res.status === 401 || res.status === 403) {
+            navigate("/login");
+            return;
+          }
+          throw new Error(`Dashboard fetch failed: ${res.statusText}`);
+        }
+
         const data = await res.json();
 
         if (data.success && Array.isArray(data.documents)) {
@@ -55,8 +71,9 @@ const DashboardPage = () => {
         setLoading(false);
       }
     };
+
     fetchDocs();
-  }, [customerId]);
+  }, [customerId, navigate]);
 
   // 🔹 Download handler calls the backend /api/download route
   const handleDownload = (doc: DocumentRow) => {
@@ -68,7 +85,9 @@ const DashboardPage = () => {
 
     const url = `/api/download/${doc.customerId}/${doc.id}`;
     logDebug("dashboard.download", { id: doc.id, fileName: doc.fileName });
-    window.open(url, "_blank");
+
+    // 🔹 Use centralized utility for auth + blob download
+    downloadWithAuth(url, doc.fileName, navigate);
   };
 
   // 🔹 Home button navigates to landing page
@@ -103,7 +122,7 @@ const DashboardPage = () => {
               {documents.map((doc) => (
                 <tr key={doc.id}>
                   <td>{doc.fileName}</td>
-                  <td>{Math.round(doc.fileSize / 1024)}</td>
+                  <td>{doc.fileSize ? Math.round(doc.fileSize / 1024) : "-"}</td>
                   <td>{new Date(doc.createdAt).toLocaleString()}</td>
                   <td>
                     <button

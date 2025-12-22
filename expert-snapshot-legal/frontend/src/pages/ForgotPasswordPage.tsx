@@ -1,15 +1,14 @@
-// src/pages/LoginPage.tsx
+// src/pages/ForgotPasswordPage.tsx
 
 import { useState, useEffect } from "react";
-import { useNavigate, Link } from "react-router-dom";
-import { MicrosoftLoginButton } from "../components/Auth/MicrosoftLoginButton";
+import { useNavigate } from "react-router-dom";
 import AppHeader from "../components/AppHeader";
 import styles from "../styles/LoginPage.module.css";
 import { focusFirstError } from "../utils/focusFirstError";
 
-const LoginPage = () => {
-  const [formData, setFormData] = useState({ email: "", password: "" });
-  const [errors, setErrors] = useState<{ email?: string; password?: string }>({});
+const ForgotPasswordPage = () => {
+  const [formData, setFormData] = useState({ email: "" });
+  const [errors, setErrors] = useState<{ email?: string }>({});
   const [submitted, setSubmitted] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [status, setStatus] = useState<null | string>(null);
@@ -31,7 +30,6 @@ const LoginPage = () => {
 
     const newErrors: typeof errors = {};
     if (!formData.email.trim()) newErrors.email = "Email is required.";
-    if (!formData.password.trim()) newErrors.password = "Password is required.";
 
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
@@ -43,28 +41,17 @@ const LoginPage = () => {
     setStatus(null);
 
     try {
-      const res = await fetch("/api/login", {
+      const res = await fetch("/api/forgot-password", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          email: formData.email,
-          password: formData.password,
-        }),
+        body: JSON.stringify({ email: formData.email }),
       });
 
       const data = await res.json();
-      if (res.ok) {
-        if (data.token) {
-          localStorage.setItem("token", data.token);
-        }
-
-        // 🔹 Clear any stale navigation flags so forms can't be accessed directly
-        sessionStorage.removeItem("formNavigationAllowed");
-
-        setStatus("Login successful! Redirecting...");
-        navigate("/");
+      if (res.ok && data.success) {
+        setStatus("If the email exists, a reset link has been sent.");
       } else {
-        setStatus(data.error || "Login failed. Please check your credentials.");
+        setStatus(data.error || "Failed to process request.");
       }
     } catch {
       setStatus("Network error. Please try again.");
@@ -75,11 +62,11 @@ const LoginPage = () => {
 
   // Focus first editable field on mount
   useEffect(() => {
-    const formEl = document.getElementById("loginForm");
+    const formEl = document.getElementById("forgotPasswordForm");
     if (!formEl) return;
 
     const editable = formEl.querySelector(
-      'input:not([type="hidden"]):not([disabled]):not([tabindex="-1"]), textarea:not([disabled]), select:not([disabled])'
+      'input:not([type="hidden"]):not([disabled]):not([tabindex="-1"])'
     ) as HTMLElement | null;
 
     editable?.focus();
@@ -89,7 +76,7 @@ const LoginPage = () => {
   useEffect(() => {
     if (!submitted || Object.keys(errors).length === 0) return;
 
-    focusFirstError("loginForm", errors as Record<string, string>);
+    focusFirstError("forgotPasswordForm", errors as Record<string, string>);
     setSubmitted(false);
   }, [submitted, errors]);
 
@@ -99,7 +86,7 @@ const LoginPage = () => {
         <AppHeader showHomeButton={false} />
 
         <main className={styles.landing}>
-          <h2 className={styles.formTitle}>👤 Sign in to Expert Snapshot Legal</h2>
+          <h2 className={styles.formTitle}>🔑 Forgot your password?</h2>
 
           {showBanner && (
             <div className={styles.errorBanner}>
@@ -110,16 +97,8 @@ const LoginPage = () => {
 
           <div className={styles.cardGroup}>
             <div className={styles.formColumn}>
-              <MicrosoftLoginButton />
-
-              <div className={styles.dividerRow}>
-                <hr className={styles.dividerLine} />
-                <span className={styles.dividerText}>or</span>
-                <hr className={styles.dividerLine} />
-              </div>
-
               <form
-                id="loginForm"
+                id="forgotPasswordForm"
                 onSubmit={handleSubmit}
                 style={{ all: "unset", display: "contents" }}
               >
@@ -134,30 +113,13 @@ const LoginPage = () => {
                 />
                 {errors.email && <span className={styles.error}>{errors.email}</span>}
 
-                <input
-                  type="password"
-                  name="password"
-                  value={formData.password}
-                  onChange={handleChange}
-                  className={styles.input}
-                  placeholder="Password"
-                  autoComplete="current-password"
-                />
-                {errors.password && <span className={styles.error}>{errors.password}</span>}
-
-                <div className={styles.forgotRow}>
-                  <a href="/forgot-password" className={styles.forgotLink}>
-                    Forgot password?
-                  </a>
-                </div>
-
                 <button type="submit" className={styles.submitButton} disabled={submitting}>
-                  {submitting ? "Signing in..." : "Sign in"}
+                  {submitting ? "Sending..." : "Send Reset Link"}
                 </button>
               </form>
 
               <div className={styles.loginFooter}>
-                Don’t have an account? <Link to="/register">Sign up</Link>
+                Remembered your password? <a href="/login">Sign in</a>
               </div>
             </div>
           </div>
@@ -167,4 +129,5 @@ const LoginPage = () => {
   );
 };
 
-export default LoginPage;
+export default ForgotPasswordPage;
+

@@ -1,14 +1,19 @@
 // src/server/routes/exportDocx.ts
+// -----------------------------
+// Route: /exportDocx
+// -----------------------------
+// Converts styled HTML to DOCX using generateDOCX and uploads to Azure Blob.
 
 import { Router } from "express";
 import { logDebug, logError } from "../../utils/logger.js";
 import { generateDOCX } from "../../utils/export/generateDOCX.js";
 import { uploadToAzureBlob } from "../utils/uploadToAzureBlob.js";
-import { track } from "../../../track.js"
+import { track } from "../../../track.js";
+import { authenticateToken } from "../../middleware/auth.js";
 
 const router = Router();
 
-router.post("/exportDocx", async (req, res) => {
+router.post("/exportDocx", authenticateToken, async (req, res) => {
   logDebug("exportDocx.request.received", {
     keys: Object.keys(req.body || {}),
     filename: req.body?.filename,

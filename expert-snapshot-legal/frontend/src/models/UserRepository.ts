@@ -213,3 +213,59 @@ export async function findOrCreateMicrosoftUser(profile: any, params: any) {
     lastName: profile.family_name || ""
   };
 }
+
+/**
+ * Save a password reset token for a user.
+ * Stores token + expiry directly in Users table.
+ */
+export async function savePasswordResetToken(userId: number, token: string, expiresAt: Date) {
+  const pool = await poolPromise;
+  await pool.request()
+    .input("userId", sql.Int, userId)
+    .input("token", sql.NVarChar(64), token)
+    .input("expiresAt", sql.DateTime, expiresAt)
+    .query(`
+      UPDATE Users
+      SET resetToken = @token, resetTokenExpiry = @expiresAt, updatedAt = GETDATE()
+      WHERE id = @userId
+    `);
+}
+
+/**
+ * Delete a password reset token after use or expiration.
+ */
+export async function deletePasswordResetToken(token: string) {
+  const pool = await poolPromise;
+  await pool.request()
+    .input("token", sql.NVarChar(64), token)
+    .query(`
+      UPDATE Users
+      SET resetToken = NULL, resetTokenExpiry = NULL, updatedAt = GETDATE()
+      WHERE resetToken = @token
+    `);
+}
+
+/**
+ * Utility: check if a password reset token is expired.
+ * TTL is configurable via RESET_TOKEN_TTL_HOURS (default = 1).
+ */
+export function isPasswordResetTokenExpired(record: { resetTokenExpiry: Date }) {
+  if (!record?.resetTokenExpiry) return true;
+  return new Date() > new Date(record.resetTokenExpiry);
+}
+
+/**
+ * Find a password reset token record.
+ * Returns userId, resetToken, resetTokenExpiry for expiration checks.
+ */
+export async function findPasswordResetToken(token: string) {
+  const pool = await poolPromise;
+  const result = await pool.request()
+    .input("token", sql.NVarChar(64), token)
+    .query(`
+      SELECT id AS userId, resetToken, resetTokenExpiry
+      FROM Users
+      WHERE resetToken = @token
+    `);
+  return result.recordset[0]; // { userId, resetToken, resetTokenExpiry }
+}

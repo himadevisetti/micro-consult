@@ -37,6 +37,8 @@ import runtimeConfigRouter from "./src/server/routes/runtimeConfig.js";
 import registerRoute from "./src/server/routes/register.js";
 import loginRoute from "./src/server/routes/login.js";
 import verifyEmailRoute from "./src/server/routes/verifyEmail.js";
+import forgotPasswordRoute from "./src/server/routes/forgot-password.js";
+import resetPasswordRoute from "./src/server/routes/reset-password.js";
 import microsoftLoginRoute from "./src/server/routes/microsoftLogin.js";
 import logoutRoute from "./src/server/routes/logout.js";
 import dashboardRoute from "./src/server/routes/dashboard.js";
@@ -121,6 +123,8 @@ async function startDevServer() {
   app.use("/api", registerRoute);
   app.use("/api", loginRoute);
   app.use("/api", verifyEmailRoute);
+  app.use("/api", forgotPasswordRoute);
+  app.use("/api", resetPasswordRoute);
   app.use("/api", microsoftLoginRoute);
   app.use("/api", logoutRoute);
   app.use("/api", dashboardRoute);

@@ -21,7 +21,7 @@ export default function MicrosoftCallbackPage() {
       return;
     }
 
-    sessionStorage.setItem("token", token);
+    localStorage.setItem("token", token);
     logDebug("MicrosoftCallbackPage.success.tokenStored");
     navigate("/", { replace: true });
   }, [navigate]);
