@@ -11,6 +11,7 @@ import EmploymentAgreementPreviewPage from './pages/EmploymentAgreementPreviewPa
 import CustomTemplatePreviewPage from './pages/CustomTemplatePreviewPage';
 import LitigationEngagementPreviewPage from './pages/LitigationEngagementPreviewPage';
 import RealEstateContractPreviewPage from './pages/RealEstateContractPreviewPage';
+import FamilyLawAgreementPreviewPage from './pages/FamilyLawAgreementPreviewPage';
 import LoginPage from './pages/LoginPage';
 import RegistrationPage from './pages/RegistrationPage';
 import MicrosoftCallbackPage from './pages/MicrosoftCallbackPage';
@@ -91,6 +92,8 @@ function PreviewRouter() {
       return <LitigationEngagementPreviewPage />;
     case FormType.RealEstateContract:
       return <RealEstateContractPreviewPage />;
+    case FormType.FamilyLawAgreement:
+      return <FamilyLawAgreementPreviewPage />;
     case FormType.CustomTemplateGenerate:
       return <CustomTemplatePreviewPage />;
     default:

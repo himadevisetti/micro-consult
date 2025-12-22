@@ -8,6 +8,7 @@ import StartupAdvisoryFlow from '../components/FormFlows/StartupAdvisoryFlow';
 import EmploymentAgreementFlow from '../components/FormFlows/EmploymentAgreementFlow';
 import LitigationEngagementFlow from '../components/FormFlows/LitigationEngagementFlow';
 import RealEstateContractFlow from '../components/FormFlows/RealEstateContractFlow';
+import FamilyLawAgreementFlow from '../components/FormFlows/FamilyLawAgreementFlow';
 import CustomTemplateFlow from '../components/FormFlows/CustomTemplateFlow';
 import GenerateDocumentFlow from '../components/FormFlows/GenerateDocumentFlow';
 import PageLayout from '../components/PageLayout';
@@ -90,6 +91,9 @@ const RetainerFormPage = () => {
 
       case FormType.RealEstateContract:
         return <RealEstateContractFlow schema={formSchemas[FormType.RealEstateContract]} />;
+
+      case FormType.FamilyLawAgreement:
+        return <FamilyLawAgreementFlow schema={formSchemas[FormType.FamilyLawAgreement]} />;
 
       case FormType.CustomTemplate:
         return <CustomTemplateFlow customerId={customerId} />;

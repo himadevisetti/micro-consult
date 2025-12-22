@@ -109,10 +109,25 @@ function resolveMetadata(formData: Record<string, any>, formType: FormType) {
         brokerName: formData.brokerName?.trim() || '',
       };
       break;
-    case FormType.FamilyLawAgreement:
-      client = formData.clientName?.trim() || 'Client';
+    case FormType.FamilyLawAgreement: {
+      // Prefer Party A, then Party B for primary identifier
+      const identifier =
+        formData.partyAName?.trim() ||
+        formData.partyBName?.trim() ||
+        'Client';
+
+      client = identifier;
       purpose = 'Family law agreement';
+
+      extraMetadata = {
+        partyAName: formData.partyAName?.trim() || '',
+        partyBName: formData.partyBName?.trim() || '',
+        agreementType: formData.agreementType?.toString() || '',
+        custodyType: formData.custodyType?.toString() || '',
+        decisionMakingAuthority: formData.decisionMakingAuthority?.toString() || '',
+      };
       break;
+    }
     case FormType.CustomTemplate:
     case FormType.CustomTemplateGenerate: {
       const candidateKeys = [
@@ -173,7 +188,23 @@ export async function exportRetainer<T extends Record<string, any>>(
       type === "pdf" ? "final" : "draft",
       resolvedClient,
       today,
-      contractTypeLabel   // use Purchase, Lease, Option, Listing
+      contractTypeLabel   // Purchase-Contract, Lease-Contract, etc.
+    );
+  } else if (formType === FormType.FamilyLawAgreement) {
+    // Use both parties and agreementType in the filename
+    const partyA = formData.partyAName?.trim() || '';
+    const partyB = formData.partyBName?.trim() || '';
+    const partiesLabel = [partyA, partyB].filter(Boolean).join('_') || 'Parties';
+
+    const agreementTypeLabel = formData.agreementType
+      ? `${formData.agreementType.charAt(0).toUpperCase()}${formData.agreementType.slice(1)}-Agreement`
+      : "Agreement";
+
+    filename = getFilename(
+      type === "pdf" ? "final" : "draft",
+      partiesLabel,       // e.g. Alice_Smith-Bob_Jones
+      today,
+      agreementTypeLabel  // Divorce-Agreement, Custody-Agreement, etc.
     );
   } else {
     // Standard flows: keep using getFilename convention
