@@ -48,8 +48,12 @@ export default function SignatureClause({
         <p style={lineStyle}>__________________________</p>
         <p style={lineStyle}>
           <strong>{name.trim()}</strong>
-          {role ? `, ${role.trim()}` : ''}
         </p>
+        {role && (
+          <p style={lineStyle}>
+            {role.trim()}
+          </p>
+        )}
         <br />
         <br />
       </div>

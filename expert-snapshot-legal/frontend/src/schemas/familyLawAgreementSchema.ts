@@ -17,7 +17,7 @@ export const familyLawAgreementSchema: Record<string, FamilyLawAgreementFieldCon
   petitionerAddress: {
     label: 'Petitioner Address',
     type: 'textarea',
-    required: false,
+    required: true, // patched: mandatory for Divorce
     placeholder: 'Full address of Petitioner',
     clauseTemplate: 'Petitioner resides at {{petitionerAddress}}.',
     showIf: (form: FamilyLawAgreementFormData) => form.agreementType === 'Divorce',
@@ -35,7 +35,7 @@ export const familyLawAgreementSchema: Record<string, FamilyLawAgreementFieldCon
   respondentAddress: {
     label: 'Respondent Address',
     type: 'textarea',
-    required: false,
+    required: true, // patched: mandatory for Divorce
     placeholder: 'Full address of Respondent',
     clauseTemplate: 'Respondent resides at {{respondentAddress}}.',
     showIf: (form: FamilyLawAgreementFormData) => form.agreementType === 'Divorce',
@@ -56,7 +56,7 @@ export const familyLawAgreementSchema: Record<string, FamilyLawAgreementFieldCon
   motherAddress: {
     label: 'Mother Address',
     type: 'textarea',
-    required: false,
+    required: true, // patched: mandatory for Custody/ChildSupport
     placeholder: 'Full address of Mother',
     clauseTemplate: 'Mother resides at {{motherAddress}}.',
     showIf: (form: FamilyLawAgreementFormData) =>
@@ -76,7 +76,7 @@ export const familyLawAgreementSchema: Record<string, FamilyLawAgreementFieldCon
   fatherAddress: {
     label: 'Father Address',
     type: 'textarea',
-    required: false,
+    required: true, // patched: mandatory for Custody/ChildSupport
     placeholder: 'Full address of Father',
     clauseTemplate: 'Father resides at {{fatherAddress}}.',
     showIf: (form: FamilyLawAgreementFormData) =>
@@ -98,7 +98,7 @@ export const familyLawAgreementSchema: Record<string, FamilyLawAgreementFieldCon
   spouse1Address: {
     label: 'Spouse 1 Address',
     type: 'textarea',
-    required: false,
+    required: true, // patched: mandatory for SpousalSupport/PropertySettlement
     placeholder: 'Full address of Spouse 1',
     clauseTemplate: 'Spouse 1 resides at {{spouse1Address}}.',
     showIf: (form: FamilyLawAgreementFormData) =>
@@ -118,7 +118,7 @@ export const familyLawAgreementSchema: Record<string, FamilyLawAgreementFieldCon
   spouse2Address: {
     label: 'Spouse 2 Address',
     type: 'textarea',
-    required: false,
+    required: true, // patched: mandatory for SpousalSupport/PropertySettlement
     placeholder: 'Full address of Spouse 2',
     clauseTemplate: 'Spouse 2 resides at {{spouse2Address}}.',
     showIf: (form: FamilyLawAgreementFormData) =>
@@ -159,6 +159,8 @@ export const familyLawAgreementSchema: Record<string, FamilyLawAgreementFieldCon
     required: false,
     placeholder: 'MM/DD/YYYY',
     clauseTemplate: 'This agreement shall expire on {{expirationDate}}.',
+    showIf: (form: FamilyLawAgreementFormData) =>
+      form.agreementType === 'PropertySettlement',
     group: 'main'
   },
   governingLaw: {
@@ -176,7 +178,7 @@ export const familyLawAgreementSchema: Record<string, FamilyLawAgreementFieldCon
   marriageDate: {
     label: 'Marriage Date',
     type: 'date',
-    required: false,
+    required: true, // patched: mandatory for Divorce
     placeholder: 'MM/DD/YYYY',
     clauseTemplate: 'The parties were married on {{marriageDate}}.',
     showIf: (form: FamilyLawAgreementFormData) => form.agreementType === 'Divorce',
@@ -185,7 +187,7 @@ export const familyLawAgreementSchema: Record<string, FamilyLawAgreementFieldCon
   separationDate: {
     label: 'Separation Date',
     type: 'date',
-    required: false,
+    required: true, // patched: mandatory for Divorce
     placeholder: 'MM/DD/YYYY',
     clauseTemplate: 'The parties separated on {{separationDate}}.',
     showIf: (form: FamilyLawAgreementFormData) => form.agreementType === 'Divorce',
@@ -194,7 +196,7 @@ export const familyLawAgreementSchema: Record<string, FamilyLawAgreementFieldCon
   groundsForDivorce: {
     label: 'Grounds for Divorce',
     type: 'textarea',
-    required: false,
+    required: true, // patched: mandatory for Divorce
     placeholder: 'e.g. Irreconcilable differences',
     clauseTemplate: 'The grounds for divorce are {{groundsForDivorce}}.',
     showIf: (form: FamilyLawAgreementFormData) => form.agreementType === 'Divorce',
@@ -205,7 +207,7 @@ export const familyLawAgreementSchema: Record<string, FamilyLawAgreementFieldCon
   custodyType: {
     label: 'Custody Type',
     type: 'dropdown',
-    required: false,
+    required: true, // patched: mandatory for Custody
     options: ['Sole', 'Joint'],
     placeholder: 'Select custody type',
     clauseTemplate: 'Custody of the children shall be {{custodyType}}.',
@@ -215,7 +217,7 @@ export const familyLawAgreementSchema: Record<string, FamilyLawAgreementFieldCon
   childNames: {
     label: 'Children Names',
     type: 'textarea',
-    required: false,
+    required: true, // patched: at least one child name required for Custody
     placeholder: 'List names of children',
     clauseTemplate: 'The children covered by this agreement are: {{childNames}}.',
     showIf: (form: FamilyLawAgreementFormData) => form.agreementType === 'Custody',
@@ -225,7 +227,7 @@ export const familyLawAgreementSchema: Record<string, FamilyLawAgreementFieldCon
   childDOBs: {
     label: 'Children DOBs',
     type: 'textarea',
-    required: false,
+    required: true, // patched: mandatory for Custody
     placeholder: 'List dates of birth',
     clauseTemplate: 'Dates of birth: {{childDOBs}}.',
     showIf: (form: FamilyLawAgreementFormData) => form.agreementType === 'Custody',
@@ -235,7 +237,7 @@ export const familyLawAgreementSchema: Record<string, FamilyLawAgreementFieldCon
   visitationSchedule: {
     label: 'Visitation Schedule',
     type: 'dropdown',
-    required: false,
+    required: true, // patched: mandatory for Custody
     options: ['Standard', 'Custom', 'HolidayOnly', 'None'],
     placeholder: 'Select visitation schedule',
     clauseTemplate: 'Visitation schedule: {{visitationSchedule}}.',
@@ -245,7 +247,7 @@ export const familyLawAgreementSchema: Record<string, FamilyLawAgreementFieldCon
   visitationScheduleEntries: {
     label: 'Visitation Days & Hours',
     type: 'inline-pair',
-    required: false,
+    required: true, // patched: must have at least one entry when Custom schedule is chosen
     pair: [
       {
         key: 'days',
@@ -283,7 +285,7 @@ export const familyLawAgreementSchema: Record<string, FamilyLawAgreementFieldCon
   decisionMakingAuthority: {
     label: 'Decision Making Authority',
     type: 'dropdown',
-    required: false,
+    required: true, // patched: mandatory for Custody
     options: ['Mother', 'Father', 'Joint'],
     placeholder: 'Select authority',
     clauseTemplate: 'Decision-making authority shall rest with {{decisionMakingAuthority}}.',
@@ -295,7 +297,7 @@ export const familyLawAgreementSchema: Record<string, FamilyLawAgreementFieldCon
   motherIncome: {
     label: 'Mother Income',
     type: 'number',
-    required: false,
+    required: true, // patched: mandatory for Child Support
     placeholder: 'e.g. 60000',
     clauseTemplate: 'Mother\'s income is {{motherIncome}}.',
     showIf: (form: FamilyLawAgreementFormData) => form.agreementType === 'ChildSupport',
@@ -304,7 +306,7 @@ export const familyLawAgreementSchema: Record<string, FamilyLawAgreementFieldCon
   fatherIncome: {
     label: 'Father Income',
     type: 'number',
-    required: false,
+    required: true, // patched: mandatory for Child Support
     placeholder: 'e.g. 70000',
     clauseTemplate: 'Father\'s income is {{fatherIncome}}.',
     showIf: (form: FamilyLawAgreementFormData) => form.agreementType === 'ChildSupport',
@@ -313,7 +315,7 @@ export const familyLawAgreementSchema: Record<string, FamilyLawAgreementFieldCon
   custodyPercentageMother: {
     label: 'Custody % (Mother)',
     type: 'number',
-    required: false,
+    required: true, // patched: mandatory for Child Support
     placeholder: 'e.g. 60',
     clauseTemplate: 'Mother has custody {{custodyPercentageMother}}% of the time.',
     showIf: (form: FamilyLawAgreementFormData) => form.agreementType === 'ChildSupport',
@@ -322,7 +324,7 @@ export const familyLawAgreementSchema: Record<string, FamilyLawAgreementFieldCon
   custodyPercentageFather: {
     label: 'Custody % (Father)',
     type: 'number',
-    required: false,
+    required: true, // patched: mandatory for Child Support
     placeholder: 'e.g. 40',
     clauseTemplate: 'Father has custody {{custodyPercentageFather}}% of the time.',
     showIf: (form: FamilyLawAgreementFormData) => form.agreementType === 'ChildSupport',
@@ -331,7 +333,7 @@ export const familyLawAgreementSchema: Record<string, FamilyLawAgreementFieldCon
   childSupportAmount: {
     label: 'Child Support Amount',
     type: 'number',
-    required: false,
+    required: true, // patched: mandatory for Child Support
     placeholder: 'e.g. 1000',
     clauseTemplate: 'Child support shall be {{childSupportAmount}}.',
     showIf: (form: FamilyLawAgreementFormData) => form.agreementType === 'ChildSupport',
@@ -340,7 +342,7 @@ export const familyLawAgreementSchema: Record<string, FamilyLawAgreementFieldCon
   childSupportPaymentFrequency: {
     label: 'Payment Frequency',
     type: 'dropdown',
-    required: false,
+    required: true, // patched: mandatory for Child Support
     options: ['Weekly', 'Monthly', 'Quarterly'],
     default: 'Monthly',
     clauseTemplate: 'Payments will be made {{childSupportPaymentFrequency}}.',
@@ -350,7 +352,7 @@ export const familyLawAgreementSchema: Record<string, FamilyLawAgreementFieldCon
   childSupportPaymentMethod: {
     label: 'Payment Method',
     type: 'dropdown',
-    required: false,
+    required: true, // patched: mandatory for Child Support
     options: ['DirectDeposit', 'Check', 'PayrollDeduction', 'Cash', 'Other'],
     default: 'DirectDeposit',
     clauseTemplate: 'Payments will be made via {{childSupportPaymentMethod}}.',
@@ -360,7 +362,7 @@ export const familyLawAgreementSchema: Record<string, FamilyLawAgreementFieldCon
   childSupportResponsibleParty: {
     label: 'Responsible Party',
     type: 'dropdown',
-    required: false,
+    required: true, // patched: mandatory for Child Support
     options: ['Mother', 'Father', 'Joint'],
     default: 'Joint',
     clauseTemplate: 'Child support responsibility lies with {{childSupportResponsibleParty}}.',
@@ -370,7 +372,7 @@ export const familyLawAgreementSchema: Record<string, FamilyLawAgreementFieldCon
   healthInsuranceResponsibility: {
     label: 'Health Insurance Responsibility',
     type: 'dropdown',
-    required: false,
+    required: true, // patched: mandatory for Child Support
     options: ['Mother', 'Father', 'Joint'],
     default: 'Joint',
     clauseTemplate: 'Health insurance responsibility lies with {{healthInsuranceResponsibility}}.',
@@ -382,7 +384,7 @@ export const familyLawAgreementSchema: Record<string, FamilyLawAgreementFieldCon
   spousalSupportAmount: {
     label: 'Spousal Support Amount',
     type: 'number',
-    required: false,
+    required: true, // patched: mandatory for Spousal Support
     placeholder: 'e.g. 2000',
     clauseTemplate: 'Spousal support shall be {{spousalSupportAmount}}.',
     showIf: (form: FamilyLawAgreementFormData) => form.agreementType === 'SpousalSupport',
@@ -391,7 +393,7 @@ export const familyLawAgreementSchema: Record<string, FamilyLawAgreementFieldCon
   spousalSupportDurationMonths: {
     label: 'Duration (Months)',
     type: 'number',
-    required: false,
+    required: true, // patched: mandatory for Spousal Support
     placeholder: 'e.g. 24',
     clauseTemplate: 'Spousal support will continue for {{spousalSupportDurationMonths}} months.',
     showIf: (form: FamilyLawAgreementFormData) => form.agreementType === 'SpousalSupport',
@@ -400,7 +402,7 @@ export const familyLawAgreementSchema: Record<string, FamilyLawAgreementFieldCon
   spousalSupportTerminationConditions: {
     label: 'Termination Conditions',
     type: 'textarea',
-    required: false,
+    required: false, // optional, can remain flexible
     placeholder: 'e.g. Upon remarriage of recipient',
     clauseTemplate: 'Spousal support terminates under the following conditions: {{spousalSupportTerminationConditions}}.',
     showIf: (form: FamilyLawAgreementFormData) => form.agreementType === 'SpousalSupport',
@@ -409,19 +411,18 @@ export const familyLawAgreementSchema: Record<string, FamilyLawAgreementFieldCon
   spousalSupportResponsibleParty: {
     label: 'Responsible Party',
     type: 'dropdown',
-    required: false,
+    required: true, // patched: mandatory for Spousal Support
     options: ['Spouse1', 'Spouse2', 'None'],
     default: 'None',
     clauseTemplate: 'Spousal support responsibility lies with {{spousalSupportResponsibleParty}}.',
     showIf: (form: FamilyLawAgreementFormData) => form.agreementType === 'SpousalSupport',
     group: 'main'
   },
-
   // Property Settlement
   propertyDivisionMethod: {
     label: 'Division Method',
     type: 'dropdown',
-    required: false,
+    required: true, // patched: mandatory for Property Settlement
     options: ['EqualSplit', 'Negotiated', 'CourtOrdered'],
     default: 'EqualSplit',
     clauseTemplate: 'Property division method: {{propertyDivisionMethod}}.',
@@ -431,7 +432,7 @@ export const familyLawAgreementSchema: Record<string, FamilyLawAgreementFieldCon
   assetList: {
     label: 'Assets',
     type: 'textarea',
-    required: false,
+    required: true, // patched: at least one asset required
     placeholder: 'Click one or more assets above to select',
     suggestions: ['House', 'Car', 'Bank Account', 'Retirement Fund', 'Investments'],
     clauseTemplate: 'Assets to be divided: {{assetList}}.',
@@ -442,7 +443,7 @@ export const familyLawAgreementSchema: Record<string, FamilyLawAgreementFieldCon
   debtAllocation: {
     label: 'Debt Allocation',
     type: 'textarea',
-    required: false,
+    required: true, // patched: mandatory for Property Settlement
     placeholder: 'Describe debt allocation',
     clauseTemplate: 'Debts will be allocated as follows: {{debtAllocation}}.',
     showIf: (form: FamilyLawAgreementFormData) => form.agreementType === 'PropertySettlement',
@@ -451,7 +452,7 @@ export const familyLawAgreementSchema: Record<string, FamilyLawAgreementFieldCon
   retirementAccounts: {
     label: 'Retirement Accounts',
     type: 'textarea',
-    required: false,
+    required: true, // patched: mandatory for Property Settlement
     placeholder: 'Describe retirement account division',
     clauseTemplate: 'Retirement accounts division: {{retirementAccounts}}.',
     showIf: (form: FamilyLawAgreementFormData) => form.agreementType === 'PropertySettlement',
@@ -460,7 +461,7 @@ export const familyLawAgreementSchema: Record<string, FamilyLawAgreementFieldCon
   taxConsiderations: {
     label: 'Tax Considerations',
     type: 'textarea',
-    required: false,
+    required: true, // patched: mandatory for Property Settlement
     placeholder: 'Describe tax considerations',
     clauseTemplate: 'Tax considerations: {{taxConsiderations}}.',
     showIf: (form: FamilyLawAgreementFormData) => form.agreementType === 'PropertySettlement',
@@ -471,7 +472,7 @@ export const familyLawAgreementSchema: Record<string, FamilyLawAgreementFieldCon
   terminationClause: {
     label: 'Termination Clause',
     type: 'textarea',
-    required: false,
+    required: false, // optional, can remain flexible
     placeholder: 'Describe termination clause',
     clauseTemplate: 'Termination clause: {{terminationClause}}.',
     group: 'main'
@@ -479,7 +480,7 @@ export const familyLawAgreementSchema: Record<string, FamilyLawAgreementFieldCon
   disputeResolution: {
     label: 'Dispute Resolution',
     type: 'dropdown',
-    required: true,
+    required: true, // already mandatory globally
     options: ['Arbitration', 'Mediation', 'Court'],
     placeholder: 'Select dispute resolution method',
     clauseTemplate: 'Disputes will be resolved via {{disputeResolution}}.',
@@ -488,14 +489,13 @@ export const familyLawAgreementSchema: Record<string, FamilyLawAgreementFieldCon
   additionalProvisions: {
     label: 'Additional Terms',
     type: 'textarea',
-    required: false,
+    required: false, // optional
     placeholder: 'Any additional terms or provisions',
     clauseTemplate: 'Additional provisions: {{additionalProvisions}}.',
     group: 'main'
   },
 
   // Signatures
-
   // Divorce
   petitionerSignatoryName: {
     label: 'Petitioner Signatory Name',

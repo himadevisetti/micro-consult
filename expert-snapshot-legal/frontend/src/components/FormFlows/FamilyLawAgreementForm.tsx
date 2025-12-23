@@ -170,11 +170,14 @@ export default function FamilyLawAgreementForm({
     const { suppressError = false } = options || {};
     const value = formData[field];
 
+    // Determine if the field is dependent on another field
+    const isDependent = typeof config.showIf === 'function';
+
     return (
       <>
         {!suppressLabel && config.label && (
           <label htmlFor={field} className={styles.label}>
-            {config.required === false ? (
+            {config.required === false && !isDependent ? (
               <>
                 {config.label}
                 <br />

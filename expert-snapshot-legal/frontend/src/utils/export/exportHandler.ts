@@ -110,18 +110,25 @@ function resolveMetadata(formData: Record<string, any>, formType: FormType) {
       };
       break;
     case FormType.FamilyLawAgreement: {
-      // Prefer Party A, then Party B for primary identifier
       const identifier =
-        formData.partyAName?.trim() ||
-        formData.partyBName?.trim() ||
+        formData.petitionerName?.trim() ||
+        formData.respondentName?.trim() ||
+        formData.motherName?.trim() ||
+        formData.fatherName?.trim() ||
+        formData.spouse1Name?.trim() ||
+        formData.spouse2Name?.trim() ||
         'Client';
 
       client = identifier;
       purpose = 'Family law agreement';
 
       extraMetadata = {
-        partyAName: formData.partyAName?.trim() || '',
-        partyBName: formData.partyBName?.trim() || '',
+        petitionerName: formData.petitionerName?.trim() || '',
+        respondentName: formData.respondentName?.trim() || '',
+        motherName: formData.motherName?.trim() || '',
+        fatherName: formData.fatherName?.trim() || '',
+        spouse1Name: formData.spouse1Name?.trim() || '',
+        spouse2Name: formData.spouse2Name?.trim() || '',
         agreementType: formData.agreementType?.toString() || '',
         custodyType: formData.custodyType?.toString() || '',
         decisionMakingAuthority: formData.decisionMakingAuthority?.toString() || '',
@@ -191,9 +198,15 @@ export async function exportRetainer<T extends Record<string, any>>(
       contractTypeLabel   // Purchase-Contract, Lease-Contract, etc.
     );
   } else if (formType === FormType.FamilyLawAgreement) {
-    // Use both parties and agreementType in the filename
-    const partyA = formData.partyAName?.trim() || '';
-    const partyB = formData.partyBName?.trim() || '';
+    const partyA =
+      formData.petitionerName?.trim() ||
+      formData.motherName?.trim() ||
+      formData.spouse1Name?.trim() || '';
+    const partyB =
+      formData.respondentName?.trim() ||
+      formData.fatherName?.trim() ||
+      formData.spouse2Name?.trim() || '';
+
     const partiesLabel = [partyA, partyB].filter(Boolean).join('_') || 'Parties';
 
     const agreementTypeLabel = formData.agreementType
@@ -202,7 +215,7 @@ export async function exportRetainer<T extends Record<string, any>>(
 
     filename = getFilename(
       type === "pdf" ? "final" : "draft",
-      partiesLabel,       // e.g. Alice_Smith-Bob_Jones
+      partiesLabel,       // e.g. Alice_Johnson-Robert_Johnson
       today,
       agreementTypeLabel  // Divorce-Agreement, Custody-Agreement, etc.
     );

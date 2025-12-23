@@ -27,6 +27,7 @@ export default function FamilyLawAgreementFlow({ schema }: Props) {
 
   const hydratedDefaults: FamilyLawAgreementFormData = {
     ...defaultFamilyLawAgreementFormData,
+    executionDate: formattedToday,
     effectiveDate: formattedToday,
   };
 
