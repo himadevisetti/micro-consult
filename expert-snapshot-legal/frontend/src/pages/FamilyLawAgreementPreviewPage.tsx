@@ -17,6 +17,7 @@ export default function FamilyLawAgreementPreviewPage() {
   const formData = location.state?.formData as FamilyLawAgreementFormData;
   const previewHtml = location.state?.previewHtml;
   const metadata = location.state?.metadata;
+  const lastStepKey = location.state?.lastStepKey as string | undefined;
 
   useEffect(() => {
     if (!formData || !previewHtml) {
@@ -43,9 +44,15 @@ export default function FamilyLawAgreementPreviewPage() {
   };
 
   const onBackClick = () => {
-    navigate(`/form/${formType}`, {
-      state: { formData, metadata },
-    });
+    if (lastStepKey) {
+      navigate(`/form/${formType}/${lastStepKey}`, {
+        state: { formData, metadata, agreementTypes: [lastStepKey] },
+      });
+    } else {
+      navigate(`/form/${formType}`, {
+        state: { formData, metadata },
+      });
+    }
   };
 
   const onRefresh = () => {
@@ -64,4 +71,3 @@ export default function FamilyLawAgreementPreviewPage() {
     </PageLayout>
   );
 }
-

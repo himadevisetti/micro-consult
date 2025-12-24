@@ -120,15 +120,15 @@ function resolveMetadata(formData: Record<string, any>, formType: FormType) {
         'Client';
 
       client = identifier;
-      purpose = 'Family law agreement';
+      purpose = 'Marital Settlement Agreement';
 
       extraMetadata = {
-        petitionerName: formData.petitionerName?.trim() || '',
-        respondentName: formData.respondentName?.trim() || '',
-        motherName: formData.motherName?.trim() || '',
-        fatherName: formData.fatherName?.trim() || '',
-        spouse1Name: formData.spouse1Name?.trim() || '',
-        spouse2Name: formData.spouse2Name?.trim() || '',
+        petitionerName: shortenName(formData.petitionerName),
+        respondentName: shortenName(formData.respondentName),
+        motherName: shortenName(formData.motherName),
+        fatherName: shortenName(formData.fatherName),
+        spouse1Name: shortenName(formData.spouse1Name),
+        spouse2Name: shortenName(formData.spouse2Name),
         agreementType: formData.agreementType?.toString() || '',
         custodyType: formData.custodyType?.toString() || '',
         decisionMakingAuthority: formData.decisionMakingAuthority?.toString() || '',
@@ -199,25 +199,23 @@ export async function exportRetainer<T extends Record<string, any>>(
     );
   } else if (formType === FormType.FamilyLawAgreement) {
     const partyA =
-      formData.petitionerName?.trim() ||
-      formData.motherName?.trim() ||
-      formData.spouse1Name?.trim() || '';
+      shortenName(formData.petitionerName) ||
+      shortenName(formData.motherName) ||
+      shortenName(formData.spouse1Name) || 'PartyA';
     const partyB =
-      formData.respondentName?.trim() ||
-      formData.fatherName?.trim() ||
-      formData.spouse2Name?.trim() || '';
+      shortenName(formData.respondentName) ||
+      shortenName(formData.fatherName) ||
+      shortenName(formData.spouse2Name) || 'PartyB';
 
-    const partiesLabel = [partyA, partyB].filter(Boolean).join('_') || 'Parties';
+    const partiesLabel = `${partyA}-${partyB}`;
 
-    const agreementTypeLabel = formData.agreementType
-      ? `${formData.agreementType.charAt(0).toUpperCase()}${formData.agreementType.slice(1)}-Agreement`
-      : "Agreement";
+    const agreementTypeLabel = 'Marital-Settlement-Agreement';
 
     filename = getFilename(
       type === "pdf" ? "final" : "draft",
-      partiesLabel,       // e.g. Alice_Johnson-Robert_Johnson
+      partiesLabel,
       today,
-      agreementTypeLabel  // Divorce-Agreement, Custody-Agreement, etc.
+      agreementTypeLabel
     );
   } else {
     // Standard flows: keep using getFilename convention
@@ -342,4 +340,14 @@ export async function exportRetainer<T extends Record<string, any>>(
   } else {
     console.warn("No file blob was generated for download.");
   }
+}
+
+function shortenName(name?: string): string {
+  if (!name) return '';
+  const parts = name.trim().split(/\s+/);
+  if (parts.length === 1) {
+    return parts[0]; // single word name
+  }
+  // First name + last initial
+  return `${parts[0]}_${parts[parts.length - 1].charAt(0)}`;
 }

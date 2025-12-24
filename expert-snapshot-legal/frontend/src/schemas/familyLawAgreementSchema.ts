@@ -142,7 +142,6 @@ export const familyLawAgreementSchema: Record<string, FamilyLawAgreementFieldCon
     required: true,
     placeholder: 'MM/DD/YYYY',
     clauseTemplate: 'This agreement is executed on {{executionDate}}.',
-    validate: (val: string) => /^\d{4}-\d{2}-\d{2}$/.test(val),
     group: 'main'
   },
   effectiveDate: {

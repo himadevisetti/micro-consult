@@ -186,7 +186,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 
 .submitRow {
   text-align: center;
-  margin-top: 1rem;
+  margin-top: 2rem;
 }
 
 .submitButton {
@@ -741,4 +741,57 @@ select[multiple] {
   align-items: center;
   padding: 40px 0;
   width: 100%;
+}
+
+.formSubtitle {
+  font-size: 1rem;
+  color: var(--text-dark);
+  margin-bottom: 1.25rem;
+  font-family: var(--font-sans);
+  text-align: center;
+}
+
+.selectorGroup {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.5rem;
+  margin: 0 auto;
+  width: fit-content;
+  max-width: 100%;
+}
+
+.checkboxInput {
+  margin-right: 0.5rem;
+}
+
+.selectorRow {
+  display: flex;
+  align-items: flex-start;
+  margin-bottom: 0.5rem;
+}
+
+.buttonRow {
+  display: flex;
+  justify-content: center;
+  gap: 1rem;
+  margin-top: 0.5rem;
+  margin-bottom: 2rem;
+}
+
+.navButton {
+  min-width: 120px;
+  padding: 0.4rem 1rem;
+  font-size: 1rem;
+  border-radius: var(--radius-sm);
+  background-color: var(--color-forest);
+  color: var(--color-white);
+  border: none;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  font-family: var(--font-sans);
+}
+
+.navButton:hover {
+  background-color: var(--color-forest-hover);
 }

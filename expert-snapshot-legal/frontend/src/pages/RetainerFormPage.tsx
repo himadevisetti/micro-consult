@@ -15,13 +15,12 @@ import PageLayout from '../components/PageLayout';
 import { FormType } from '@/types/FormType';
 import { formSchemas } from '../schemas/formSchemas';
 import UploadTemplateFlow from '../components/FormFlows/UploadTemplateFlow';
-import PlaceholderFlow from '../components/FormFlows/PlaceholderFlow';
 import { getDecodedToken } from '@/utils/authToken';
 import { clearFormState } from '@/utils/clearFormState';
 
 const RetainerFormPage = () => {
   const navigate = useNavigate();
-  const { type } = useParams<{ type: string }>();
+  const { type, templateId } = useParams<{ type: string; templateId?: string }>();
 
   const isValidType = type && Object.values(FormType).includes(type as FormType);
   const formType = isValidType ? (type as FormType) : FormType.StandardRetainer;
@@ -33,6 +32,7 @@ const RetainerFormPage = () => {
 
   useEffect(() => {
     const allowed = sessionStorage.getItem("formNavigationAllowed") === "true";
+
     if (!allowed) {
       navigate("/");
       return;
@@ -104,18 +104,25 @@ const RetainerFormPage = () => {
       case FormType.CustomTemplateGenerate:
         return <GenerateDocumentFlow customerId={customerId} />;
 
-      case FormType.FamilyLawAgreement:
-        return <PlaceholderFlow formType={formType} />;
-
       default:
         return null;
     }
   };
 
+
+  // hide AppHeader Back only on child stepper pages
+
+  const isFamilyLawAgreement = formType === FormType.FamilyLawAgreement;
+  const isModulePickerRoot = isFamilyLawAgreement && !templateId;
+
   return (
     <PageLayout
       onHomeClick={handleHomeClick}
-      onBackClick={handleBackClick}
+      onBackClick={
+        isFamilyLawAgreement && !isModulePickerRoot
+          ? undefined // hide Back in AppHeader for child stepper pages
+          : handleBackClick
+      }
       mainHeading={getMainHeading()}
     >
       {isValid && renderForm()}

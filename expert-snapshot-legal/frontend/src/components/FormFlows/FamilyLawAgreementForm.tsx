@@ -11,7 +11,6 @@ import CustomDatePicker from '../Inputs/CustomDatePicker';
 import styles from '../../styles/StandardRetainerForm.module.css';
 import { FormBlurHandler } from '@/types/FormUtils';
 import { focusFirstError } from '@/utils/focusFirstError';
-import SubmitButton from '../../utils/SubmitButton';
 import InlinePairFieldRenderer from '../Inputs/InlinePairFieldRenderer';
 
 export interface FamilyLawAgreementFormProps {
@@ -65,25 +64,6 @@ export default function FamilyLawAgreementForm({
   ) => {
     onBlur(field, e.target.value);
     markTouched?.(field);
-  };
-
-  const handleFormSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setSubmitted(true);
-    setSubmitting(true);
-
-    Object.keys(schema).forEach((k) => {
-      const key = k as keyof FamilyLawAgreementFormData;
-      markTouched?.(key);
-    });
-
-    try {
-      await onSubmit?.(rawFormData);
-    } catch (err) {
-      console.error('[FamilyLawAgreementForm] Submission failed:', err);
-    } finally {
-      setSubmitting(false);
-    }
   };
 
   useEffect(() => {
@@ -189,33 +169,34 @@ export default function FamilyLawAgreementForm({
           </label>
         )}
 
-        {config.type === 'number' ? (
+        {config.type === "number" ? (
           <input
             id={field}
             name={field}
             type="number"
             step="0.01"
-            value={typeof value === 'number' ? value : ''}
+            value={typeof value === "number" ? value : ""}
             onChange={handleChange(field)}
             onBlur={handleBlur(field)}
             placeholder={config.placeholder}
             className={styles.input}
           />
-        ) : config.type === 'date' ? (
+        ) : config.type === "date" ? (
           (() => {
             const rawValue = rawFormData[field];
             return (
               <CustomDatePicker
                 id={field}
                 name={field}
-                value={typeof rawValue === 'string' ? rawValue : ''}
+                value={typeof rawValue === "string" ? rawValue : ""}
                 onChange={(newIso: string) => {
                   onRawChange(field, newIso);
                   onChange(field, newIso);
                   markTouched?.(field);
                 }}
                 onBlur={() => {
-                  const safeValue = typeof rawValue === 'string' ? rawValue : '';
+                  const safeValue =
+                    typeof rawValue === "string" ? rawValue : "";
                   onBlur(field, safeValue);
                   markTouched?.(field);
                 }}
@@ -225,21 +206,21 @@ export default function FamilyLawAgreementForm({
               />
             );
           })()
-        ) : config.type === 'textarea' ? (
+        ) : config.type === "textarea" ? (
           <textarea
             id={field}
             name={field}
-            value={value as string}
+            value={typeof value === "string" ? value : ""}
             onChange={handleChange(field)}
             onBlur={handleBlur(field)}
             placeholder={config.placeholder}
             className={`${styles.input} ${styles.textarea}`}
           />
-        ) : config.type === 'dropdown' && config.options ? (
+        ) : config.type === "dropdown" && config.options ? (
           <select
             id={field}
             name={field}
-            value={value as string}
+            value={typeof value === "string" ? value : ""}
             onChange={handleChange(field)}
             onBlur={handleBlur(field)}
             className={styles.select}
@@ -251,10 +232,10 @@ export default function FamilyLawAgreementForm({
               </option>
             ))}
           </select>
-        ) : config.type === 'inline-pair' ? (
+        ) : config.type === "inline-pair" ? (
           <InlinePairFieldRenderer<FamilyLawAgreementFormData>
             field={field}
-            value={value as any[]}
+            value={Array.isArray(value) ? value : []}
             config={config}
             errors={errors as Record<string, string | undefined>}
             handleChange={handleChange}
@@ -264,7 +245,7 @@ export default function FamilyLawAgreementForm({
             id={field}
             name={field}
             type={config.type}
-            value={value as string}
+            value={typeof value === "string" ? value : ""}
             onChange={handleChange(field)}
             onBlur={handleBlur(field)}
             placeholder={config.placeholder}
@@ -284,20 +265,12 @@ export default function FamilyLawAgreementForm({
   return (
     <div className={styles.pageContainer}>
       <div className={styles.formWrapper}>
-        <form
-          id={formId}
-          className={styles.formInner}
-          onSubmit={handleFormSubmit}
-        >
+        <div id={formId} className={styles.formInner}>
           {errors && Object.keys(errors).length > 0 && (
             <div className={styles.errorBanner}>
               Please fix the highlighted fields below.
             </div>
           )}
-
-          <h2 className={styles.formTitle}>
-            📄 {RetainerTypeLabel[FormType.FamilyLawAgreement]} Form
-          </h2>
 
           {sortedFields.map(([key, config]) => {
             if (rendered.has(key)) return null;
@@ -332,14 +305,12 @@ export default function FamilyLawAgreementForm({
                       )}
                     </div>
 
-                    {/* Show combined error if both halves missing */}
                     {combinedError &&
                       !(errors?.[key as keyof FamilyLawAgreementFormData] ||
                         errors?.[partnerKey as keyof FamilyLawAgreementFormData]) && (
                         <span className={styles.error}>{combinedError}</span>
                       )}
 
-                    {/* Show per-field errors below the pair if only one half invalid */}
                     {!combinedError &&
                       errors?.[key as keyof FamilyLawAgreementFormData] && (
                         <span className={styles.error}>
@@ -365,11 +336,7 @@ export default function FamilyLawAgreementForm({
               </div>
             );
           })}
-
-          <div className={styles.submitRow}>
-            <SubmitButton submitting={submitting} label="Submit" />
-          </div>
-        </form>
+        </div>
       </div>
     </div>
   );

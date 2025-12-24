@@ -14,10 +14,11 @@ import type {
   PropertyDivisionMethod,
   DisputeResolution,
 } from '../types/FamilyLawAgreementFormData';
-import { normalizeFormDates } from './normalizeFormDates';
+import { normalizeFormDates, normalizeSingleDate } from './normalizeFormDates';
 
 /**
  * Normalize incoming raw data into canonical form for storage/state.
+ * Ensures all date fields are coerced into ISO format (`yyyy-mm-dd`).
  */
 export function normalizeFamilyLawAgreementFormData(
   raw: Record<string, any>
@@ -60,11 +61,16 @@ export function normalizeFamilyLawAgreementFormData(
     // Custody / Visitation
     custodyType: raw.custodyType as CustodyType,
     childNames: Array.isArray(raw.childNames) ? raw.childNames.map(String) : [],
-    childDOBs: Array.isArray(raw.childDOBs) ? raw.childDOBs.map(String) : [],
+    childDOBs: Array.isArray(raw.childDOBs) ? raw.childDOBs.map(d => normalizeSingleDate(d)) : [],
     visitationSchedule: raw.visitationSchedule as VisitationSchedule,
     visitationScheduleEntries: Array.isArray(raw.visitationScheduleEntries)
       ? (raw.visitationScheduleEntries as VisitationScheduleEntry[])
-      : [],
+      : [
+        {
+          days: [],
+          hours: { start: '', end: '' },
+        },
+      ],
     holidaySchedule: String(raw.holidaySchedule ?? ''),
     decisionMakingAuthority: raw.decisionMakingAuthority as DecisionMakingAuthority,
 
@@ -116,6 +122,7 @@ export function normalizeFamilyLawAgreementFormData(
     spouse2SignatoryRole: String(raw.spouse2SignatoryRole ?? ''),
   };
 
+  // ✅ Normalize scalar date fields
   return normalizeFormDates(base, [
     'executionDate',
     'effectiveDate',
@@ -131,11 +138,28 @@ export function normalizeFamilyLawAgreementFormData(
 export function normalizeRawFamilyLawAgreementFormData(
   data: FamilyLawAgreementFormData
 ): FamilyLawAgreementFormData {
-  return normalizeFormDates(data, [
-    'executionDate',
-    'effectiveDate',
-    'expirationDate',
-    'marriageDate',
-    'separationDate',
-  ]);
+  return {
+    ...normalizeFormDates(data, [
+      'executionDate',
+      'effectiveDate',
+      'expirationDate',
+      'marriageDate',
+      'separationDate',
+    ]),
+    childDOBs: Array.isArray(data.childDOBs) ? data.childDOBs.map(d => normalizeSingleDate(d)) : [],
+    visitationScheduleEntries: Array.isArray(data.visitationScheduleEntries)
+      ? data.visitationScheduleEntries.map(entry => ({
+        ...entry,
+        hours: {
+          start: entry.hours?.start ?? '',
+          end: entry.hours?.end ?? '',
+        },
+      }))
+      : [
+        {
+          days: [],
+          hours: { start: '', end: '' },
+        },
+      ],
+  };
 }

@@ -60,7 +60,12 @@ export function useRetainerState<T extends Record<string, any>>(
     return html;
   };
 
-  const handleSubmit = async (raw: T) => {
+  /**
+   * Submit handler: validates, generates preview, and navigates.
+   * Accepts optional lastStepKey so flows like FamilyLawAgreement can
+   * return to the last filled step from Preview.
+   */
+  const handleSubmit = async (raw: T, lastStepKey?: string) => {
     const { parsed, errors } = validateForm(raw, schema);
     setFormData(parsed);
     setErrors(errors);
@@ -83,6 +88,7 @@ export function useRetainerState<T extends Record<string, any>>(
           formData: payload,
           previewHtml: html,
           metadata,
+          lastStepKey,
         },
       });
     }
