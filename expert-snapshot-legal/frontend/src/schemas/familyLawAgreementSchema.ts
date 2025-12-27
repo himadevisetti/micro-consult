@@ -23,6 +23,15 @@ export const familyLawAgreementSchema: Record<string, FamilyLawAgreementFieldCon
     showIf: (form: FamilyLawAgreementFormData) => form.agreementType === 'Divorce',
     group: 'main'
   },
+  petitionerContact: {
+    label: 'Petitioner Contact',
+    type: 'text',
+    required: false, // optional, unlike Name/Address
+    placeholder: 'Phone or email of Petitioner',
+    clauseTemplate: 'Petitioner may be contacted at {{petitionerContact}}.',
+    showIf: (form: FamilyLawAgreementFormData) => form.agreementType === 'Divorce',
+    group: 'main'
+  },
   respondentName: {
     label: 'Respondent Name',
     type: 'text',
@@ -38,6 +47,15 @@ export const familyLawAgreementSchema: Record<string, FamilyLawAgreementFieldCon
     required: true, // patched: mandatory for Divorce
     placeholder: 'Full address of Respondent',
     clauseTemplate: 'Respondent resides at {{respondentAddress}}.',
+    showIf: (form: FamilyLawAgreementFormData) => form.agreementType === 'Divorce',
+    group: 'main'
+  },
+  respondentContact: {
+    label: 'Respondent Contact',
+    type: 'text',
+    required: false,
+    placeholder: 'Phone or email of Respondent',
+    clauseTemplate: 'Respondent may be contacted at {{respondentContact}}.',
     showIf: (form: FamilyLawAgreementFormData) => form.agreementType === 'Divorce',
     group: 'main'
   },
@@ -63,6 +81,16 @@ export const familyLawAgreementSchema: Record<string, FamilyLawAgreementFieldCon
       form.agreementType === 'Custody' || form.agreementType === 'ChildSupport',
     group: 'main'
   },
+  motherContact: {
+    label: 'Mother Contact',
+    type: 'text',
+    required: false,
+    placeholder: 'Phone or email of Mother',
+    clauseTemplate: 'Mother may be contacted at {{motherContact}}.',
+    showIf: (form: FamilyLawAgreementFormData) =>
+      form.agreementType === 'Custody' || form.agreementType === 'ChildSupport',
+    group: 'main'
+  },
   fatherName: {
     label: 'Father Name',
     type: 'text',
@@ -79,6 +107,16 @@ export const familyLawAgreementSchema: Record<string, FamilyLawAgreementFieldCon
     required: true, // patched: mandatory for Custody/ChildSupport
     placeholder: 'Full address of Father',
     clauseTemplate: 'Father resides at {{fatherAddress}}.',
+    showIf: (form: FamilyLawAgreementFormData) =>
+      form.agreementType === 'Custody' || form.agreementType === 'ChildSupport',
+    group: 'main'
+  },
+  fatherContact: {
+    label: 'Father Contact',
+    type: 'text',
+    required: false,
+    placeholder: 'Phone or email of Father',
+    clauseTemplate: 'Father may be contacted at {{fatherContact}}.',
     showIf: (form: FamilyLawAgreementFormData) =>
       form.agreementType === 'Custody' || form.agreementType === 'ChildSupport',
     group: 'main'
@@ -105,6 +143,16 @@ export const familyLawAgreementSchema: Record<string, FamilyLawAgreementFieldCon
       form.agreementType === 'SpousalSupport' || form.agreementType === 'PropertySettlement',
     group: 'main'
   },
+  spouse1Contact: {
+    label: 'Spouse 1 Contact',
+    type: 'text',
+    required: false,
+    placeholder: 'Phone or email of Spouse 1',
+    clauseTemplate: 'Spouse 1 may be contacted at {{spouse1Contact}}.',
+    showIf: (form: FamilyLawAgreementFormData) =>
+      form.agreementType === 'SpousalSupport' || form.agreementType === 'PropertySettlement',
+    group: 'main'
+  },
   spouse2Name: {
     label: 'Spouse 2 Name',
     type: 'text',
@@ -125,12 +173,22 @@ export const familyLawAgreementSchema: Record<string, FamilyLawAgreementFieldCon
       form.agreementType === 'SpousalSupport' || form.agreementType === 'PropertySettlement',
     group: 'main'
   },
+  spouse2Contact: {
+    label: 'Spouse 2 Contact',
+    type: 'text',
+    required: false,
+    placeholder: 'Phone or email of Spouse 2',
+    clauseTemplate: 'Spouse 2 may be contacted at {{spouse2Contact}}.',
+    showIf: (form: FamilyLawAgreementFormData) =>
+      form.agreementType === 'SpousalSupport' || form.agreementType === 'PropertySettlement',
+    group: 'main'
+  },
 
   // Contract metadata
   agreementType: {
     label: 'Agreement Type',
     type: 'dropdown',
-    required: true,
+    required: false,
     options: ['Divorce', 'Custody', 'ChildSupport', 'SpousalSupport', 'PropertySettlement'],
     placeholder: 'Select agreement type',
     clauseTemplate: 'The parties enter into a {{agreementType}} agreement.',
@@ -279,6 +337,15 @@ export const familyLawAgreementSchema: Record<string, FamilyLawAgreementFieldCon
     clauseTemplate: 'Visitation schedule details: {{visitationScheduleEntries}}.',
     showIf: (form: FamilyLawAgreementFormData) =>
       form.agreementType === 'Custody' && form.visitationSchedule === 'Custom',
+    group: 'main'
+  },
+  holidaySchedule: {
+    label: 'Holiday Schedule',
+    type: 'textarea',
+    required: false, // optional, unless you want to enforce
+    placeholder: 'Describe holiday visitation arrangements',
+    clauseTemplate: 'Holiday schedule: {{holidaySchedule}}.',
+    showIf: (form: FamilyLawAgreementFormData) => form.agreementType === 'Custody',
     group: 'main'
   },
   decisionMakingAuthority: {
@@ -502,7 +569,8 @@ export const familyLawAgreementSchema: Record<string, FamilyLawAgreementFieldCon
     required: true,
     placeholder: 'e.g. Jane Doe',
     clauseTemplate: 'Signed by {{petitionerSignatoryName}}, Petitioner.',
-    showIf: (form: FamilyLawAgreementFormData) => form.agreementType === 'Divorce',
+    showIf: (form: FamilyLawAgreementFormData) =>
+      form.agreementType === 'Divorce' || form.stepKey === 'Finalization',
     group: 'main'
   },
   petitionerSignatoryRole: {
@@ -511,7 +579,8 @@ export const familyLawAgreementSchema: Record<string, FamilyLawAgreementFieldCon
     required: true,
     placeholder: 'e.g. Petitioner',
     clauseTemplate: 'Role: {{petitionerSignatoryRole}}.',
-    showIf: (form: FamilyLawAgreementFormData) => form.agreementType === 'Divorce',
+    showIf: (form: FamilyLawAgreementFormData) =>
+      form.agreementType === 'Divorce' || form.stepKey === 'Finalization',
     group: 'main'
   },
   respondentSignatoryName: {
@@ -520,7 +589,8 @@ export const familyLawAgreementSchema: Record<string, FamilyLawAgreementFieldCon
     required: true,
     placeholder: 'e.g. John Doe',
     clauseTemplate: 'Signed by {{respondentSignatoryName}}, Respondent.',
-    showIf: (form: FamilyLawAgreementFormData) => form.agreementType === 'Divorce',
+    showIf: (form: FamilyLawAgreementFormData) =>
+      form.agreementType === 'Divorce' || form.stepKey === 'Finalization',
     group: 'main'
   },
   respondentSignatoryRole: {
@@ -529,7 +599,8 @@ export const familyLawAgreementSchema: Record<string, FamilyLawAgreementFieldCon
     required: true,
     placeholder: 'e.g. Respondent',
     clauseTemplate: 'Role: {{respondentSignatoryRole}}.',
-    showIf: (form: FamilyLawAgreementFormData) => form.agreementType === 'Divorce',
+    showIf: (form: FamilyLawAgreementFormData) =>
+      form.agreementType === 'Divorce' || form.stepKey === 'Finalization',
     group: 'main'
   },
 
@@ -541,7 +612,9 @@ export const familyLawAgreementSchema: Record<string, FamilyLawAgreementFieldCon
     placeholder: 'e.g. Jane Doe',
     clauseTemplate: 'Signed by {{motherSignatoryName}}, Mother.',
     showIf: (form: FamilyLawAgreementFormData) =>
-      form.agreementType === 'Custody' || form.agreementType === 'ChildSupport',
+      form.agreementType === 'Custody' ||
+      form.agreementType === 'ChildSupport' ||
+      form.stepKey === 'Finalization',
     group: 'main'
   },
   motherSignatoryRole: {
@@ -551,7 +624,9 @@ export const familyLawAgreementSchema: Record<string, FamilyLawAgreementFieldCon
     placeholder: 'e.g. Mother',
     clauseTemplate: 'Role: {{motherSignatoryRole}}.',
     showIf: (form: FamilyLawAgreementFormData) =>
-      form.agreementType === 'Custody' || form.agreementType === 'ChildSupport',
+      form.agreementType === 'Custody' ||
+      form.agreementType === 'ChildSupport' ||
+      form.stepKey === 'Finalization',
     group: 'main'
   },
   fatherSignatoryName: {
@@ -561,7 +636,9 @@ export const familyLawAgreementSchema: Record<string, FamilyLawAgreementFieldCon
     placeholder: 'e.g. John Doe',
     clauseTemplate: 'Signed by {{fatherSignatoryName}}, Father.',
     showIf: (form: FamilyLawAgreementFormData) =>
-      form.agreementType === 'Custody' || form.agreementType === 'ChildSupport',
+      form.agreementType === 'Custody' ||
+      form.agreementType === 'ChildSupport' ||
+      form.stepKey === 'Finalization',
     group: 'main'
   },
   fatherSignatoryRole: {
@@ -571,7 +648,9 @@ export const familyLawAgreementSchema: Record<string, FamilyLawAgreementFieldCon
     placeholder: 'e.g. Father',
     clauseTemplate: 'Role: {{fatherSignatoryRole}}.',
     showIf: (form: FamilyLawAgreementFormData) =>
-      form.agreementType === 'Custody' || form.agreementType === 'ChildSupport',
+      form.agreementType === 'Custody' ||
+      form.agreementType === 'ChildSupport' ||
+      form.stepKey === 'Finalization',
     group: 'main'
   },
 
@@ -583,7 +662,9 @@ export const familyLawAgreementSchema: Record<string, FamilyLawAgreementFieldCon
     placeholder: 'e.g. Jane Doe',
     clauseTemplate: 'Signed by {{spouse1SignatoryName}}, Spouse 1.',
     showIf: (form: FamilyLawAgreementFormData) =>
-      form.agreementType === 'SpousalSupport' || form.agreementType === 'PropertySettlement',
+      form.agreementType === 'SpousalSupport' ||
+      form.agreementType === 'PropertySettlement' ||
+      form.stepKey === 'Finalization',
     group: 'main'
   },
   spouse1SignatoryRole: {
@@ -593,7 +674,9 @@ export const familyLawAgreementSchema: Record<string, FamilyLawAgreementFieldCon
     placeholder: 'e.g. Wife',
     clauseTemplate: 'Role: {{spouse1SignatoryRole}}.',
     showIf: (form: FamilyLawAgreementFormData) =>
-      form.agreementType === 'SpousalSupport' || form.agreementType === 'PropertySettlement',
+      form.agreementType === 'SpousalSupport' ||
+      form.agreementType === 'PropertySettlement' ||
+      form.stepKey === 'Finalization',
     group: 'main'
   },
   spouse2SignatoryName: {
@@ -603,7 +686,9 @@ export const familyLawAgreementSchema: Record<string, FamilyLawAgreementFieldCon
     placeholder: 'e.g. John Doe',
     clauseTemplate: 'Signed by {{spouse2SignatoryName}}, Spouse 2.',
     showIf: (form: FamilyLawAgreementFormData) =>
-      form.agreementType === 'SpousalSupport' || form.agreementType === 'PropertySettlement',
+      form.agreementType === 'SpousalSupport' ||
+      form.agreementType === 'PropertySettlement' ||
+      form.stepKey === 'Finalization',
     group: 'main'
   },
   spouse2SignatoryRole: {
@@ -613,7 +698,9 @@ export const familyLawAgreementSchema: Record<string, FamilyLawAgreementFieldCon
     placeholder: 'e.g. Husband',
     clauseTemplate: 'Role: {{spouse2SignatoryRole}}.',
     showIf: (form: FamilyLawAgreementFormData) =>
-      form.agreementType === 'SpousalSupport' || form.agreementType === 'PropertySettlement',
+      form.agreementType === 'SpousalSupport' ||
+      form.agreementType === 'PropertySettlement' ||
+      form.stepKey === 'Finalization',
     group: 'main'
   }
 };

@@ -51,8 +51,15 @@ export default function FamilyLawAgreementFlow({ schema }: Props) {
   })();
 
   if (isHardReload) {
-    sessionStorage.removeItem('familyLawAgreementDraft');
-    sessionStorage.removeItem('familyLawAgreementFormData');
+    sessionStorage.removeItem("familyLawAgreementDraft");
+    sessionStorage.removeItem("familyLawAgreementFormData");
+
+    // ✅ clear per‑step persisted slices
+    Object.keys(sessionStorage).forEach((key) => {
+      if (key.startsWith("FamilyLawAgreement:")) {
+        sessionStorage.removeItem(key);
+      }
+    });
   }
 
   // ✅ Session‑persisted form state
@@ -68,6 +75,18 @@ export default function FamilyLawAgreementFlow({ schema }: Props) {
     hydratedDefaults,
     normalizeRawFamilyLawAgreementFormData
   );
+
+  // ✅ agreementTypes drives whether we render stepper vs chooser
+  const [agreementTypes, setAgreementTypes] = useState<string[]>([]);
+  // ✅ initialSelectedTypes used to pre‑check boxes in chooser
+  const [initialSelectedTypes, setInitialSelectedTypes] = useState<string[]>([]);
+  // ✅ new state for lastStepKey hydration
+  const [lastStepKey, setLastStepKey] = useState<string | undefined>(undefined);
+  // ✅ explicit flag to show chooser even if agreementTypes is non‑empty
+  const [showChooser, setShowChooser] = useState(false);
+
+  const location = useLocation();
+  const { templateId } = useParams<{ templateId?: string }>();
 
   // ✅ Retainer state for validation, preview, serialization
   const {
@@ -89,83 +108,53 @@ export default function FamilyLawAgreementFlow({ schema }: Props) {
     'familyLawAgreementFormData'
   );
 
-  // ✅ agreementTypes drives whether we render stepper vs chooser
-  const [agreementTypes, setAgreementTypes] = useState<string[]>([]);
-  // ✅ initialSelectedTypes used to pre‑check boxes in chooser
-  const [initialSelectedTypes, setInitialSelectedTypes] = useState<string[]>([]);
-
-  const location = useLocation();
-  const { templateId } = useParams<{ templateId?: string }>();
-
   // ✅ Unified onChange handler for form fields
   const onChange = (
     field: keyof FamilyLawAgreementFormData,
     value: string | number | boolean | Date
   ) => {
     if (field === 'agreementType') {
-      // Update agreementType safely
       setFormData(prev => ({
         ...prev,
         agreementType: value as FamilyLawAgreementFormData['agreementType'],
       }));
-
-      // Clear validation state (banner + field errors)
       setErrors({});
-
       updateField(field, value);
       return;
     }
 
-    // Normal update path
     setFormData(prev => ({ ...prev, [field]: value }));
     updateField(field, value);
   };
 
-  // ✅ Hydrate formData/rawFormData from location.state first, fallback to sessionStorage
+  // ✅ Hydrate formData/rawFormData + agreementTypes + lastStepKey from sessionStorage
   useEffect(() => {
-    const stateFormData = (location.state as any)?.formData as FamilyLawAgreementFormData | undefined;
-    const stateRawFormData = (location.state as any)?.rawFormData as FamilyLawAgreementFormData | undefined;
+    const saved = sessionStorage.getItem("familyLawAgreementFormData");
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      const hydrated = normalizeFamilyLawAgreementFormData(parsed);
 
-    if (stateFormData && stateRawFormData) {
-      setFormData(stateFormData);
-      setRawFormData(stateRawFormData);
-    } else {
-      const saved = sessionStorage.getItem('familyLawAgreementFormData');
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        const hydrated = normalizeFamilyLawAgreementFormData(parsed);
-        setFormData(hydrated);
-        setRawFormData(hydrated);
+      setFormData(hydrated);
+      setRawFormData(hydrated);
+
+      if (parsed.agreementTypes?.length > 0) {
+        setAgreementTypes(parsed.agreementTypes);
+        setInitialSelectedTypes(parsed.agreementTypes);
+      }
+      if (parsed.stepKey) {
+        setLastStepKey(parsed.stepKey);
       }
     }
-  }, [location.state, setFormData, setRawFormData]);
+  }, []);
 
-  // ✅ Hydrate agreementTypes for stepper OR clear for chooser
-  useEffect(() => {
-    const stateTypes = (location.state as any)?.agreementTypes as string[] | undefined;
-
-    if (templateId) {
-      // ✅ URL has a module param → stepper
-      // Use stateTypes if available, otherwise keep whatever is already in agreementTypes
-      if (stateTypes && stateTypes.length > 0) {
-        setAgreementTypes(stateTypes);
-      }
-    } else {
-      // ✅ Root URL → chooser
-      setAgreementTypes([]); // force chooser
-      if (stateTypes && stateTypes.length > 0) {
-        setInitialSelectedTypes(stateTypes); // preserve for pre‑checking
-      } else {
-        setInitialSelectedTypes([]);
-      }
-    }
-  }, [location.state, templateId]);
-
-  // ✅ If no agreement types selected yet, show selector
-  if (agreementTypes.length === 0) {
+  // ✅ If chooser mode is active, show selector
+  if (showChooser || agreementTypes.length === 0) {
     return (
       <AgreementTypeSelector
-        onSelect={types => setAgreementTypes(types)}
+        onSelect={types => {
+          setAgreementTypes(types);
+          setShowChooser(false); // once user selects, go back to stepper
+        }}
         initialSelected={initialSelectedTypes}
       />
     );
@@ -180,7 +169,11 @@ export default function FamilyLawAgreementFlow({ schema }: Props) {
       setRawFormData={setRawFormData}
       agreementTypes={agreementTypes}
       setAgreementTypes={setAgreementTypes}
-      onComplete={handleSubmit}
+      lastStepKey={lastStepKey}
+      setLastStepKey={setLastStepKey}
+      onComplete={(raw, lastStepKey) => handleSubmit(raw, lastStepKey, agreementTypes)}
+      // ✅ provide a way for Stepper to trigger chooser mode
+      onExitToChooser={() => setShowChooser(true)}
     />
   );
 }

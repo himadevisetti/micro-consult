@@ -65,21 +65,36 @@ export function useRetainerState<T extends Record<string, any>>(
    * Accepts optional lastStepKey so flows like FamilyLawAgreement can
    * return to the last filled step from Preview.
    */
-  const handleSubmit = async (raw: T, lastStepKey?: string) => {
+  const handleSubmit = async (
+    raw: T,
+    lastStepKey?: string,
+    agreementTypes?: string[] // accept agreementTypes from Stepper/Flow
+  ) => {
     const { parsed, errors } = validateForm(raw, schema);
     setFormData(parsed);
-    setErrors(errors);
 
-    if (Object.keys(errors).length > 0) {
-      console.warn('Form submission blocked due to validation errors:', errors);
-      return;
+    if (formType === FormType.FamilyLawAgreement) {
+      setErrors({});
+      console.log("Skipping error blocking: Stepper already validated FamilyLawAgreement flow");
+    } else {
+      setErrors(errors);
+      if (Object.keys(errors).length > 0) {
+        console.warn("Form submission blocked due to validation errors:", errors);
+        return;
+      }
     }
 
     const html = await generatePreview();
-    const payload = parsed;
+
+    // ✅ Build payload with agreementTypes + stepKey for rehydration
+    const payload = {
+      ...parsed,
+      agreementTypes, // preserve selected modules for FamilyLawAgreement
+      stepKey: lastStepKey, // preserve current step for FamilyLawAgreement
+    };
 
     sessionStorage.setItem(sessionStorageKey, JSON.stringify(payload));
-    console.log('Form submitted successfully:', payload);
+    console.log("Form submitted successfully:", payload);
 
     // Only navigate for non-CustomTemplateGenerate flows
     if (formType !== FormType.CustomTemplateGenerate) {

@@ -8,6 +8,11 @@ export type FamilyLawAgreementType =
   | 'SpousalSupport'
   | 'PropertySettlement';
 
+/* === Step Keys (UI flow steps) === */
+export type FamilyLawAgreementStepKey =
+  | FamilyLawAgreementType
+  | 'Finalization';
+
 /* === Custody & Visitation === */
 export type CustodyType = 'Sole' | 'Joint';
 export type DecisionMakingAuthority = 'Mother' | 'Father' | 'Joint';
@@ -75,6 +80,7 @@ export interface FamilyLawAgreementFormData {
 
   // Contract metadata
   agreementType: FamilyLawAgreementType;
+  stepKey?: FamilyLawAgreementStepKey; // ✅ added to distinguish UI step (e.g. Finalization)
   executionDate: string; // ISO YYYY-MM-DD
   effectiveDate?: string;
   expirationDate?: string;
@@ -144,6 +150,7 @@ export interface FamilyLawAgreementFormData {
 
 export const defaultFamilyLawAgreementFormData: FamilyLawAgreementFormData = {
   agreementType: 'Divorce',
+  stepKey: 'Divorce', // ✅ default stepKey matches agreementType initially
   executionDate: '',
   effectiveDate: '',
   expirationDate: '',

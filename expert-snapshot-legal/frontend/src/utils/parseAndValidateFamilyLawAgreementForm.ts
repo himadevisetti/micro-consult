@@ -9,17 +9,22 @@ export type FamilyLawAgreementValidationErrors = Partial<
   Record<keyof FamilyLawAgreementFormData, string>
 >;
 
+// ✅ helper for contact validation
+function validateContact(value: string): boolean {
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  const phoneRegex = /^\+?[0-9\s\-()]{7,}$/;
+  return emailRegex.test(value) || phoneRegex.test(value);
+}
+
 export function parseAndValidateFamilyLawAgreementForm(
   rawFormData: FamilyLawAgreementFormData,
   schema: Record<string, FamilyLawAgreementFieldConfig>
 ): { parsed: FamilyLawAgreementFormData; errors: FamilyLawAgreementValidationErrors } {
   const errors: FamilyLawAgreementValidationErrors = {};
-  const parsedRaw: Partial<
-    Record<
-      keyof FamilyLawAgreementFormData,
-      FamilyLawAgreementFormData[keyof FamilyLawAgreementFormData]
-    >
-  > = {};
+  const parsedRaw: Partial<Record<keyof FamilyLawAgreementFormData, any>> = {};
+
+  // --- Instrumentation: log schema keys received ---
+  console.log("Validator received schema keys:", Object.keys(schema));
 
   // --- Generic per-field parsing + schema-driven validation ---
   for (const [key, config] of Object.entries(schema)) {
@@ -27,14 +32,11 @@ export function parseAndValidateFamilyLawAgreementForm(
     const rawValue = rawFormData[field];
     let parsedValue: unknown = rawValue;
 
+    // normalize values
     if (config.type === 'number') {
       parsedValue = rawValue !== undefined ? Number(rawValue) : undefined;
     }
-    if (
-      config.type === 'text' ||
-      config.type === 'textarea' ||
-      config.type === 'date'
-    ) {
+    if (config.type === 'text' || config.type === 'textarea' || config.type === 'date') {
       parsedValue = typeof rawValue === 'string' ? rawValue.trim() : rawValue;
     }
 
@@ -47,16 +49,34 @@ export function parseAndValidateFamilyLawAgreementForm(
         ? !!(config as any).showIf(formSnapshot)
         : true;
 
-    if (!isVisible) {
-      continue;
-    }
+    if (!isVisible) continue;
 
+    // --- Instrumentation: log each field being validated ---
+    console.log("Validating field:", field, "required:", config.required, "value:", parsedValue);
+
+    // ✅ required check
     if (config.required && isEmptyValue(parsedValue)) {
       errors[field] = `${config.label} is required.`;
       console.warn(`⚠️ Missing required: ${String(field)}`);
       continue;
     }
 
+    // ✅ contact validation
+    if (
+      (field === 'petitionerContact' ||
+        field === 'respondentContact' ||
+        field === 'motherContact' ||
+        field === 'fatherContact' ||
+        field === 'spouse1Contact' ||
+        field === 'spouse2Contact') &&
+      !isEmptyValue(parsedValue) &&
+      !validateContact(parsedValue as string)
+    ) {
+      errors[field] = `${config.label} must be a valid phone number or email.`;
+      console.warn(`⚠️ Invalid contact: ${String(field)}`);
+    }
+
+    // ✅ custom validators
     if (config.validate) {
       const normalized = normalizeForValidation(parsedValue, config.type);
       const result = config.validate(normalized, formSnapshot);
@@ -70,76 +90,36 @@ export function parseAndValidateFamilyLawAgreementForm(
   // --- Combined inline pair validation helpers ---
   const formSnapshot = { ...rawFormData, ...parsedRaw } as FamilyLawAgreementFormData;
 
-  // Child Support: Amount + Frequency
-  validateInlinePair(
-    formSnapshot,
-    errors,
-    'childSupportAmount' as keyof FamilyLawAgreementFormData,
-    'childSupportPaymentFrequency' as keyof FamilyLawAgreementFormData,
-    'Child Support Obligation',
-    false,
-    schema
-  );
-
-  // Spousal Support: Amount + Duration
-  validateInlinePair(
-    formSnapshot,
-    errors,
-    'spousalSupportAmount' as keyof FamilyLawAgreementFormData,
-    'spousalSupportDurationMonths' as keyof FamilyLawAgreementFormData,
-    'Spousal Support Obligation',
-    false,
-    schema
-  );
-
-  // --- Role-specific validations ---
-  if (formSnapshot.agreementType === 'Divorce') {
-    if (isEmptyValue(formSnapshot.petitionerName)) {
-      errors.petitionerName = 'Petitioner Name is required.';
-    }
-    if (isEmptyValue(formSnapshot.respondentName)) {
-      errors.respondentName = 'Respondent Name is required.';
-    }
-    if (isEmptyValue(formSnapshot.petitionerSignatoryName)) {
-      errors.petitionerSignatoryName = 'Petitioner Signatory Name is required.';
-    }
-    if (isEmptyValue(formSnapshot.respondentSignatoryName)) {
-      errors.respondentSignatoryName = 'Respondent Signatory Name is required.';
-    }
+  // ✅ Only run inline pair checks if those fields exist in the current step schema
+  if (schema.childSupportAmount || schema.childSupportPaymentFrequency) {
+    console.log("Running inline pair validation for Child Support");
+    validateInlinePair(
+      formSnapshot,
+      errors,
+      'childSupportAmount',
+      'childSupportPaymentFrequency',
+      'Child Support Obligation',
+      false,
+      schema // pass stepSchema, not full master schema
+    );
   }
 
-  if (formSnapshot.agreementType === 'Custody' || formSnapshot.agreementType === 'ChildSupport') {
-    if (isEmptyValue(formSnapshot.motherName)) {
-      errors.motherName = 'Mother Name is required.';
-    }
-    if (isEmptyValue(formSnapshot.fatherName)) {
-      errors.fatherName = 'Father Name is required.';
-    }
-    if (isEmptyValue(formSnapshot.motherSignatoryName)) {
-      errors.motherSignatoryName = 'Mother Signatory Name is required.';
-    }
-    if (isEmptyValue(formSnapshot.fatherSignatoryName)) {
-      errors.fatherSignatoryName = 'Father Signatory Name is required.';
-    }
+  if (schema.spousalSupportAmount || schema.spousalSupportDurationMonths) {
+    console.log("Running inline pair validation for Spousal Support");
+    validateInlinePair(
+      formSnapshot,
+      errors,
+      'spousalSupportAmount',
+      'spousalSupportDurationMonths',
+      'Spousal Support Obligation',
+      false,
+      schema // pass stepSchema
+    );
   }
 
-  if (formSnapshot.agreementType === 'SpousalSupport' || formSnapshot.agreementType === 'PropertySettlement') {
-    if (isEmptyValue(formSnapshot.spouse1Name)) {
-      errors.spouse1Name = 'Spouse 1 Name is required.';
-    }
-    if (isEmptyValue(formSnapshot.spouse2Name)) {
-      errors.spouse2Name = 'Spouse 2 Name is required.';
-    }
-    if (isEmptyValue(formSnapshot.spouse1SignatoryName)) {
-      errors.spouse1SignatoryName = 'Spouse 1 Signatory Name is required.';
-    }
-    if (isEmptyValue(formSnapshot.spouse2SignatoryName)) {
-      errors.spouse2SignatoryName = 'Spouse 2 Signatory Name is required.';
-    }
-  }
-
-  // --- Visitation Schedule (Days + Time range) validation ---
-  {
+  // --- Visitation Schedule validation ---
+  if (schema.visitationScheduleEntries) {
+    console.log("Running visitation schedule validation");
     const vsCfg = schema.visitationScheduleEntries as any;
     const vsVisible =
       typeof vsCfg?.showIf === 'function' ? !!vsCfg.showIf(formSnapshot) : true;
@@ -158,7 +138,7 @@ export function parseAndValidateFamilyLawAgreementForm(
         const endStr: string = row?.hours?.end || '';
 
         const hasAny = days.length > 0 || !!startStr || !!endStr;
-        if (!hasAny) return; // skip empty rows
+        if (!hasAny) return;
 
         if (days.length === 0) {
           (errors as any)[`visitationSchedule_row_${idx}_days`] =
@@ -207,7 +187,7 @@ export function parseAndValidateFamilyLawAgreementForm(
       // --- Requiredness check ---
       if (formSnapshot.agreementType === 'Custody' && validRowCount === 0 && !hasPerRowErrors) {
         const daysFieldKey =
-          schema.visitationScheduleEntries?.pair?.find(f => f.type === 'multiselect')?.key || 'days';
+          schema.visitationScheduleEntries?.pair?.find((f: any) => f.type === 'multiselect')?.key || 'days';
 
         const firstRowDaysKey = `visitationSchedule_row_0_${daysFieldKey}`;
         const message = `${vsCfg?.label || 'Visitation Schedule'} is required: add at least one row with days and a start–end time.`;

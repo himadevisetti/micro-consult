@@ -121,31 +121,32 @@ export const stepperConfig: Record<string, StepConfig> = {
     fields: ['additionalProvisions'],
   },
 
+  // Signatures step (no hardcoded fields here anymore)
   Signatures: {
     key: 'Signatures',
     title: 'Signatures',
     description: 'Enter signatory names and roles.',
+    fields: [], // dynamically injected via getSignatoryFields()
+  },
+
+  // Finalization step (no hardcoded signatures)
+  Finalization: {
+    key: 'Finalization',
+    title: 'Finalization & Signatures',
+    description: 'Termination clauses, miscellaneous provisions, and signature fields.',
     fields: [
-      'petitionerSignatoryName',
-      'petitionerSignatoryRole',
-      'respondentSignatoryName',
-      'respondentSignatoryRole',
-      'motherSignatoryName',
-      'motherSignatoryRole',
-      'fatherSignatoryName',
-      'fatherSignatoryRole',
-      'spouse1SignatoryName',
-      'spouse1SignatoryRole',
-      'spouse2SignatoryName',
-      'spouse2SignatoryRole',
+      'terminationClause',
+      'disputeResolution',
+      'additionalProvisions',
+      // signatures injected dynamically via getSignatoryFields()
     ],
   },
 };
 
-// Export helper arrays so other components (like AgreementTypeSelector) don’t hard‑code strings
+// Export helper arrays
 export const ALWAYS_INCLUDED_KEYS = ['TerminationAndRemedies', 'Miscellaneous', 'Signatures'];
 
 // All selectable agreement types (modules)
 export const SELECTABLE_AGREEMENT_TYPES = Object.keys(stepperConfig).filter(
-  key => !ALWAYS_INCLUDED_KEYS.includes(key)
+  key => !ALWAYS_INCLUDED_KEYS.includes(key) && key !== 'Finalization'
 );

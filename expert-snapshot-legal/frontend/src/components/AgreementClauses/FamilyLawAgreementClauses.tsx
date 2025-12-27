@@ -180,7 +180,8 @@ export function getFamilyLawAgreementClauses(
     {
       id: 'signatureClause',
       render: (fd) => {
-        if (fd.agreementType === 'Divorce') {
+        // Always render signatures if Finalization step is present
+        if (fd.petitionerSignatoryName && fd.respondentSignatoryName) {
           return (
             <SignatureClause
               petitionerSignatoryName={fd.petitionerSignatoryName}
@@ -191,7 +192,7 @@ export function getFamilyLawAgreementClauses(
             />
           );
         }
-        if (fd.agreementType === 'Custody' || fd.agreementType === 'ChildSupport') {
+        if (fd.motherSignatoryName && fd.fatherSignatoryName) {
           return (
             <SignatureClause
               motherSignatoryName={fd.motherSignatoryName}
@@ -202,7 +203,7 @@ export function getFamilyLawAgreementClauses(
             />
           );
         }
-        if (fd.agreementType === 'SpousalSupport' || fd.agreementType === 'PropertySettlement') {
+        if (fd.spouse1SignatoryName && fd.spouse2SignatoryName) {
           return (
             <SignatureClause
               spouse1SignatoryName={fd.spouse1SignatoryName}
