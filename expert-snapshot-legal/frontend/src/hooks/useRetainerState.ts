@@ -68,35 +68,32 @@ export function useRetainerState<T extends Record<string, any>>(
   const handleSubmit = async (
     raw: T,
     lastStepKey?: string,
-    agreementTypes?: string[] // accept agreementTypes from Stepper/Flow
+    agreementTypes?: string[]
   ) => {
-    const { parsed, errors } = validateForm(raw, schema);
+    // Inject agreementTypes + stepKey before validation
+    const enrichedRaw = { ...raw, agreementTypes, stepKey: lastStepKey };
+
+    const { parsed, errors } = validateForm(enrichedRaw, schema);
     setFormData(parsed);
 
-    if (formType === FormType.FamilyLawAgreement) {
-      setErrors({});
-      console.log("Skipping error blocking: Stepper already validated FamilyLawAgreement flow");
-    } else {
-      setErrors(errors);
-      if (Object.keys(errors).length > 0) {
-        console.warn("Form submission blocked due to validation errors:", errors);
-        return;
-      }
+    // Normal error handling now applies to all form types
+    setErrors(errors);
+    if (Object.keys(errors).length > 0) {
+      console.warn("Form submission blocked due to validation errors:", errors);
+      return;
     }
 
     const html = await generatePreview();
 
-    // ✅ Build payload with agreementTypes + stepKey for rehydration
     const payload = {
       ...parsed,
-      agreementTypes, // preserve selected modules for FamilyLawAgreement
-      stepKey: lastStepKey, // preserve current step for FamilyLawAgreement
+      agreementTypes,
+      stepKey: lastStepKey,
     };
 
     sessionStorage.setItem(sessionStorageKey, JSON.stringify(payload));
     console.log("Form submitted successfully:", payload);
 
-    // Only navigate for non-CustomTemplateGenerate flows
     if (formType !== FormType.CustomTemplateGenerate) {
       navigate(`/preview/${formType}`, {
         state: {

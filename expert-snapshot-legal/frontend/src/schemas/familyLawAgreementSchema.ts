@@ -2,6 +2,7 @@
 
 import type { FamilyLawAgreementFormData, VisitationScheduleEntry } from '../types/FamilyLawAgreementFormData';
 import { FamilyLawAgreementFieldConfig } from '../types/FamilyLawAgreementFieldConfig';
+import { validateSignatory } from '../utils/validateSignatory';
 
 export const familyLawAgreementSchema: Record<string, FamilyLawAgreementFieldConfig> = {
   // Parties — Divorce
@@ -564,143 +565,167 @@ export const familyLawAgreementSchema: Record<string, FamilyLawAgreementFieldCon
   // Signatures
   // Divorce
   petitionerSignatoryName: {
-    label: 'Petitioner Signatory Name',
-    type: 'text',
-    required: true,
-    placeholder: 'e.g. Jane Doe',
-    clauseTemplate: 'Signed by {{petitionerSignatoryName}}, Petitioner.',
+    label: "Petitioner Signatory Name",
+    type: "text",
+    required: false,
+    placeholder: "e.g. Jane Doe",
+    clauseTemplate: "Signed by {{petitionerSignatoryName}}, Petitioner.",
     showIf: (form: FamilyLawAgreementFormData) =>
-      form.agreementType === 'Divorce' || form.stepKey === 'Finalization',
-    group: 'main'
+      form.agreementType === "Divorce" || form.stepKey === "Finalization",
+    validate: (val: string, form?: FamilyLawAgreementFormData) =>
+      validateSignatory(val, form, "Divorce"),
+    group: "main",
   },
   petitionerSignatoryRole: {
-    label: 'Petitioner Role',
-    type: 'text',
-    required: true,
-    placeholder: 'e.g. Petitioner',
-    clauseTemplate: 'Role: {{petitionerSignatoryRole}}.',
+    label: "Petitioner Role",
+    type: "text",
+    required: false,
+    placeholder: "e.g. Petitioner",
+    clauseTemplate: "Role: {{petitionerSignatoryRole}}.",
     showIf: (form: FamilyLawAgreementFormData) =>
-      form.agreementType === 'Divorce' || form.stepKey === 'Finalization',
-    group: 'main'
+      form.agreementType === "Divorce" || form.stepKey === "Finalization",
+    validate: (val: string, form?: FamilyLawAgreementFormData) =>
+      validateSignatory(val, form, "Divorce"),
+    group: "main",
   },
   respondentSignatoryName: {
-    label: 'Respondent Signatory Name',
-    type: 'text',
-    required: true,
-    placeholder: 'e.g. John Doe',
-    clauseTemplate: 'Signed by {{respondentSignatoryName}}, Respondent.',
+    label: "Respondent Signatory Name",
+    type: "text",
+    required: false,
+    placeholder: "e.g. John Doe",
+    clauseTemplate: "Signed by {{respondentSignatoryName}}, Respondent.",
     showIf: (form: FamilyLawAgreementFormData) =>
-      form.agreementType === 'Divorce' || form.stepKey === 'Finalization',
-    group: 'main'
+      form.agreementType === "Divorce" || form.stepKey === "Finalization",
+    validate: (val: string, form?: FamilyLawAgreementFormData) =>
+      validateSignatory(val, form, "Divorce"),
+    group: "main",
   },
   respondentSignatoryRole: {
-    label: 'Respondent Role',
-    type: 'text',
-    required: true,
-    placeholder: 'e.g. Respondent',
-    clauseTemplate: 'Role: {{respondentSignatoryRole}}.',
+    label: "Respondent Role",
+    type: "text",
+    required: false,
+    placeholder: "e.g. Respondent",
+    clauseTemplate: "Role: {{respondentSignatoryRole}}.",
     showIf: (form: FamilyLawAgreementFormData) =>
-      form.agreementType === 'Divorce' || form.stepKey === 'Finalization',
-    group: 'main'
+      form.agreementType === "Divorce" || form.stepKey === "Finalization",
+    validate: (val: string, form?: FamilyLawAgreementFormData) =>
+      validateSignatory(val, form, "Divorce"),
+    group: "main",
   },
 
   // Custody / Child Support
   motherSignatoryName: {
-    label: 'Mother Signatory Name',
-    type: 'text',
-    required: true,
-    placeholder: 'e.g. Jane Doe',
-    clauseTemplate: 'Signed by {{motherSignatoryName}}, Mother.',
+    label: "Mother Signatory Name",
+    type: "text",
+    required: false,
+    placeholder: "e.g. Jane Doe",
+    clauseTemplate: "Signed by {{motherSignatoryName}}, Mother.",
     showIf: (form: FamilyLawAgreementFormData) =>
-      form.agreementType === 'Custody' ||
-      form.agreementType === 'ChildSupport' ||
-      form.stepKey === 'Finalization',
-    group: 'main'
+      form.agreementType === "Custody" ||
+      form.agreementType === "ChildSupport" ||
+      form.stepKey === "Finalization",
+    validate: (val: string, form?: FamilyLawAgreementFormData) =>
+      validateSignatory(val, form, "Custody"),
+    group: "main",
   },
   motherSignatoryRole: {
-    label: 'Mother Role',
-    type: 'text',
-    required: true,
-    placeholder: 'e.g. Mother',
-    clauseTemplate: 'Role: {{motherSignatoryRole}}.',
+    label: "Mother Role",
+    type: "text",
+    required: false,
+    placeholder: "e.g. Mother",
+    clauseTemplate: "Role: {{motherSignatoryRole}}.",
     showIf: (form: FamilyLawAgreementFormData) =>
-      form.agreementType === 'Custody' ||
-      form.agreementType === 'ChildSupport' ||
-      form.stepKey === 'Finalization',
-    group: 'main'
+      form.agreementType === "Custody" ||
+      form.agreementType === "ChildSupport" ||
+      form.stepKey === "Finalization",
+    validate: (val: string, form?: FamilyLawAgreementFormData) =>
+      validateSignatory(val, form, "Custody"),
+    group: "main",
   },
   fatherSignatoryName: {
-    label: 'Father Signatory Name',
-    type: 'text',
-    required: true,
-    placeholder: 'e.g. John Doe',
-    clauseTemplate: 'Signed by {{fatherSignatoryName}}, Father.',
+    label: "Father Signatory Name",
+    type: "text",
+    required: false,
+    placeholder: "e.g. John Doe",
+    clauseTemplate: "Signed by {{fatherSignatoryName}}, Father.",
     showIf: (form: FamilyLawAgreementFormData) =>
-      form.agreementType === 'Custody' ||
-      form.agreementType === 'ChildSupport' ||
-      form.stepKey === 'Finalization',
-    group: 'main'
+      form.agreementType === "Custody" ||
+      form.agreementType === "ChildSupport" ||
+      form.stepKey === "Finalization",
+    validate: (val: string, form?: FamilyLawAgreementFormData) =>
+      validateSignatory(val, form, "Custody"),
+    group: "main",
   },
   fatherSignatoryRole: {
-    label: 'Father Role',
-    type: 'text',
-    required: true,
-    placeholder: 'e.g. Father',
-    clauseTemplate: 'Role: {{fatherSignatoryRole}}.',
+    label: "Father Role",
+    type: "text",
+    required: false,
+    placeholder: "e.g. Father",
+    clauseTemplate: "Role: {{fatherSignatoryRole}}.",
     showIf: (form: FamilyLawAgreementFormData) =>
-      form.agreementType === 'Custody' ||
-      form.agreementType === 'ChildSupport' ||
-      form.stepKey === 'Finalization',
-    group: 'main'
+      form.agreementType === "Custody" ||
+      form.agreementType === "ChildSupport" ||
+      form.stepKey === "Finalization",
+    validate: (val: string, form?: FamilyLawAgreementFormData) =>
+      validateSignatory(val, form, "Custody"),
+    group: "main",
   },
 
   // Spousal Support / Property Settlement
   spouse1SignatoryName: {
-    label: 'Spouse 1 Signatory Name',
-    type: 'text',
-    required: true,
-    placeholder: 'e.g. Jane Doe',
-    clauseTemplate: 'Signed by {{spouse1SignatoryName}}, Spouse 1.',
+    label: "Spouse 1 Signatory Name",
+    type: "text",
+    required: false,
+    placeholder: "e.g. Jane Doe",
+    clauseTemplate: "Signed by {{spouse1SignatoryName}}, Spouse 1.",
     showIf: (form: FamilyLawAgreementFormData) =>
-      form.agreementType === 'SpousalSupport' ||
-      form.agreementType === 'PropertySettlement' ||
-      form.stepKey === 'Finalization',
-    group: 'main'
+      form.agreementType === "SpousalSupport" ||
+      form.agreementType === "PropertySettlement" ||
+      form.stepKey === "Finalization",
+    validate: (val: string, form?: FamilyLawAgreementFormData) =>
+      validateSignatory(val, form, "Spousal"),
+    group: "main",
   },
   spouse1SignatoryRole: {
-    label: 'Spouse 1 Role',
-    type: 'text',
-    required: true,
-    placeholder: 'e.g. Wife',
-    clauseTemplate: 'Role: {{spouse1SignatoryRole}}.',
+    label: "Spouse 1 Role",
+    type: "text",
+    required: false,
+    placeholder: "e.g. Wife",
+    clauseTemplate: "Role: {{spouse1SignatoryRole}}.",
     showIf: (form: FamilyLawAgreementFormData) =>
-      form.agreementType === 'SpousalSupport' ||
-      form.agreementType === 'PropertySettlement' ||
-      form.stepKey === 'Finalization',
-    group: 'main'
+      form.agreementType === "SpousalSupport" ||
+      form.agreementType === "PropertySettlement" ||
+      form.stepKey === "Finalization",
+    validate: (val: string, form?: FamilyLawAgreementFormData) =>
+      validateSignatory(val, form, "Spousal"),
+    group: "main",
   },
   spouse2SignatoryName: {
-    label: 'Spouse 2 Signatory Name',
-    type: 'text',
-    required: true,
-    placeholder: 'e.g. John Doe',
-    clauseTemplate: 'Signed by {{spouse2SignatoryName}}, Spouse 2.',
+    label: "Spouse 2 Signatory Name",
+    type: "text",
+    required: false,
+    placeholder: "e.g. John Doe",
+    clauseTemplate: "Signed by {{spouse2SignatoryName}}, Spouse 2.",
     showIf: (form: FamilyLawAgreementFormData) =>
-      form.agreementType === 'SpousalSupport' ||
-      form.agreementType === 'PropertySettlement' ||
-      form.stepKey === 'Finalization',
-    group: 'main'
+      form.agreementType === "SpousalSupport" ||
+      form.agreementType === "PropertySettlement" ||
+      form.stepKey === "Finalization",
+    validate: (val: string, form?: FamilyLawAgreementFormData) =>
+      validateSignatory(val, form, "Spousal"),
+    group: "main",
   },
   spouse2SignatoryRole: {
-    label: 'Spouse 2 Role',
-    type: 'text',
-    required: true,
-    placeholder: 'e.g. Husband',
-    clauseTemplate: 'Role: {{spouse2SignatoryRole}}.',
+    label: "Spouse 2 Role",
+    type: "text",
+    required: false,
+    placeholder: "e.g. Husband",
+    clauseTemplate: "Role: {{spouse2SignatoryRole}}.",
     showIf: (form: FamilyLawAgreementFormData) =>
-      form.agreementType === 'SpousalSupport' ||
-      form.agreementType === 'PropertySettlement' ||
-      form.stepKey === 'Finalization',
-    group: 'main'
+      form.agreementType === "SpousalSupport" ||
+      form.agreementType === "PropertySettlement" ||
+      form.stepKey === "Finalization",
+    validate: (val: string, form?: FamilyLawAgreementFormData) =>
+      validateSignatory(val, form, "Spousal"),
+    group: "main",
   }
 };

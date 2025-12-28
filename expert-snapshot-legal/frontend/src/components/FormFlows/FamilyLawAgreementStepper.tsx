@@ -114,23 +114,39 @@ export default function FamilyLawAgreementStepper({
     const currentKey = steps[currentStep]?.key;
     if (!currentKey) return;
 
+    // ❌ Skip rehydration if single-module
+    if (steps.length === 1) {
+      console.log("[Stepper] Skipping rehydration (single-module).");
+      return;
+    }
+
     const saved = rehydrateStepData(currentKey);
+    console.log("[Stepper] After rehydrateStepData:", saved);
 
     let merged = { ...saved };
-    if (steps.length === 1) {
+    if (steps.length > 1) {
       const finalizationMerged = rehydrateWithFinalization(currentKey);
+      console.log("[Stepper] finalizationMerged:", finalizationMerged);
       merged = { ...merged, ...finalizationMerged };
     }
 
     if (merged && Object.keys(merged).length > 0) {
-      console.log("[Stepper.useEffect] rehydrating normalized formData for", currentKey, merged);
+      console.log("[Stepper] Merged before setFormData:", merged);
 
-      // ✅ Normalize after merge
-      const normalized = normalizeFamilyLawAgreementFormData({ ...formData, ...merged });
+      setFormData(prev => {
+        const next = { ...prev, ...merged };
+        console.log("[Stepper] setFormData next:", next);
+        return next;
+      });
 
-      setFormData(prev => ({ ...prev, ...normalized }));
+      // 🔹 Also update rawFormData to keep CustomDatePicker safe
+      setRawFormData(prev => {
+        const next = { ...prev, ...merged };
+        console.log("[Stepper] setRawFormData next:", next);
+        return next;
+      });
     }
-  }, [currentStep, steps, setFormData]);
+  }, [currentStep, steps, setFormData, setRawFormData]);
 
   // ✅ Keep URL in sync only when inside stepper and not exiting
   useEffect(() => {
@@ -167,13 +183,9 @@ export default function FamilyLawAgreementStepper({
       )
     );
 
-    console.log("[Stepper.handleNext] incoming formData keys:", Object.keys(formData));
-    console.log("[Stepper.handleNext] incoming petitionerSignatoryName:", formData.petitionerSignatoryName);
-    console.log("[Stepper.handleNext] incoming respondentSignatoryName:", formData.respondentSignatoryName);
-
-    // Validate only against this step’s schema
+    // ✅ Validate against rawFormData (ISO/user-entered values)
     const { parsed, errors: validationErrors } =
-      parseAndValidateFamilyLawAgreementForm(formData, stepSchema);
+      parseAndValidateFamilyLawAgreementForm(rawFormData, stepSchema);
 
     // Collect errors only for fields in this step
     const stepErrors = Object.entries(validationErrors)
@@ -204,42 +216,41 @@ export default function FamilyLawAgreementStepper({
       )
     );
 
-    console.log("[Stepper.handleNext] parsed:", parsed);
-    console.log("[Stepper.handleNext] parsedStepOnly:", parsedStepOnly);
+    // ✅ Normalize canonical formData before persisting
+    const normalizedNextFormData = normalizeFamilyLawAgreementFormData({
+      ...formData,
+      ...parsedStepOnly,
+    });
 
-    // Merge into existing formData
-    const nextFormData = { ...formData, ...parsedStepOnly };
-    // Also merge into rawFormData so inputs stay hydrated
-    const nextRawFormData = { ...rawFormData, ...parsedStepOnly };
+    // ✅ Keep rawFormData strictly as user-entered display strings
+    const nextRawFormData = {
+      ...rawFormData,
+      ...parsedStepOnly,
+    };
 
-    // 🔎 Instrumentation
-    console.log("[Stepper.handleNext] currentStep:", currentStep, "step.key:", step.key);
-    console.log("[Stepper.handleNext] parsed (raw):", parsed);
-    console.log("[Stepper.handleNext] parsedStepOnly:", parsedStepOnly);
-    console.log("[Stepper.handleNext] formData before merge:", formData);
-    console.log("[Stepper.handleNext] formData after merge:", nextFormData);
-    console.log("[Stepper.handleNext] rawFormData before merge:", rawFormData);
-    console.log("[Stepper.handleNext] rawFormData after merge:", nextRawFormData);
+    // 🔎 Essential logs
+    console.log("[Stepper.handleNext] step:", step.key, "currentStep:", currentStep);
+    console.log("[Stepper.handleNext] normalized formData:", normalizedNextFormData);
+    console.log("[Stepper.handleNext] next rawFormData:", nextRawFormData);
 
-    setFormData(nextFormData);
+    // Update both states
+    setFormData(normalizedNextFormData);
     setRawFormData(nextRawFormData);
 
-    // ✅ Persist this step’s data
-    persistStepData(step.key, nextFormData);
+    // ✅ Persist this step’s data (normalized)
+    persistStepData(step.key, normalizedNextFormData);
 
     if (currentStep < steps.length - 1) {
+      console.log("[Stepper.handleNext] advancing to next step");
       const nextKey = steps[currentStep + 1].key;
       setCurrentStep(currentStep + 1);
       navigate(`/form/family-law-agreement/${nextKey}`, {
-        state: { agreementTypes, formData: nextFormData, rawFormData: nextRawFormData },
+        state: { agreementTypes, formData: normalizedNextFormData, rawFormData: nextRawFormData },
         replace: true,
       });
     } else {
-      navigate(`/form/family-law-agreement/${step.key}`, {
-        state: { agreementTypes, formData: nextFormData, rawFormData: nextRawFormData },
-        replace: true,
-      });
-      onComplete(nextFormData, step.key, agreementTypes);
+      console.log("[Stepper.handleNext] final step reached, calling onComplete");
+      onComplete(normalizedNextFormData, step.key, agreementTypes);
     }
   };
 

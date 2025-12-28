@@ -1,5 +1,7 @@
 // src/utils/stepPersistence.ts
 
+import { normalizeFamilyLawAgreementFormData } from "../utils/normalizeFamilyLawAgreementFormData";
+
 export function persistStepData(stepKey: string, data: any) {
   try {
     sessionStorage.setItem(
@@ -18,7 +20,9 @@ export function rehydrateStepData(stepKey: string) {
     if (saved) {
       const parsed = JSON.parse(saved);
       console.log(`[rehydrateStepData] loaded for ${stepKey}:`, parsed);
-      return parsed;
+
+      // Always normalize before returning
+      return normalizeFamilyLawAgreementFormData(parsed);
     }
   } catch (err) {
     console.error("[rehydrateStepData] error:", err);
