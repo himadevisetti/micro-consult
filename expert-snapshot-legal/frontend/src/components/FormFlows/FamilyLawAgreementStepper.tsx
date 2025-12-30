@@ -73,7 +73,6 @@ export default function FamilyLawAgreementStepper({
         description: onlyStep.description,
       };
     } else if (moduleSteps.length > 1) {
-      // Multiple modules → add a dedicated Finalization step from config
       const finalizationStep = stepperConfig.Finalization;
       moduleSteps.push({
         ...finalizationStep,
@@ -85,7 +84,6 @@ export default function FamilyLawAgreementStepper({
       });
     }
 
-    console.log("[Stepper.useMemo] Final steps:", moduleSteps.map(s => s.key));
     return moduleSteps;
   }, [agreementTypes]);
 
@@ -109,16 +107,11 @@ export default function FamilyLawAgreementStepper({
     return 0;
   }, [lastStepKey, templateId, steps]);
 
-  // Track current step index
   const [currentStep, setCurrentStep] = useState(initialStepIndex);
-  // Track touched fields for validation feedback
   const [touched, setTouched] = useState<Partial<Record<keyof FamilyLawAgreementFormData, boolean>>>({});
-  // Track field errors for current step
   const [fieldErrors, setFieldErrors] = useState<Partial<Record<keyof FamilyLawAgreementFormData, string>>>({});
-  // Track exiting state to avoid URL sync when leaving
   const [exiting, setExiting] = useState(false);
 
-  // Current step object
   const step = steps[currentStep];
 
   // Rehydrate from sessionStorage when step changes
@@ -126,33 +119,21 @@ export default function FamilyLawAgreementStepper({
     const currentKey = steps[currentStep]?.key;
     if (!currentKey) return;
 
-    // ❌ Skip rehydration if single-module
-    if (steps.length === 1) {
-      console.log("[Stepper] Skipping rehydration (single-module).");
-      return;
-    }
+    if (steps.length === 1) return;
 
     const step = steps[currentStep];
-
-    // Load full snapshot for this step
     const saved = rehydrateStepData(currentKey);
-    console.log("[Stepper] After rehydrateStepData (raw):", saved);
 
-    // 🔍 Filter saved data to only fields belonging to this step
     const filteredSaved = Object.fromEntries(
       Object.entries(saved).filter(([field]) =>
         step.fields.includes(field as keyof FamilyLawAgreementFormData)
       )
     );
 
-    console.log("[Stepper] After rehydrateStepData (filtered):", filteredSaved);
-
     let merged: Partial<FamilyLawAgreementFormData> = { ...filteredSaved };
 
-    // 🔍 Merge Finalization fields into non-Finalization steps, if any
     if (steps.length > 1 && currentKey !== "Finalization") {
       const finalizationMerged = rehydrateWithFinalization(currentKey);
-      console.log("[Stepper] finalizationMerged:", finalizationMerged);
       merged = {
         ...merged,
         ...(finalizationMerged as Partial<FamilyLawAgreementFormData>)
@@ -160,24 +141,12 @@ export default function FamilyLawAgreementStepper({
     }
 
     if (merged && Object.keys(merged).length > 0) {
-      console.log("[Stepper] Merged before setFormData:", merged);
-
-      setFormData(prev => {
-        const next = { ...prev, ...merged };
-        console.log("[Stepper] setFormData next:", next);
-        return next;
-      });
-
-      // 🔹 Also update rawFormData to keep CustomDatePicker safe
-      setRawFormData(prev => {
-        const next = { ...prev, ...merged };
-        console.log("[Stepper] setRawFormData next:", next);
-        return next;
-      });
+      setFormData(prev => ({ ...prev, ...merged }));
+      setRawFormData(prev => ({ ...prev, ...merged }));
     }
   }, [currentStep, steps, setFormData, setRawFormData]);
 
-  // ✅ Keep URL in sync only when inside stepper and not exiting
+  // Keep URL in sync
   useEffect(() => {
     if (exiting) return;
     const currentKey = steps[currentStep]?.key;
@@ -190,7 +159,7 @@ export default function FamilyLawAgreementStepper({
     setLastStepKey(currentKey);
   }, [currentStep, steps, navigate, exiting, setLastStepKey]);
 
-  // Ensure agreementType and stepKey in formData match current step key
+  // Ensure agreementType + stepKey match current step
   useEffect(() => {
     const currentKey = steps[currentStep]?.key;
     if (!currentKey) return;
@@ -205,18 +174,15 @@ export default function FamilyLawAgreementStepper({
   }, [currentStep, steps, setFormData]);
 
   const handleNext = () => {
-    // Build a schema limited to the current step’s fields
     const stepSchema = Object.fromEntries(
       Object.entries(familyLawAgreementSchema).filter(([field]) =>
         step.fields.includes(field as keyof FamilyLawAgreementFormData)
       )
     );
 
-    // ✅ Validate against rawFormData (ISO/user-entered values)
     const { parsed, errors: validationErrors } =
       parseAndValidateFamilyLawAgreementForm(rawFormData, stepSchema);
 
-    // Collect errors only for fields in this step
     const stepErrors = Object.entries(validationErrors)
       .filter(([field]) =>
         step.fields.includes(field as keyof FamilyLawAgreementFormData)
@@ -235,42 +201,30 @@ export default function FamilyLawAgreementStepper({
       return;
     }
 
-    // Clear errors
     setFieldErrors({});
 
-    // Restrict parsed to only current step fields
     const parsedStepOnly = Object.fromEntries(
       Object.entries(parsed).filter(([field]) =>
         step.fields.includes(field as keyof FamilyLawAgreementFormData)
       )
     );
 
-    // ✅ Normalize canonical formData before persisting
     const normalizedNextFormData = normalizeFamilyLawAgreementFormData({
       ...formData,
       ...parsedStepOnly,
     });
 
-    // ✅ Keep rawFormData strictly as user-entered display strings
     const nextRawFormData = {
       ...rawFormData,
       ...parsedStepOnly,
     };
 
-    // 🔎 Essential logs
-    console.log("[Stepper.handleNext] step:", step.key, "currentStep:", currentStep);
-    console.log("[Stepper.handleNext] normalized formData:", normalizedNextFormData);
-    console.log("[Stepper.handleNext] next rawFormData:", nextRawFormData);
-
-    // Update both states
     setFormData(normalizedNextFormData);
     setRawFormData(nextRawFormData);
 
-    // ✅ Persist this step’s data (normalized)
     persistStepData(step.key, normalizedNextFormData);
 
     if (currentStep < steps.length - 1) {
-      console.log("[Stepper.handleNext] advancing to next step");
       const nextKey = steps[currentStep + 1].key;
       setCurrentStep(currentStep + 1);
       navigate(`/form/family-law-agreement/${nextKey}`, {
@@ -278,46 +232,21 @@ export default function FamilyLawAgreementStepper({
         replace: true,
       });
     } else {
-      console.log("[Stepper.handleNext] final step reached, calling onComplete");
       onComplete(normalizedNextFormData, step.key, agreementTypes);
     }
   };
 
   const handleBack = () => {
-    console.log("[Stepper.handleBack] invoked at step:", currentStep, "step.key:", steps[currentStep]?.key);
-
     if (currentStep === 0) {
-      console.log("[Stepper.handleBack] Exiting to chooser with agreementTypes:", agreementTypes);
-      console.log("[Stepper.handleBack] formData keys:", Object.keys(formData));
-      console.log("[Stepper.handleBack] petitionerSignatoryName:", formData.petitionerSignatoryName);
-      console.log("[Stepper.handleBack] respondentSignatoryName:", formData.respondentSignatoryName);
-
-      // ✅ Exit stepper → return to module chooser
       setExiting(true);
       if (onExitToChooser) onExitToChooser();
       navigate("/form/family-law-agreement", {
-        state: {
-          agreementTypes,   // preserve selected modules for chooser checkboxes
-          formData,         // preserve filled values
-          rawFormData,      // preserve raw values
-        },
+        state: { agreementTypes, formData, rawFormData },
       });
       return;
     }
 
-    // ✅ Move back one step
-    console.log("[Stepper.handleBack] Moving back from step:", currentStep, "to step:", currentStep - 1);
-    console.log("[Stepper.handleBack] formData before back navigation:", formData);
-    console.log("[Stepper.handleBack] petitionerSignatoryName before back:", formData.petitionerSignatoryName);
-    console.log("[Stepper.handleBack] respondentSignatoryName before back:", formData.respondentSignatoryName);
-
     setCurrentStep(currentStep - 1);
-
-    // Log what we’re passing into navigation
-    console.log("[Stepper.handleBack] Navigating to step:", steps[currentStep - 1].key);
-    console.log("[Stepper.handleBack] Passing agreementTypes:", agreementTypes);
-    console.log("[Stepper.handleBack] Passing formData keys:", Object.keys(formData));
-    console.log("[Stepper.handleBack] Passing rawFormData keys:", Object.keys(rawFormData));
 
     navigate(`/form/family-law-agreement/${steps[currentStep - 1].key}`, {
       state: { agreementTypes, formData, rawFormData },
@@ -325,23 +254,17 @@ export default function FamilyLawAgreementStepper({
     });
   };
 
-  // ✅ Filter schema to only include fields for current step
   const filteredSchema = Object.fromEntries(
     Object.entries(familyLawAgreementSchema).filter(([field]) =>
       step.fields.includes(field as keyof FamilyLawAgreementFormData)
     )
   );
 
-  // ✅ Minimal debug logging
-  console.log("[Stepper] Step:", step.key, "currentStep:", currentStep);
-
   return (
     <div>
-      {/* ✅ Step title and description */}
       <h2 className={styles.formTitle}>{step.title}</h2>
       <p className={styles.formSubtitle}>{step.description}</p>
 
-      {/* ✅ Render form for current step */}
       <FamilyLawAgreementForm
         schema={filteredSchema}
         formData={formData}
@@ -350,44 +273,25 @@ export default function FamilyLawAgreementStepper({
         touched={touched}
         firstFieldKeys={firstFieldKeys}
         onChange={(field, value) => {
-          // Update canonical formData
-          setFormData(prev => ({
-            ...prev,
-            [field]: value,
-          }));
-          // ✅ Propagate to useRetainerState for consistency
+          setFormData(prev => ({ ...prev, [field]: value }));
           updateField(field, value);
         }}
         onRawChange={(field, value: string) => {
-          // Update rawFormData
-          setRawFormData(prev => ({
-            ...prev,
-            [field]: value,
-          }));
-          // Optionally also propagate raw values if needed
+          setRawFormData(prev => ({ ...prev, [field]: value }));
           updateField(field, value);
         }}
         onBlur={(field) =>
-          setTouched(prev => ({
-            ...prev,
-            [field]: true,
-          }))
+          setTouched(prev => ({ ...prev, [field]: true }))
         }
         onSubmit={async (raw) => {
-          // ✅ keep rawFormData in sync before moving forward
           setRawFormData(raw);
           handleNext();
-          return;
         }}
         markTouched={(field) =>
-          setTouched(prev => ({
-            ...prev,
-            [field]: true,
-          }))
+          setTouched(prev => ({ ...prev, [field]: true }))
         }
       />
 
-      {/* ✅ Navigation buttons */}
       <div className={styles.buttonRow}>
         <button className={styles.navButton} onClick={handleBack}>
           Back
