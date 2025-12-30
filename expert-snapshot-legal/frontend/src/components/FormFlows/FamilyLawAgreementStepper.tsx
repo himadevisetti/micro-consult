@@ -24,9 +24,19 @@ type Props = {
   setRawFormData: React.Dispatch<React.SetStateAction<FamilyLawAgreementFormData>>;
   agreementTypes: string[];
   setAgreementTypes: React.Dispatch<React.SetStateAction<string[]>>;
+
+  // ⭐ NEW
+  manualAgreementTypes: string[];
+  setManualAgreementTypes: React.Dispatch<React.SetStateAction<string[]>>;
+
   lastStepKey?: string;
   setLastStepKey: React.Dispatch<React.SetStateAction<string | undefined>>;
-  onComplete: (formData: FamilyLawAgreementFormData, lastStepKey: string, agreementTypes: string[]) => void;
+  onComplete: (
+    formData: FamilyLawAgreementFormData,
+    lastStepKey: string,
+    agreementTypes: string[],
+    manualAgreementTypes: string[]   // ⭐ NEW
+  ) => void;
   onExitToChooser?: () => void;
   updateField: (
     field: keyof FamilyLawAgreementFormData,
@@ -41,6 +51,11 @@ export default function FamilyLawAgreementStepper({
   setRawFormData,
   agreementTypes,
   setAgreementTypes,
+
+  // ⭐ NEW
+  manualAgreementTypes,
+  setManualAgreementTypes,
+
   lastStepKey,
   setLastStepKey,
   onComplete,
@@ -228,11 +243,21 @@ export default function FamilyLawAgreementStepper({
       const nextKey = steps[currentStep + 1].key;
       setCurrentStep(currentStep + 1);
       navigate(`/form/family-law-agreement/${nextKey}`, {
-        state: { agreementTypes, formData: normalizedNextFormData, rawFormData: nextRawFormData },
+        state: {
+          agreementTypes,
+          manualAgreementTypes,   // ⭐ NEW
+          formData: normalizedNextFormData,
+          rawFormData: nextRawFormData
+        },
         replace: true,
       });
     } else {
-      onComplete(normalizedNextFormData, step.key, agreementTypes);
+      onComplete(
+        normalizedNextFormData,
+        step.key,
+        agreementTypes,
+        manualAgreementTypes   // ⭐ NEW
+      );
     }
   };
 
@@ -241,7 +266,12 @@ export default function FamilyLawAgreementStepper({
       setExiting(true);
       if (onExitToChooser) onExitToChooser();
       navigate("/form/family-law-agreement", {
-        state: { agreementTypes, formData, rawFormData },
+        state: {
+          agreementTypes,
+          manualAgreementTypes,   // ⭐ NEW
+          formData,
+          rawFormData
+        },
       });
       return;
     }
@@ -249,7 +279,12 @@ export default function FamilyLawAgreementStepper({
     setCurrentStep(currentStep - 1);
 
     navigate(`/form/family-law-agreement/${steps[currentStep - 1].key}`, {
-      state: { agreementTypes, formData, rawFormData },
+      state: {
+        agreementTypes,
+        manualAgreementTypes,   // ⭐ NEW
+        formData,
+        rawFormData
+      },
       replace: true,
     });
   };

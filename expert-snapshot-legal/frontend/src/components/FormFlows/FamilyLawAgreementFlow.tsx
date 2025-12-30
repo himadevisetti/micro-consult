@@ -77,6 +77,7 @@ export default function FamilyLawAgreementFlow({ schema }: Props) {
 
   // Agreement type selection
   const [agreementTypes, setAgreementTypes] = useState<string[]>([]);
+  const [manualAgreementTypes, setManualAgreementTypes] = useState<string[]>([]);
   const [initialSelectedTypes, setInitialSelectedTypes] = useState<string[]>([]);
   const [lastStepKey, setLastStepKey] = useState<string | undefined>(undefined);
   const [showChooser, setShowChooser] = useState(false);
@@ -146,6 +147,11 @@ export default function FamilyLawAgreementFlow({ schema }: Props) {
         setAgreementTypes(parsed.agreementTypes);
         setInitialSelectedTypes(parsed.agreementTypes);
       }
+
+      if (parsed.manualAgreementTypes?.length > 0) {
+        setManualAgreementTypes(parsed.manualAgreementTypes);
+      }
+
       if (parsed.stepKey) {
         setLastStepKey(parsed.stepKey);
       }
@@ -156,8 +162,9 @@ export default function FamilyLawAgreementFlow({ schema }: Props) {
   if (showChooser || agreementTypes.length === 0) {
     return (
       <AgreementTypeSelector
-        onSelect={types => {
-          setAgreementTypes(types);
+        onSelect={(fullTypes, manualTypes) => {
+          setAgreementTypes(fullTypes);
+          setManualAgreementTypes(manualTypes);
           setShowChooser(false);
         }}
         initialSelected={initialSelectedTypes}
@@ -174,6 +181,8 @@ export default function FamilyLawAgreementFlow({ schema }: Props) {
       setRawFormData={setRawFormData}
       agreementTypes={agreementTypes}
       setAgreementTypes={setAgreementTypes}
+      manualAgreementTypes={manualAgreementTypes}
+      setManualAgreementTypes={setManualAgreementTypes}
       lastStepKey={lastStepKey}
       setLastStepKey={setLastStepKey}
       onComplete={(raw, lastStepKey) =>
