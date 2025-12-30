@@ -27,14 +27,14 @@ export default function FamilyLawAgreementFlow({ schema }: Props) {
   const today = new Date();
   const formattedToday = formatDateMMDDYYYY(today);
 
-  // ✅ Hydrate defaults with today's date for execution/effective
+  // Default execution/effective dates
   const hydratedDefaults: FamilyLawAgreementFormData = {
     ...defaultFamilyLawAgreementFormData,
     executionDate: formattedToday,
     effectiveDate: formattedToday,
   };
 
-  // ✅ Clear persisted state only on hard reload
+  // Clear persisted state only on hard reload
   const isHardReload = (() => {
     if (typeof performance === 'undefined') return false;
 
@@ -54,7 +54,6 @@ export default function FamilyLawAgreementFlow({ schema }: Props) {
     sessionStorage.removeItem("familyLawAgreementDraft");
     sessionStorage.removeItem("familyLawAgreementFormData");
 
-    // ✅ clear per‑step persisted slices
     Object.keys(sessionStorage).forEach((key) => {
       if (key.startsWith("FamilyLawAgreement:")) {
         sessionStorage.removeItem(key);
@@ -62,7 +61,7 @@ export default function FamilyLawAgreementFlow({ schema }: Props) {
     });
   }
 
-  // ✅ Session‑persisted form state
+  // Session‑persisted form state
   const {
     formData,
     rawFormData,
@@ -76,19 +75,16 @@ export default function FamilyLawAgreementFlow({ schema }: Props) {
     normalizeRawFamilyLawAgreementFormData
   );
 
-  // ✅ agreementTypes drives whether we render stepper vs chooser
+  // Agreement type selection
   const [agreementTypes, setAgreementTypes] = useState<string[]>([]);
-  // ✅ initialSelectedTypes used to pre‑check boxes in chooser
   const [initialSelectedTypes, setInitialSelectedTypes] = useState<string[]>([]);
-  // ✅ new state for lastStepKey hydration
   const [lastStepKey, setLastStepKey] = useState<string | undefined>(undefined);
-  // ✅ explicit flag to show chooser even if agreementTypes is non‑empty
   const [showChooser, setShowChooser] = useState(false);
 
   const location = useLocation();
   const { templateId } = useParams<{ templateId?: string }>();
 
-  // ✅ Retainer state for validation, preview, serialization
+  // Retainer state for validation + preview
   const {
     updateField,
     errors,
@@ -108,10 +104,10 @@ export default function FamilyLawAgreementFlow({ schema }: Props) {
     'familyLawAgreementFormData'
   );
 
-  // ✅ Unified onChange handler for form fields
+  // Unified onChange handler
   const onChange = (
     field: keyof FamilyLawAgreementFormData,
-    value: string | number | boolean | Date
+    value: string | number | boolean | Date | any[]
   ) => {
     if (field === 'agreementType') {
       setFormData(prev => ({
@@ -123,11 +119,20 @@ export default function FamilyLawAgreementFlow({ schema }: Props) {
       return;
     }
 
+    // Inline‑pair arrays
+    if (Array.isArray(value)) {
+      setRawFormData(prev => ({ ...prev, [field]: value }));
+      setFormData(prev => ({ ...prev, [field]: value }));
+      updateField(field, value);
+      return;
+    }
+
+    // Default scalar case
     setFormData(prev => ({ ...prev, [field]: value }));
     updateField(field, value);
   };
 
-  // ✅ Hydrate formData/rawFormData + agreementTypes + lastStepKey from sessionStorage
+  // Hydrate from canonical sessionStorage
   useEffect(() => {
     const saved = sessionStorage.getItem("familyLawAgreementFormData");
     if (saved) {
@@ -147,20 +152,20 @@ export default function FamilyLawAgreementFlow({ schema }: Props) {
     }
   }, []);
 
-  // ✅ If chooser mode is active, show selector
+  // Show chooser if needed
   if (showChooser || agreementTypes.length === 0) {
     return (
       <AgreementTypeSelector
         onSelect={types => {
           setAgreementTypes(types);
-          setShowChooser(false); // once user selects, go back to stepper
+          setShowChooser(false);
         }}
         initialSelected={initialSelectedTypes}
       />
     );
   }
 
-  // ✅ Once agreement types are selected, launch stepper
+  // Render stepper
   return (
     <FamilyLawAgreementStepper
       formData={formData}
@@ -171,9 +176,11 @@ export default function FamilyLawAgreementFlow({ schema }: Props) {
       setAgreementTypes={setAgreementTypes}
       lastStepKey={lastStepKey}
       setLastStepKey={setLastStepKey}
-      onComplete={(raw, lastStepKey) => handleSubmit(raw, lastStepKey, agreementTypes)}
-      // ✅ provide a way for Stepper to trigger chooser mode
+      onComplete={(raw, lastStepKey) =>
+        handleSubmit(raw, lastStepKey, agreementTypes)
+      }
       onExitToChooser={() => setShowChooser(true)}
+      updateField={updateField}
     />
   );
 }

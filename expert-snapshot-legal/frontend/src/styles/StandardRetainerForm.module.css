@@ -302,6 +302,20 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   max-width: calc(60% - 4px);
 }
 
+.inlinePairBlock {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  max-width: 480px;
+}
+
+.inlinePairHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.25rem;
+}
+
 /* Wrapper for textarea fields with suggestions (e.g., Benefits) */
 .textareaWrapper {
   display: flex;
@@ -385,7 +399,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   font-size: 0.9rem;
   border-radius: var(--radius-sm);
   border: 1px solid #ccc;
-  background-color: #f9f9f9;
+  background-color: var(--neutral-gray);
   cursor: pointer;
   font-family: var(--font-sans);
   transition: background-color 0.2s ease, border-color 0.2s ease;
@@ -421,6 +435,25 @@ select[multiple] {
   /* include padding in width calc */
   padding-right: 2rem;
   /* space for the minus button */
+}
+
+.inlinePairBlock>button {
+  align-self: flex-start;
+  margin-top: 0.5rem;
+  padding: 0.4rem 0.9rem;
+  font-size: 0.9rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-default);
+  background-color: var(--neutral-gray);
+  color: var(--text-dark);
+  cursor: pointer;
+  font-family: var(--font-sans);
+  transition: background-color 0.2s ease, border-color 0.2s ease;
+}
+
+.inlinePairBlock>button:hover {
+  background-color: var(--hover-bg);
+  border-color: var(--border-strong);
 }
 
 .removeRowButton {

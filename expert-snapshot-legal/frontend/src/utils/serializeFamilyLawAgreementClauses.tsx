@@ -3,7 +3,7 @@
 import * as React from 'react';
 import styles from '../styles/StandardPreview.module.css';
 
-import type { FamilyLawAgreementFormData } from '../types/FamilyLawAgreementFormData';
+import type { FamilyLawAgreementFormData, ChildEntry, VisitationScheduleEntry } from '../types/FamilyLawAgreementFormData';
 import { normalizeFamilyLawAgreementFormData } from './normalizeFamilyLawAgreementFormData';
 import { formatDateLong } from './formatDate';
 import { getFamilyLawAgreementClauses } from '@/components/AgreementClauses/FamilyLawAgreementClauses';
@@ -21,6 +21,10 @@ export type EnrichedFamilyLawAgreementFormData = FamilyLawAgreementFormData & {
   formattedChildSupportAmount: string;
   formattedSpousalSupportAmount: string;
   formattedSpousalSupportDurationMonths: string;
+  children: ChildEntry[];
+  visitationSchedule: string;
+  visitationScheduleEntries: VisitationScheduleEntry[];
+  holidaySchedule: string;
 };
 
 export interface FamilyLawAgreementClauseTemplate {
@@ -95,6 +99,10 @@ export function getSerializedFamilyLawAgreementClauses(
     formattedChildSupportAmount,
     formattedSpousalSupportAmount,
     formattedSpousalSupportDurationMonths,
+    children: normalized.children ?? [],
+    visitationSchedule: normalized.visitationSchedule ?? "None",
+    visitationScheduleEntries: normalized.visitationScheduleEntries ?? [],
+    holidaySchedule: normalized.holidaySchedule ?? '',
   };
 
   const clauseTemplates: FamilyLawAgreementClauseTemplate[] =

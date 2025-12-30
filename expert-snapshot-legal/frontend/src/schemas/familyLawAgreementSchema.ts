@@ -272,40 +272,51 @@ export const familyLawAgreementSchema: Record<string, FamilyLawAgreementFieldCon
     showIf: (form: FamilyLawAgreementFormData) => form.agreementType === 'Custody',
     group: 'main'
   },
-  childNames: {
-    label: 'Children Names',
-    type: 'textarea',
-    required: true, // patched: at least one child name required for Custody
-    placeholder: 'List names of children',
-    clauseTemplate: 'The children covered by this agreement are: {{childNames}}.',
+  children: {
+    label: 'Children',
+    type: 'inline-pair',
+    renderer: 'generic-inline-pair',   // use GenericInlinePairFieldRenderer
+    required: true, // at least one child required for Custody
+    pair: [
+      {
+        key: 'name',
+        label: 'Name',
+        type: 'text',
+        placeholder: 'Enter child name'
+      },
+      {
+        key: 'dob',
+        label: 'Date of Birth',
+        type: 'date',
+        placeholder: 'Select date of birth'
+      }
+    ],
+    clauseTemplate: 'The children covered by this agreement are: {{children}}.',
     showIf: (form: FamilyLawAgreementFormData) => form.agreementType === 'Custody',
     group: 'main',
-    join: (entries: string[]) => entries.join(', ')
+    join: (entries: { name: string; dob: string }[]) =>
+      entries
+        .map(c => `${c.name} (DOB: ${c.dob})`)
+        .filter(Boolean)
+        .join(', ')
   },
-  childDOBs: {
-    label: 'Children DOBs',
-    type: 'textarea',
-    required: true, // patched: mandatory for Custody
-    placeholder: 'List dates of birth',
-    clauseTemplate: 'Dates of birth: {{childDOBs}}.',
-    showIf: (form: FamilyLawAgreementFormData) => form.agreementType === 'Custody',
-    group: 'main',
-    join: (entries: string[]) => entries.join(', ')
-  },
+
   visitationSchedule: {
     label: 'Visitation Schedule',
     type: 'dropdown',
-    required: true, // patched: mandatory for Custody
+    required: true, // mandatory for Custody
     options: ['Standard', 'Custom', 'HolidayOnly', 'None'],
     placeholder: 'Select visitation schedule',
     clauseTemplate: 'Visitation schedule: {{visitationSchedule}}.',
     showIf: (form: FamilyLawAgreementFormData) => form.agreementType === 'Custody',
     group: 'main'
   },
+
   visitationScheduleEntries: {
     label: 'Visitation Days & Hours',
     type: 'inline-pair',
-    required: true, // patched: must have at least one entry when Custom schedule is chosen
+    renderer: 'visitation-inline-pair',   // use InlinePairFieldRenderer
+    required: true, // must have at least one entry when Custom schedule is chosen
     pair: [
       {
         key: 'days',

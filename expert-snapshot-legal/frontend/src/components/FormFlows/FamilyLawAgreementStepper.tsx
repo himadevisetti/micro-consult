@@ -28,6 +28,10 @@ type Props = {
   setLastStepKey: React.Dispatch<React.SetStateAction<string | undefined>>;
   onComplete: (formData: FamilyLawAgreementFormData, lastStepKey: string, agreementTypes: string[]) => void;
   onExitToChooser?: () => void;
+  updateField: (
+    field: keyof FamilyLawAgreementFormData,
+    value: string | number | boolean | Date | any[]
+  ) => void;
 };
 
 export default function FamilyLawAgreementStepper({
@@ -41,6 +45,7 @@ export default function FamilyLawAgreementStepper({
   setLastStepKey,
   onComplete,
   onExitToChooser,
+  updateField,
 }: Props) {
   const navigate = useNavigate();
   const { templateId } = useParams<{ templateId?: string }>();
@@ -84,6 +89,13 @@ export default function FamilyLawAgreementStepper({
     return moduleSteps;
   }, [agreementTypes]);
 
+  // Collect first field keys from each module step (exclude Finalization)
+  const firstFieldKeys = useMemo(() => {
+    return steps
+      .map(s => s.fields[0])
+      .filter(Boolean);
+  }, [steps]);
+
   // Determine initial step index using lastStepKey or templateId
   const initialStepIndex = useMemo(() => {
     if (lastStepKey) {
@@ -120,14 +132,31 @@ export default function FamilyLawAgreementStepper({
       return;
     }
 
-    const saved = rehydrateStepData(currentKey);
-    console.log("[Stepper] After rehydrateStepData:", saved);
+    const step = steps[currentStep];
 
-    let merged = { ...saved };
-    if (steps.length > 1) {
+    // Load full snapshot for this step
+    const saved = rehydrateStepData(currentKey);
+    console.log("[Stepper] After rehydrateStepData (raw):", saved);
+
+    // 🔍 Filter saved data to only fields belonging to this step
+    const filteredSaved = Object.fromEntries(
+      Object.entries(saved).filter(([field]) =>
+        step.fields.includes(field as keyof FamilyLawAgreementFormData)
+      )
+    );
+
+    console.log("[Stepper] After rehydrateStepData (filtered):", filteredSaved);
+
+    let merged: Partial<FamilyLawAgreementFormData> = { ...filteredSaved };
+
+    // 🔍 Merge Finalization fields into non-Finalization steps, if any
+    if (steps.length > 1 && currentKey !== "Finalization") {
       const finalizationMerged = rehydrateWithFinalization(currentKey);
       console.log("[Stepper] finalizationMerged:", finalizationMerged);
-      merged = { ...merged, ...finalizationMerged };
+      merged = {
+        ...merged,
+        ...(finalizationMerged as Partial<FamilyLawAgreementFormData>)
+      };
     }
 
     if (merged && Object.keys(merged).length > 0) {
@@ -319,20 +348,27 @@ export default function FamilyLawAgreementStepper({
         rawFormData={rawFormData}
         errors={fieldErrors}
         touched={touched}
-        onChange={(field, value) =>
-          setFormData((prev) => ({
+        firstFieldKeys={firstFieldKeys}
+        onChange={(field, value) => {
+          // Update canonical formData
+          setFormData(prev => ({
             ...prev,
             [field]: value,
-          }))
-        }
-        onRawChange={(field, value: string) =>
-          setRawFormData((prev) => ({
+          }));
+          // ✅ Propagate to useRetainerState for consistency
+          updateField(field, value);
+        }}
+        onRawChange={(field, value: string) => {
+          // Update rawFormData
+          setRawFormData(prev => ({
             ...prev,
             [field]: value,
-          }))
-        }
+          }));
+          // Optionally also propagate raw values if needed
+          updateField(field, value);
+        }}
         onBlur={(field) =>
-          setTouched((prev) => ({
+          setTouched(prev => ({
             ...prev,
             [field]: true,
           }))
@@ -344,7 +380,7 @@ export default function FamilyLawAgreementStepper({
           return;
         }}
         markTouched={(field) =>
-          setTouched((prev) => ({
+          setTouched(prev => ({
             ...prev,
             [field]: true,
           }))
@@ -353,11 +389,9 @@ export default function FamilyLawAgreementStepper({
 
       {/* ✅ Navigation buttons */}
       <div className={styles.buttonRow}>
-        {/* ✅ Back button navigates to previous step or exits to chooser */}
         <button className={styles.navButton} onClick={handleBack}>
           Back
         </button>
-        {/* ✅ Next button moves forward or finishes on last step */}
         <button className={styles.navButton} onClick={handleNext}>
           {currentStep < steps.length - 1 ? "Next" : "Finish"}
         </button>

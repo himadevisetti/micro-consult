@@ -1,7 +1,8 @@
 // src/types/FamilyLawAgreementFieldConfig.ts
 import type {
   FamilyLawAgreementFormData,
-  VisitationScheduleEntry
+  VisitationScheduleEntry,
+  ChildEntry
 } from './FamilyLawAgreementFormData';
 
 /** All supported field types in the form schema */
@@ -20,11 +21,12 @@ export type FieldType =
 export interface InlinePairField {
   key: string; // key inside the object for this pair
   label: string;
-  type: 'multiselect' | 'time-range' | 'text';
+  type: 'multiselect' | 'time-range' | 'text' | 'date';
   options?: { value: string; label: string }[];
   step?: number;        // for time-range increments
   startLabel?: string;  // for time-range UX
   endLabel?: string;    // for time-range UX
+  placeholder?: string; // allow placeholder text for text/date inputs
 }
 
 /**
@@ -49,7 +51,7 @@ export interface FamilyLawAgreementFieldConfig<T = string> {
   inlineWith?: keyof FamilyLawAgreementFormData;
   disabled?: boolean;
 
-  // For inline-pair fields (used by visitationSchedule)
+  // For inline-pair fields (used by visitationSchedule, children)
   pair?: InlinePairField[];
 
   // Explicit override: if true, this field’s inline-pair is optional even when visible
@@ -57,6 +59,9 @@ export interface FamilyLawAgreementFieldConfig<T = string> {
 
   // If this field is an array-like value, join defines how to stringify it (e.g., for clauses)
   join?: (entries: T extends any[] ? T : never) => string;
+
+  // Renderer hint for inline-pair fields
+  renderer?: 'generic-inline-pair' | 'visitation-inline-pair';
 }
 
 /** Specialized config type for the Visitation Schedule field (array of entries) */
@@ -64,5 +69,16 @@ export type VisitationScheduleFieldConfig = FamilyLawAgreementFieldConfig<Visita
   type: 'inline-pair';
   pair: InlinePairField[];
   join: (entries: VisitationScheduleEntry[]) => string;
+  renderer: 'visitation-inline-pair';
 };
 
+/** Specialized config type for the Children field (array of {name, dob}) */
+export type ChildrenFieldConfig = FamilyLawAgreementFieldConfig<ChildEntry[]> & {
+  type: 'inline-pair';
+  pair: [
+    { key: 'name'; label: 'Name'; type: 'text' },
+    { key: 'dob'; label: 'Date of Birth'; type: 'date' }
+  ];
+  join: (entries: ChildEntry[]) => string;
+  renderer: 'generic-inline-pair';
+};

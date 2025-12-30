@@ -13,6 +13,7 @@ import type {
   SpousalSupportResponsibleParty,
   PropertyDivisionMethod,
   DisputeResolution,
+  ChildEntry
 } from '../types/FamilyLawAgreementFormData';
 import { normalizeFormDates, normalizeSingleDate } from './normalizeFormDates';
 
@@ -60,17 +61,23 @@ export function normalizeFamilyLawAgreementFormData(
 
     // Custody / Visitation
     custodyType: raw.custodyType as CustodyType,
-    childNames: Array.isArray(raw.childNames) ? raw.childNames.map(String) : [],
-    childDOBs: Array.isArray(raw.childDOBs) ? raw.childDOBs.map(d => normalizeSingleDate(d)) : [],
+    children: Array.isArray(raw.children)
+      ? raw.children.map((c: any) => ({
+        name: String(c.name ?? ''),
+        dob: normalizeSingleDate(c.dob)
+      }))
+      : [],
     visitationSchedule: raw.visitationSchedule as VisitationSchedule,
     visitationScheduleEntries: Array.isArray(raw.visitationScheduleEntries)
       ? (raw.visitationScheduleEntries as VisitationScheduleEntry[])
-      : [
-        {
-          days: [],
-          hours: { start: '', end: '' },
-        },
-      ],
+      : raw.visitationScheduleEntries
+        ? [raw.visitationScheduleEntries as VisitationScheduleEntry]
+        : [
+          {
+            days: [],
+            hours: { start: '', end: '' },
+          },
+        ],
     holidaySchedule: String(raw.holidaySchedule ?? ''),
     decisionMakingAuthority: raw.decisionMakingAuthority as DecisionMakingAuthority,
 
@@ -93,7 +100,11 @@ export function normalizeFamilyLawAgreementFormData(
 
     // Property Settlement
     propertyDivisionMethod: raw.propertyDivisionMethod as PropertyDivisionMethod,
-    assetList: Array.isArray(raw.assetList) ? raw.assetList.map(String) : [],
+    assetList: Array.isArray(raw.assetList)
+      ? raw.assetList.map(String)
+      : raw.assetList
+        ? [String(raw.assetList)]
+        : [],
     debtAllocation: String(raw.debtAllocation ?? ''),
     retirementAccounts: String(raw.retirementAccounts ?? ''),
     taxConsiderations: String(raw.taxConsiderations ?? ''),
@@ -146,7 +157,12 @@ export function normalizeRawFamilyLawAgreementFormData(
       'marriageDate',
       'separationDate',
     ]),
-    childDOBs: Array.isArray(data.childDOBs) ? data.childDOBs.map(d => normalizeSingleDate(d)) : [],
+    children: Array.isArray(data.children)
+      ? data.children.map(c => ({
+        ...c,
+        dob: normalizeSingleDate(c.dob)
+      }))
+      : [],
     visitationScheduleEntries: Array.isArray(data.visitationScheduleEntries)
       ? data.visitationScheduleEntries.map(entry => ({
         ...entry,
@@ -155,11 +171,13 @@ export function normalizeRawFamilyLawAgreementFormData(
           end: entry.hours?.end ?? '',
         },
       }))
-      : [
-        {
-          days: [],
-          hours: { start: '', end: '' },
-        },
-      ],
+      : data.visitationScheduleEntries
+        ? [data.visitationScheduleEntries as VisitationScheduleEntry]
+        : [
+          {
+            days: [],
+            hours: { start: '', end: '' },
+          },
+        ],
   };
 }

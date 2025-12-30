@@ -37,7 +37,7 @@ export function useRetainerState<T extends Record<string, any>>(
 
   const updateField = (
     field: keyof T,
-    value: string | number | boolean | Date
+    value: string | number | boolean | Date | any[]
   ) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
   };

@@ -11,6 +11,7 @@
   --color-soft-blue-hover: #b3daff;
   --color-soft-blue-focus: #99ccff;
   --color-forest-hover: #2e7d32;
+  --color-neutral-gray: #f9f9f9;
 
   /* Aliases (preferred app tokens) */
   --forest-green: var(--color-forest);
@@ -22,6 +23,8 @@
   --soft-blue-hover: var(--color-soft-blue-hover);
   --soft-blue-focus: var(--color-soft-blue-focus);
   --forest-green-hover: var(--color-forest-hover);
+  --neutral-gray: var(--color-neutral-gray);
+  /* alias for use in components */
 
   /* UI intent tokens */
   --hover-bg: var(--cream-light);

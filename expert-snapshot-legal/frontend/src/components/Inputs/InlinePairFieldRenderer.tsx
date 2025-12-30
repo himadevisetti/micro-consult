@@ -8,7 +8,7 @@ interface InlinePairFieldRendererProps<TFormData> {
   value: any[];
   config: { pair?: InlinePairField[];[key: string]: any };
   errors?: Record<string, string | undefined>;
-  handleChange: (field: keyof TFormData) => (e: any) => void;
+  onChange: (field: keyof TFormData) => (e: any) => void;
 }
 
 export default function InlinePairFieldRenderer<TFormData>({
@@ -16,7 +16,7 @@ export default function InlinePairFieldRenderer<TFormData>({
   value,
   config,
   errors,
-  handleChange,
+  onChange,
 }: InlinePairFieldRendererProps<TFormData>) {
   const getError = (key: string) => errors?.[key];
 
@@ -49,7 +49,7 @@ export default function InlinePairFieldRenderer<TFormData>({
                       const selected = Array.from(e.target.selectedOptions, (o) => o.value);
                       const updated = [...(Array.isArray(value) ? value : [])] as Record<string, any>[];
                       updated[idx] = { ...defaultRow, ...updated[idx], [daysField.key]: selected };
-                      handleChange(field)({ target: { value: updated } } as any);
+                      onChange(field)({ target: { value: updated } } as any);
                     }}
                   >
                     {daysField.options.map((opt: { value: string; label: string }) => (
@@ -71,7 +71,7 @@ export default function InlinePairFieldRenderer<TFormData>({
                   onClick={() => {
                     const current = Array.isArray(value) ? value : [];
                     const updated = current.filter((_, i) => i !== idx);
-                    handleChange(field)({ target: { value: updated } } as any);
+                    onChange(field)({ target: { value: updated } } as any);
                   }}
                   aria-label={`Remove row ${idx + 1}`}
                 >
@@ -100,7 +100,7 @@ export default function InlinePairFieldRenderer<TFormData>({
                           start: e.target.value,
                         },
                       };
-                      handleChange(field)({ target: { value: updated } } as any);
+                      onChange(field)({ target: { value: updated } } as any);
                     }}
                   >
                     <option value="">Start</option>
@@ -132,7 +132,7 @@ export default function InlinePairFieldRenderer<TFormData>({
                           end: e.target.value,
                         },
                       };
-                      handleChange(field)({ target: { value: updated } } as any);
+                      onChange(field)({ target: { value: updated } } as any);
                     }}
                   >
                     <option value="">End</option>
@@ -179,7 +179,7 @@ export default function InlinePairFieldRenderer<TFormData>({
           const current = Array.isArray(value) ? value : [];
           const updated =
             current.length === 0 ? [defaultEntry, defaultEntry] : [...current, defaultEntry];
-          handleChange(field)({ target: { value: updated } } as any);
+          onChange(field)({ target: { value: updated } } as any);
         }}
       >
         + Add Row

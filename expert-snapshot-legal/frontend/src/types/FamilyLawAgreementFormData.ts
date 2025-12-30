@@ -37,6 +37,12 @@ export type VisitationScheduleEntry = {
   hours: TimeRange;
 };
 
+/* === Children === */
+export interface ChildEntry {
+  name: string;
+  dob: string; // MM/DD/YYYY from calendar picker, normalized later
+}
+
 /* === Support === */
 export type SupportPaymentFrequency = 'Weekly' | 'Monthly' | 'Quarterly';
 export type ChildSupportPaymentMethod =
@@ -93,8 +99,7 @@ export interface FamilyLawAgreementFormData {
 
   // Custody / Visitation
   custodyType?: CustodyType;
-  childNames?: string[];
-  childDOBs?: string[];
+  children?: ChildEntry[]; // ✅ replaces childNames + childDOBs
   visitationSchedule?: VisitationSchedule;
   visitationScheduleEntries?: VisitationScheduleEntry[];
   holidaySchedule?: string;
@@ -182,8 +187,7 @@ export const defaultFamilyLawAgreementFormData: FamilyLawAgreementFormData = {
   groundsForDivorce: '',
 
   custodyType: 'Joint',
-  childNames: [],
-  childDOBs: [],
+  children: [], // ✅ default empty array
   visitationSchedule: 'Standard',
   visitationScheduleEntries: [],
   holidaySchedule: '',

@@ -85,8 +85,7 @@ export function getFamilyLawAgreementClauses(
           render: (fd) => (
             <CustodyClause
               custodyType={fd.custodyType}
-              childNames={fd.childNames}
-              childDOBs={fd.childDOBs}
+              children={fd.children} // now a list of { name, dob }
               decisionMakingAuthority={fd.decisionMakingAuthority}
             />
           ),

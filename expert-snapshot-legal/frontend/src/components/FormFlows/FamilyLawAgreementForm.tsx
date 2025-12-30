@@ -12,6 +12,7 @@ import styles from '../../styles/StandardRetainerForm.module.css';
 import { FormBlurHandler } from '@/types/FormUtils';
 import { focusFirstError } from '@/utils/focusFirstError';
 import InlinePairFieldRenderer from '../Inputs/InlinePairFieldRenderer';
+import GenericInlinePairFieldRenderer from '../Inputs/GenericInlinePairFieldRenderer';
 
 export interface FamilyLawAgreementFormProps {
   schema: Record<string, FamilyLawAgreementFieldConfig>;
@@ -24,6 +25,7 @@ export interface FamilyLawAgreementFormProps {
   onBlur: FormBlurHandler<FamilyLawAgreementFormData>;
   onSubmit?: (rawFormData: FamilyLawAgreementFormData) => Promise<void>;
   markTouched?: (field: keyof FamilyLawAgreementFormData) => void;
+  firstFieldKeys?: (keyof FamilyLawAgreementFormData)[];
 }
 
 export default function FamilyLawAgreementForm({
@@ -37,18 +39,20 @@ export default function FamilyLawAgreementForm({
   onBlur,
   onSubmit,
   markTouched,
+  firstFieldKeys,
 }: FamilyLawAgreementFormProps) {
   const formId = getFormDomId(FormType.FamilyLawAgreement);
   const [submitted, setSubmitted] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
   const handleChange = (field: keyof FamilyLawAgreementFormData) => (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement> | { target: { value: any } }
   ) => {
     const raw = e.target.value;
     const config = schema[field];
 
-    let parsed: string | number | boolean = raw;
+    // Allow parsed to be string, number, boolean, or any (for arrays/objects)
+    let parsed: string | number | boolean | any = raw;
 
     if (config.type === 'number') {
       parsed = raw === '' ? 0 : parseFloat(raw);
@@ -68,16 +72,30 @@ export default function FamilyLawAgreementForm({
 
   useEffect(() => {
     const formEl = document.getElementById(formId);
-    if (!formEl) return;
+    if (!formEl || !firstFieldKeys || firstFieldKeys.length === 0) return;
 
     if (errors && Object.keys(errors).length > 0) {
       focusFirstError(formId, errors);
-    } else {
-      const editable = formEl.querySelector<HTMLElement>(
-        'input:not([type="hidden"]):not([disabled]):not([tabindex="-1"]), textarea:not([disabled]), select:not([disabled])'
-      );
-      editable?.focus();
+      return;
     }
+
+    firstFieldKeys.forEach((key) => {
+      const el = document.getElementById(key);
+      if (el) {
+        (el as HTMLElement).focus();
+        return;
+      }
+
+      const observer = new MutationObserver(() => {
+        const retry = document.getElementById(key);
+        if (retry) {
+          (retry as HTMLElement).focus();
+          observer.disconnect();
+        }
+      });
+
+      observer.observe(formEl, { childList: true, subtree: true });
+    });
   }, [errors]);
 
   function getDefault<K extends keyof FamilyLawAgreementFormData>(
@@ -195,8 +213,7 @@ export default function FamilyLawAgreementForm({
                   markTouched?.(field);
                 }}
                 onBlur={() => {
-                  const safeValue =
-                    typeof rawValue === "string" ? rawValue : "";
+                  const safeValue = typeof rawValue === "string" ? rawValue : "";
                   onBlur(field, safeValue);
                   markTouched?.(field);
                 }}
@@ -233,13 +250,23 @@ export default function FamilyLawAgreementForm({
             ))}
           </select>
         ) : config.type === "inline-pair" ? (
-          <InlinePairFieldRenderer<FamilyLawAgreementFormData>
-            field={field}
-            value={Array.isArray(value) ? value : []}
-            config={config}
-            errors={errors as Record<string, string | undefined>}
-            handleChange={handleChange}
-          />
+          config.renderer === "generic-inline-pair" ? (
+            <GenericInlinePairFieldRenderer<FamilyLawAgreementFormData>
+              field={field}
+              value={Array.isArray(value) ? value : []}
+              config={config}
+              errors={errors as Record<string, string | undefined>}
+              onChange={handleChange}
+            />
+          ) : (
+            <InlinePairFieldRenderer<FamilyLawAgreementFormData>
+              field={field}
+              value={Array.isArray(value) ? value : []}
+              config={config}
+              errors={errors as Record<string, string | undefined>}
+              onChange={handleChange}
+            />
+          )
         ) : (
           <input
             id={field}
