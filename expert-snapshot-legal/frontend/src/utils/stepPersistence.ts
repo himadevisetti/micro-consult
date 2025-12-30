@@ -8,7 +8,6 @@ export function persistStepData(stepKey: string, data: any) {
       `FamilyLawAgreement:${stepKey}`,
       JSON.stringify(data)
     );
-    console.log(`[persistStepData] saved for ${stepKey}:`, data);
   } catch (err) {
     console.error("[persistStepData] error:", err);
   }
@@ -19,9 +18,6 @@ export function rehydrateStepData(stepKey: string) {
     const saved = sessionStorage.getItem(`FamilyLawAgreement:${stepKey}`);
     if (saved) {
       const parsed = JSON.parse(saved);
-      console.log(`[rehydrateStepData] loaded for ${stepKey}:`, parsed);
-
-      // Always normalize before returning
       return normalizeFamilyLawAgreementFormData(parsed);
     }
   } catch (err) {
@@ -36,4 +32,3 @@ export function clearAllStepData() {
     .forEach(k => sessionStorage.removeItem(k));
   console.log("[clearAllStepData] cleared all step data");
 }
-

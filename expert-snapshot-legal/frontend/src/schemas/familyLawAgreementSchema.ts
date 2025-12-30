@@ -211,16 +211,6 @@ export const familyLawAgreementSchema: Record<string, FamilyLawAgreementFieldCon
     clauseTemplate: 'This agreement becomes effective on {{effectiveDate}}.',
     group: 'main'
   },
-  expirationDate: {
-    label: 'Expiration Date',
-    type: 'date',
-    required: false,
-    placeholder: 'MM/DD/YYYY',
-    clauseTemplate: 'This agreement shall expire on {{expirationDate}}.',
-    showIf: (form: FamilyLawAgreementFormData) =>
-      form.agreementType === 'PropertySettlement',
-    group: 'main'
-  },
   governingLaw: {
     label: 'Governing Law',
     type: 'dropdown',

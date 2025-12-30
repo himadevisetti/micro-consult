@@ -132,6 +132,8 @@ export function getFamilyLawAgreementClauses(
               spousalSupportDurationMonths={fd.formattedSpousalSupportDurationMonths}
               terminationConditions={fd.spousalSupportTerminationConditions}
               responsibleParty={fd.spousalSupportResponsibleParty}
+              spouse1Name={fd.spouse1Name}
+              spouse2Name={fd.spouse2Name}
             />
           ),
         },

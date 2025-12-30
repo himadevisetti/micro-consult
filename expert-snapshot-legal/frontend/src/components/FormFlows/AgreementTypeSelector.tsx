@@ -2,7 +2,10 @@
 
 import React, { useState, useEffect } from "react";
 import { useLocation } from "react-router-dom";
-import { stepperConfig, SELECTABLE_AGREEMENT_TYPES } from "../../config/familyLawAgreementStepperConfig";
+import {
+  stepperConfig,
+  SELECTABLE_AGREEMENT_TYPES,
+} from "../../config/familyLawAgreementStepperConfig";
 import styles from "../../styles/StandardRetainerForm.module.css";
 
 interface Props {
@@ -10,46 +13,177 @@ interface Props {
   initialSelected?: string[];
 }
 
-export default function AgreementTypeSelector({ onSelect, initialSelected = [] }: Props) {
-  // ✅ selected holds canonical step keys (e.g. "Custody", "Divorce")
-  const [selected, setSelected] = useState<string[]>(initialSelected);
+// ------------------------------------------------------------
+// ⭐ Correct dependency graph using REAL step keys
+// ------------------------------------------------------------
+const DEPENDENCIES: Record<string, string[]> = {
+  Custody: ["Divorce"],
+  ChildSupport: ["Custody", "Divorce"],
+  SpousalSupport: ["Divorce"],
+  PropertySettlement: ["Divorce"],
+};
+
+// ------------------------------------------------------------
+// ⭐ Reverse dependency graph (who depends on me?)
+// ------------------------------------------------------------
+const REVERSE_DEPENDENCIES: Record<string, string[]> = {};
+Object.entries(DEPENDENCIES).forEach(([child, parents]) => {
+  parents.forEach((parent) => {
+    if (!REVERSE_DEPENDENCIES[parent]) REVERSE_DEPENDENCIES[parent] = [];
+    REVERSE_DEPENDENCIES[parent].push(child);
+  });
+});
+
+// ------------------------------------------------------------
+// ⭐ Canonical module order
+// ------------------------------------------------------------
+const CANONICAL_ORDER = [
+  "Divorce",
+  "Custody",
+  "ChildSupport",
+  "SpousalSupport",
+  "PropertySettlement",
+];
+
+// Map stepKey -> title for tooltips
+const STEP_KEY_TO_TITLE: Record<string, string> = {};
+SELECTABLE_AGREEMENT_TYPES.forEach((typeKey) => {
+  const cfg = stepperConfig[typeKey];
+  STEP_KEY_TO_TITLE[cfg.key] = cfg.title;
+});
+
+export default function AgreementTypeSelector({
+  onSelect,
+  initialSelected = [],
+}: Props) {
+  // ⭐ What the user explicitly selected (no auto-parents here)
+  const [manualSelected, setManualSelected] = useState<string[]>(initialSelected);
   const [submitted, setSubmitted] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
   const location = useLocation();
 
-  // ✅ Hydrate selections from navigation state when returning from stepper
+  // ------------------------------------------------------------
+  // ⭐ Rehydrate from navigation state (fixes Divorce staying checked)
+  // ------------------------------------------------------------
   useEffect(() => {
-    const stateTypes = (location.state as any)?.agreementTypes as string[] | undefined;
+    const stateTypes = (location.state as any)?.agreementTypes as
+      | string[]
+      | undefined;
+
     if (stateTypes && stateTypes.length > 0) {
-      setSelected(stateTypes);
+      // Remove auto-selected parents from rehydrated list
+      const cleaned = stateTypes.filter((stepKey) => {
+        const isParent = REVERSE_DEPENDENCIES[stepKey] !== undefined;
+
+        if (isParent) {
+          const requiredByChild = (REVERSE_DEPENDENCIES[stepKey] || []).some(
+            (child) => stateTypes.includes(child)
+          );
+          if (requiredByChild) {
+            return false; // drop auto-selected parent
+          }
+        }
+
+        return true; // keep manual selection
+      });
+
+      setManualSelected(cleaned);
     }
   }, [location.state]);
 
-  // ✅ Keep selected in sync if initialSelected prop changes
+  // Sync with initialSelected prop
   useEffect(() => {
     if (initialSelected && initialSelected.length > 0) {
-      setSelected(initialSelected);
+      setManualSelected(initialSelected);
     }
   }, [initialSelected]);
 
-  // ✅ Toggle a module on/off by its step key
+  // ------------------------------------------------------------
+  // ⭐ Auto-select parents for all manually selected modules
+  // ------------------------------------------------------------
+  const applyDependencies = (baseSelected: string[]): string[] => {
+    const final = new Set(baseSelected);
+
+    baseSelected.forEach((stepKey) => {
+      const parents = DEPENDENCIES[stepKey] || [];
+      parents.forEach((parent) => final.add(parent));
+    });
+
+    return Array.from(final);
+  };
+
+  // ------------------------------------------------------------
+  // ⭐ When a parent is removed, remove dependent children
+  //    from the *manual* selection
+  // ------------------------------------------------------------
+  const cascadeDeselectManual = (baseSelected: string[]): string[] => {
+    const final = new Set(baseSelected);
+
+    let changed = true;
+    while (changed) {
+      changed = false;
+
+      Object.entries(REVERSE_DEPENDENCIES).forEach(([parent, children]) => {
+        if (!final.has(parent)) {
+          children.forEach((child) => {
+            if (final.has(child)) {
+              final.delete(child);
+              changed = true;
+            }
+          });
+        }
+      });
+    }
+
+    return Array.from(final);
+  };
+
+  // ------------------------------------------------------------
+  // ⭐ Derived selection = manual + required parents
+  // ------------------------------------------------------------
+  const selectedWithDeps = applyDependencies(manualSelected);
+
+  // ------------------------------------------------------------
+  // ⭐ Toggle logic
+  // ------------------------------------------------------------
   const toggleType = (stepKey: string) => {
-    setSelected(prev =>
-      prev.includes(stepKey) ? prev.filter(t => t !== stepKey) : [...prev, stepKey]
+    setManualSelected((prev) => {
+      // UNCHECKING
+      if (prev.includes(stepKey)) {
+        let nextManual = prev.filter((t) => t !== stepKey);
+        nextManual = cascadeDeselectManual(nextManual);
+        return nextManual;
+      }
+
+      // CHECKING
+      return [...prev, stepKey];
+    });
+  };
+
+  // ------------------------------------------------------------
+  // ⭐ Sort modules into canonical order
+  // ------------------------------------------------------------
+  const sortModules = (modules: string[]): string[] => {
+    return [...modules].sort(
+      (a, b) => CANONICAL_ORDER.indexOf(a) - CANONICAL_ORDER.indexOf(b)
     );
   };
 
+  // ------------------------------------------------------------
+  // Continue button handler
+  // ------------------------------------------------------------
   const handleContinue = async (e: React.FormEvent) => {
     e.preventDefault();
     setSubmitted(true);
 
-    if (selected.length === 0) return;
+    if (selectedWithDeps.length === 0) return;
+
+    const sorted = sortModules(selectedWithDeps);
 
     setSubmitting(true);
     try {
-      // ✅ Pass canonical step keys to parent
-      await onSelect(selected);
+      await onSelect(sorted);
     } catch (err) {
       console.error("[AgreementTypeSelector] Continue failed:", err);
     } finally {
@@ -57,15 +191,16 @@ export default function AgreementTypeSelector({ onSelect, initialSelected = [] }
     }
   };
 
+  // Focus first checkbox on error
   useEffect(() => {
-    if (submitted && selected.length === 0) {
+    if (submitted && selectedWithDeps.length === 0) {
       const firstCheckbox = document.querySelector<HTMLInputElement>(
         "#family-law-agreement-selector input[type='checkbox']"
       );
       firstCheckbox?.focus();
       setSubmitted(false);
     }
-  }, [submitted, selected]);
+  }, [submitted, selectedWithDeps]);
 
   const renderButtonLabel = () =>
     submitting ? (
@@ -76,6 +211,25 @@ export default function AgreementTypeSelector({ onSelect, initialSelected = [] }
       "Continue"
     );
 
+  // ------------------------------------------------------------
+  // ⭐ Disable parents required by any *manually* selected module
+  // ------------------------------------------------------------
+  const isDisabled = (stepKey: string): boolean => {
+    const dependents = REVERSE_DEPENDENCIES[stepKey] || [];
+    return dependents.some((dep) => manualSelected.includes(dep));
+  };
+
+  const getTooltip = (stepKey: string): string => {
+    const dependents = REVERSE_DEPENDENCIES[stepKey] || [];
+    const active = dependents.filter((dep) => manualSelected.includes(dep));
+    if (active.length === 0) return "";
+
+    return `Required for: ${active.map((d) => STEP_KEY_TO_TITLE[d]).join(", ")}`;
+  };
+
+  // ------------------------------------------------------------
+  // Render
+  // ------------------------------------------------------------
   return (
     <div className={styles.pageContainer}>
       <div className={styles.formWrapper}>
@@ -84,7 +238,7 @@ export default function AgreementTypeSelector({ onSelect, initialSelected = [] }
           className={styles.formInner}
           onSubmit={handleContinue}
         >
-          {submitted && selected.length === 0 && (
+          {submitted && selectedWithDeps.length === 0 && (
             <div className={styles.errorBanner}>
               Please select at least one module to continue.
             </div>
@@ -96,14 +250,18 @@ export default function AgreementTypeSelector({ onSelect, initialSelected = [] }
           </p>
 
           <div className={styles.selectorGroup}>
-            {SELECTABLE_AGREEMENT_TYPES.map(typeKey => {
-              const stepKey = stepperConfig[typeKey].key; // ✅ canonical key
+            {SELECTABLE_AGREEMENT_TYPES.map((typeKey) => {
+              const stepKey = stepperConfig[typeKey].key;
+              const disabled = isDisabled(stepKey);
+              const tooltip = getTooltip(stepKey);
+
               return (
                 <div key={stepKey} className={styles.selectorRow}>
-                  <label className={styles.label}>
+                  <label className={styles.label} title={tooltip}>
                     <input
                       type="checkbox"
-                      checked={selected.includes(stepKey)}
+                      checked={selectedWithDeps.includes(stepKey)}
+                      disabled={disabled}
                       onChange={() => toggleType(stepKey)}
                       className={styles.checkboxInput}
                     />
@@ -118,8 +276,12 @@ export default function AgreementTypeSelector({ onSelect, initialSelected = [] }
             <button
               type="submit"
               className={styles.submitButton}
-              disabled={submitting || selected.length === 0}
-              title={selected.length === 0 ? "Please select at least one module to continue." : ""}
+              disabled={submitting || selectedWithDeps.length === 0}
+              title={
+                selectedWithDeps.length === 0
+                  ? "Please select at least one module to continue."
+                  : ""
+              }
             >
               {renderButtonLabel()}
             </button>
