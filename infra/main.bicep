@@ -30,6 +30,8 @@ resource appService 'Microsoft.Web/sites@2022-03-01' = {
       linuxFxVersion: 'DOCKER|ghcr.io/himadevisetti/expert-snapshot-legal:latest'
       appSettings: [
         // Non-secret env vars
+        { name: 'COMPANY_NAME'; value: 'Expert Snapshot Legal' } 
+        { name: 'SUPPORT_EMAIL'; value: 'support@microconsultnetwork.com' }
         { name: 'FRONTEND_BUILD_PATH'; value: '/app/frontend' }
         { name: 'STORAGE_PATH'; value: '/storage' }
         { name: 'DEBUG_LOGS'; value: 'true' }

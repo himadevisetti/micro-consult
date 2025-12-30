@@ -38,6 +38,8 @@ az webapp config appsettings set \
   --resource-group $RG \
   --name $APP \
   --settings \
+    COMPANY_NAME="Expert Snapshot Legal" \
+    SUPPORT_EMAIL="support@microconsultnetwork.com" \
     FRONTEND_BUILD_PATH="/app/frontend" \
     STORAGE_PATH="/storage" \
     DEBUG_LOGS="true" \
